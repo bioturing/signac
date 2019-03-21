@@ -14,23 +14,36 @@
 #' @slot assay A named list of multimodal analysis
 #' @slot trajectory Pseudotime result
 signac <- setClass(
-    "signac",
+    "Signac",
+    slots = c(
+        # Data
+        raw.data = "ANY",
+        corrected.data = "ANY",
+        scaled.data = "ANY",
+        log.data = "ANY",
 
-    # Data
-    raw.data = "ANY",
-    corrected.data = "ANY",
-    scaled.data = "ANY",
-    log.data = "ANY",
+        # Metadata
+        cell.names = "character",
+        batch = "character",
+        metadata = "data.frame",
+        vdj = "data.frame",
 
-    # Metadata
-    cell.names = "character"
-    batch = "character",
-    metadata = "data.frame",
-    vdj = "data.frame"
-
-    # Supported data
-    snn = "list",
-    dimred = "list",
-    assay = "list",
-    trajectory = "list"
+        # Supported data
+        snn = "list",
+        dimred = "list",
+        assay = "list",
+        trajectory = "ANY"
+    )
 )
+
+# How to show signac
+setMethod("show", "Signac", function(object) {
+    cat(
+        # Intro
+        "Class:", class(object), "\n",
+
+        # Detail
+        "Original data:", nrow(object@raw.data), "genes X",
+        ncol(object@raw.data), "cells\n"
+    )
+})
