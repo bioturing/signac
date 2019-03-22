@@ -39,8 +39,8 @@ CreateSignacObject <- function(
 
   ReadFunction <- switch(type,
                          `mtx` = Read10X,
-                         `csv` = function(path, ...) ReadMatrix(path, sep = ","),
-                         `tsv` = function(path, ...) ReadMatrix(path, sep = "\t"),
+                         `csv` = function(path, ...) ReadDelim(path, sep = ","),
+                         `tsv` = function(path, ...) ReadDelim(path, sep = "\t"),
                          `h5`  = NULL)
   data <- ReadFunction(raw.data, ...)
   signac.version <- packageVersion("Signac")
@@ -154,7 +154,7 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
     lines <- read_lines(mat.path, n_max = 2)
     lines <- lapply(lines, getLine, sep = sep)
     if (length(lines[[1]]) == length(lines[[2]])) {
-      lines[[1]] <- line[[1]][-1]
+      lines[[1]] <- lines[[1]][-1]
     }
     lines[[1]] <- c('gene', lines[[1]])
     return(lines[[1]])

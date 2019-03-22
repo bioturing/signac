@@ -4,7 +4,7 @@
 \alias{CheckFileExist}
 \title{Check whether a file is exists, then stop with a message}
 \usage{
-CheckFileExist(c)
+CheckFileExist(path)
 }
 \arguments{
 \item{path}{path to  a file on your system}
