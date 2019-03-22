@@ -96,21 +96,25 @@ ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
 
   # Get header. Handle a case when the 1st element is missing
   getHeader <- function(mat.path, sep) {
-    con <- file(mat.path)
-    open(con)
-    line1 <- readOneLine(con, sep)
-    line2 <- readOneLine(con, sep)
-    if (length(line2) == length(line1)) {
-      line1 <- line1[-1]
+    lines <- readr::read_lines(mat.path, n_max = 2)
+    lines <- lapply(lines, getLine, sep = sep)
+    if (length(lines[[1]]) == length(lines[[2]])) {
+      lines[[1]] <- line[[1]][-1]
     }
-    close(con)
-    return(line1)
+    return(lines[[1]])
   }
 
-  # Read one line
-  readOneLine <- function(con, sep) {
-    return(strsplit(readLines(con, n = 1, warn = FALSE), sep)[[1]])
+  # Get line's components
+  getLine <- function(line, sep) {
+    return(strsplit(line, sep)[[1]])
   }
 
-  header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep)
+  # Fake header
+  fakeHeader <- function(mat.path, sep) {
+    line1 <- getLine(readr::read_lines(mat.path, n_max = 1), sep)
+    return(paste0('c', seq_along(line1)))
+  }
+
+  header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep) 
+  return(header.arr)
 }
