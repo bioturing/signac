@@ -41,7 +41,9 @@ CreateSignacObject <- function(
                          `mtx` = Read10X,
                          `csv` = function(path, ...) ReadDelim(path, sep = ",", ...),
                          `tsv` = function(path, ...) ReadDelim(path, sep = "\t", ...),
-                         `h5`  = NULL)
+                         `h5`  = function(path, ...) Read10XH5(path, ...)
+                         )
+
   data <- ReadFunction(raw.data, ...)
   signac.version <- packageVersion("Signac")
   object <- new(
