@@ -101,6 +101,7 @@ ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
     if (length(lines[[1]]) == length(lines[[2]])) {
       lines[[1]] <- line[[1]][-1]
     }
+    lines[[1]] <- c('gene', lines[[1]])
     return(lines[[1]])
   }
 
@@ -115,6 +116,23 @@ ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
     return(paste0('c', seq_along(line1)))
   }
 
+  # convert tibble table to a sparse matrix
+  convertTibbleToSparseMatrix <- function(mat) {
+    rn <- mat$gene
+    mat <- Matrix(as.matrix(mat[, -1]), sparse = TRUE)
+    rownames(mat) <- rn
+    return(mat)
+  }
+
   header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep) 
-  return(header.arr)
+  n.skip <- if (header) 1 else 0
+  mat <- suppressWarnings(readr::read_delim(
+    mat.path,
+    delim = sep,
+    skip = n.skip,
+    col_names = header.arr,
+    progress = FALSE
+  ))
+  mat <- convertTibbleToSparseMatrix(mat)
+  return(mat)
 }
