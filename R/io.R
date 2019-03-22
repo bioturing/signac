@@ -86,3 +86,9 @@ Read10X <- function(data.dir = NULL){
   return(full.data)
 }
 
+
+#' Read expresison matrix from CSV or TSV
+#' @param mat.path Path to expression matrix (can be zipped)
+#' @param sep Separator. Default is <code>,</code>
+ReadMatrix <- function(mat.path, sep = ",") {
+}
