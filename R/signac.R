@@ -32,7 +32,13 @@ signac <- setClass(
         snn = "list",
         dimred = "list",
         assay = "list",
-        trajectory = "ANY"
+        trajectory = "ANY",
+
+        # Version
+        version = "ANY",
+
+        # Project name
+        project.name = "ANY"
     )
 )
 
@@ -40,10 +46,13 @@ signac <- setClass(
 setMethod("show", "Signac", function(object) {
     cat(
         # Intro
-        "Class:", class(object), "\n",
+        "Class:", Colourise(class(object), "green"), "\n",
 
         # Detail
         "Original data:", nrow(object@raw.data), "genes X",
         ncol(object@raw.data), "cells\n"
+
+        # Project name
+
     )
 })
