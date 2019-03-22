@@ -5,7 +5,7 @@
 #' @param type Type of the input file "mtx", "h5", "csv", "tsv", "sparse",
 #' "matrix"
 #' @param project Project name (string)
-#' @param ... parameters for h5 file
+#' @param ... parameters for h5 file, tsv file,
 #' @return Returns a Signac object with the raw data stored in object@@raw.data.
 #' object@@data, object@@meta.data, object@@ident, also initialized.
 #'
@@ -39,8 +39,8 @@ CreateSignacObject <- function(
 
   ReadFunction <- switch(type,
                          `mtx` = Read10X,
-                         `csv` = function(path, ...) ReadDelim(path, sep = ","),
-                         `tsv` = function(path, ...) ReadDelim(path, sep = "\t"),
+                         `csv` = function(path, ...) ReadDelim(path, sep = ",", ...),
+                         `tsv` = function(path, ...) ReadDelim(path, sep = "\t", ...),
                          `h5`  = NULL)
   data <- ReadFunction(raw.data, ...)
   signac.version <- packageVersion("Signac")
@@ -145,8 +145,10 @@ Read10X <- function(data.dir = NULL){
 #' @param mat.path Path to expression matrix (can be zipped)
 #' @param sep Separator. Default is <code>,</code>
 #' @param sep Data has a header. Default is TRUE
-#' @importFrom readr read_lines read_delim
+#' @importFrom Matrix readMM
 #' @importFrom Matrix Matrix
+#' @importFrom readr read_lines read_delim
+#'
 ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
 
   # Get header. Handle a case when the 1st element is missing
@@ -179,7 +181,7 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
     return(mat)
   }
 
-  header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep) 
+  header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep)
   n.skip <- if (header) 1 else 0
   mat <- suppressWarnings(read_delim(
     mat.path,
