@@ -11,7 +11,7 @@ ReadMatrix(mat.path, sep = ",", header = TRUE)
 
 \item{sep}{Separator. Default is <code>,</code>}
 
-\item{sep}{Data has a header. Default is TRUE}
+\item{header}{Data has a header. Default is TRUE}
 }
 \description{
 Read expresison matrix from CSV or TSV
