@@ -145,11 +145,13 @@ Read10X <- function(data.dir = NULL){
 #' @param mat.path Path to expression matrix (can be zipped)
 #' @param sep Separator. Default is <code>,</code>
 #' @param sep Data has a header. Default is TRUE
-ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
+#' @importFrom readr read_lines read_delim
+#' @importFrom Matrix Matrix
+ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
 
   # Get header. Handle a case when the 1st element is missing
   getHeader <- function(mat.path, sep) {
-    lines <- readr::read_lines(mat.path, n_max = 2)
+    lines <- read_lines(mat.path, n_max = 2)
     lines <- lapply(lines, getLine, sep = sep)
     if (length(lines[[1]]) == length(lines[[2]])) {
       lines[[1]] <- line[[1]][-1]
@@ -165,7 +167,7 @@ ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
 
   # Fake header
   fakeHeader <- function(mat.path, sep) {
-    line1 <- getLine(readr::read_lines(mat.path, n_max = 1), sep)
+    line1 <- getLine(read_lines(mat.path, n_max = 1), sep)
     return(paste0('c', seq_along(line1)))
   }
 
@@ -179,7 +181,7 @@ ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
 
   header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep) 
   n.skip <- if (header) 1 else 0
-  mat <- suppressWarnings(readr::read_delim(
+  mat <- suppressWarnings(read_delim(
     mat.path,
     delim = sep,
     skip = n.skip,
