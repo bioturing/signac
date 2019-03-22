@@ -15,7 +15,7 @@ CreateSignacObject(raw.data, type = "mtx", project = "UntitleProject",
 
 \item{project}{Project name (string)}
 
-\item{...}{parameters for h5 file}
+\item{...}{parameters for h5 file, tsv file,}
 }
 \value{
 Returns a Signac object with the raw data stored in object@raw.data.

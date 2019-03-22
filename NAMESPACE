@@ -3,6 +3,7 @@
 export(CreateSignacObject)
 export(ExtractField)
 export(Read10X)
+export(Read10XH5)
 importFrom(Matrix,Matrix)
 importFrom(Matrix,readMM)
 importFrom(methods,new)
