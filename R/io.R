@@ -1,3 +1,5 @@
+require(readr)
+
 #' This function was imported from Seurat R package
 #' citation: Butler et al., Nature Biotechnology 2018
 #'
@@ -89,5 +91,26 @@ Read10X <- function(data.dir = NULL){
 #' Read expresison matrix from CSV or TSV
 #' @param mat.path Path to expression matrix (can be zipped)
 #' @param sep Separator. Default is <code>,</code>
-ReadMatrix <- function(mat.path, sep = ",") {
+#' @param sep Data has a header. Default is TRUE
+ReadMatrix <- function(mat.path, sep = ",", header = TRUE) {
+
+  # Get header. Handle a case when the 1st element is missing
+  getHeader <- function(mat.path, sep) {
+    con <- file(mat.path)
+    open(con)
+    line1 <- readOneLine(con, sep)
+    line2 <- readOneLine(con, sep)
+    if (length(line2) == length(line1)) {
+      line1 <- line1[-1]
+    }
+    close(con)
+    return(line1)
+  }
+
+  # Read one line
+  readOneLine <- function(con, sep) {
+    return(strsplit(readLines(con, n = 1, warn = FALSE), sep)[[1]])
+  }
+
+  header.arr <- if (header) getHeader(mat.path, sep) else fakeHeader(mat.path, sep)
 }
