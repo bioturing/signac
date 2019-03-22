@@ -1,4 +1,57 @@
-require(readr)
+#' Initialize and setup the Signac object
+#'
+#' Initializes the Signac object and some optional filtering
+#' @param raw.data Raw input data
+#' @param type Type of the input file "mtx", "h5", "csv", "tsv", "sparse",
+#' "matrix"
+#' @param project Project name (string)
+#' @param ... parameters for h5 file
+#' @return Returns a Signac object with the raw data stored in object@@raw.data.
+#' object@@data, object@@meta.data, object@@ident, also initialized.
+#'
+#' @importFrom methods new
+#' @importFrom utils packageVersion
+#'
+#' @export
+#'
+#' @examples
+#' pbmc_small <- CreateSignacObject(raw.data = path2pbmc, type = "mtx")
+#' pbmc_small
+#'
+CreateSignacObject <- function(
+  raw.data,
+  type = "mtx",
+  project = "UntitleProject",
+  ...
+) {
+
+  if (type %in% c("mtx", "h5", "csv", "tsv")) {
+    CheckFileExist(raw.data)
+  }
+
+  if (type == "matrix") {
+    stopifnot("matrix" %in% class(raw.data))
+  }
+
+  if (type == "sparse") {
+    stopifnot("sparseMatrix" %in% class(raw.data))
+  }
+
+  ReadFunction <- switch(type,
+                         `mtx` = Read10X,
+                         `csv` = function(path, ...) ReadMatrix(path, sep = ","),
+                         `tsv` = function(path, ...) ReadMatrix(path, sep = "\t"),
+                         `h5`  = NULL)
+  data <- ReadFunction(raw.data, ...)
+  signac.version <- packageVersion("Signac")
+  object <- new(
+    Class = "Signac",
+    raw.data = data,
+    project.name = project,
+    version = signac.version
+  )
+  return(object)
+}
 
 #' This function was imported from Seurat R package
 #' citation: Butler et al., Nature Biotechnology 2018
