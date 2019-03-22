@@ -50,9 +50,12 @@ setMethod("show", "Signac", function(object) {
 
         # Detail
         "Original data:", nrow(object@raw.data), "genes X",
-        ncol(object@raw.data), "cells\n"
+        ncol(object@raw.data), "cells\n",
 
         # Project name
+        "Project name:", Colourise(object@project.name, "cyan"), "\n",
 
+        # Signac version
+        "Signac version:", Colourise(object@version, "cyan"), "\n"
     )
 })
