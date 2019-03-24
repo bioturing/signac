@@ -214,6 +214,21 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
 #' @export
 #'
 Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
+
+  # Get version of HDF5 file
+  GetVersion <- function(infile) {
+    return if (!infile$attr_exists("PYTABLES_FORMAT_VERSION")) 3 else 2
+  }
+
+  # Get row names (for genes)
+  GetFeatureSlot <- function(version, use.names) {
+    slot <- if (version == 3) {
+      if (use.names) "features/name" else "features/id"
+    } else {
+      if (use.names) "gene_names" else "genes"
+    }
+  }
+
   if (!requireNamespace('hdf5r', quietly = TRUE)) {
     stop("Please install hdf5r to read HDF5 files")
   }
@@ -223,26 +238,14 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
   infile <- hdf5r::H5File$new(filename = filename, mode = 'r')
   genomes <- names(x = infile)
   output <- list()
-  if (!infile$attr_exists("PYTABLES_FORMAT_VERSION")) {
-    # cellranger version 3
-    if (use.names) {
-      feature_slot <- 'features/name'
-    } else {
-      feature_slot <- 'features/id'
-    }
-  } else {
-    if (use.names) {
-      feature_slot <- 'gene_names'
-    } else {
-      feature_slot <- 'genes'
-    }
-  }
+  version <- GetVersion(infile)
+  feature.slot <- GetFeatureSlot(version, use.names)
   for (genome in genomes) {
     counts <- infile[[paste0(genome, '/data')]]
     indices <- infile[[paste0(genome, '/indices')]]
     indptr <- infile[[paste0(genome, '/indptr')]]
     shp <- infile[[paste0(genome, '/shape')]]
-    features <- infile[[paste0(genome, '/', feature_slot)]][]
+    features <- infile[[paste0(genome, '/', feature.slot)]][]
     barcodes <- infile[[paste0(genome, '/barcodes')]]
     sparse.mat <- sparseMatrix(
       i = indices[] + 1,
