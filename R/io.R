@@ -196,7 +196,8 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
   return(mat)
 }
 
-#' This function was imported from Seurat R package
+#' This function was initialized by the idea
+#' from Seurat R package
 #' citation: Butler et al., Nature Biotechnology 2018
 #'
 #' Read 10X hdf5 file
