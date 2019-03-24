@@ -211,7 +211,8 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
 #' @return Returns a sparse matrix with rows and columns labeled. If multiple
 #' genomes are present, returns a list of sparse matrices (one per genome).
 #'
-#' @export
+#' @importFrom hdf5r H5File
+#' @importFrom Matrix sparseMatrix
 #'
 Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
 
@@ -229,24 +230,76 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
     }
   }
 
-  if (!requireNamespace('hdf5r', quietly = TRUE)) {
-    stop("Please install hdf5r to read HDF5 files")
+  # Get features
+  GetFeatures <- function(infile, base.slot, feature.slot, unique.features) {
+    features <- infile[[paste0(base.slot, '/', feature.slot)]][]
+    if (unique.features) {
+      features <- make.unique(names = features)
+    }
+    return(features)
   }
-  if (!file.exists(filename)) {
-    stop("File not found")
+
+  # Get data from v2 H5 file
+  GetOutputV2 <- function(infile, feature.slot, unique.features) {
+    output <- list()
+    genomes <- names(x = infile)
+    for (genome in genomes) {
+      counts <- infile[[paste0(genome, '/data')]]
+      indices <- infile[[paste0(genome, '/indices')]]
+      indptr <- infile[[paste0(genome, '/indptr')]]
+      shp <- infile[[paste0(genome, '/shape')]]
+      features <- GetFeatures(infile, genome, feature.slot, unique.features)
+      barcodes <- infile[[paste0(genome, '/barcodes')]]
+      sparse.mat <- sparseMatrix(
+        i = indices[] + 1,
+        p = indptr[],
+        x = as.numeric(x = counts[]),
+        dims = shp[],
+        giveCsparse = FALSE
+      )
+      rownames(x = sparse.mat) <- features
+      colnames(x = sparse.mat) <- barcodes[]
+      sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
+      output[[genome]] <- sparse.mat
+    }
+    infile$close_all()
+    if (length(x = output) == 1) {
+      output <- output[[genome]]
+    }
+    return(output)
   }
-  infile <- hdf5r::H5File$new(filename = filename, mode = 'r')
-  genomes <- names(x = infile)
-  output <- list()
-  version <- GetVersion(infile)
-  feature.slot <- GetFeatureSlot(version, use.names)
-  for (genome in genomes) {
-    counts <- infile[[paste0(genome, '/data')]]
-    indices <- infile[[paste0(genome, '/indices')]]
-    indptr <- infile[[paste0(genome, '/indptr')]]
-    shp <- infile[[paste0(genome, '/shape')]]
-    features <- infile[[paste0(genome, '/', feature.slot)]][]
-    barcodes <- infile[[paste0(genome, '/barcodes')]]
+
+  # Get data from v3 H5 file
+  GetOutputV3 <- function(infile, feature.slot, unique.features) {
+
+    # Get genomes and indices (of features)
+    GetGenomes <- function(infile, base.slot) {
+      genome.arr <- infile[[paste0(base.slot, "/features/genome")]][]
+      name <- unique(genome.arr)
+      genome.arr <- lapply(name, function(x) which(genome.arr == x))
+      names(genome.arr) <- name
+      return(genome.arr)
+    }
+
+    # Get feature type
+    GetFeatureType <- function(infile, base.slot) {
+      return (if (infile$exists(name = paste0(base.slot, '/features/feature_type'))) {
+        infile[[paste0(base.slot, '/features/feature_type')]][]
+      } else {
+        NULL
+      })
+    }
+
+    output <- list()
+    base.slot <- names(x = infile)
+    genomes <- GetGenomes(infile, base.slot)
+    counts <- infile[[paste0(base.slot, '/data')]]
+    indices <- infile[[paste0(base.slot, '/indices')]]
+    indptr <- infile[[paste0(base.slot, '/indptr')]]
+    shp <- infile[[paste0(base.slot, '/shape')]]
+    features <- GetFeatures(infile, base.slot, feature.slot, unique.features)
+    types <- GetFeatureType(infile, base.slot)
+    barcodes <- infile[[paste0(base.slot, '/barcodes')]]
     sparse.mat <- sparseMatrix(
       i = indices[] + 1,
       p = indptr[],
@@ -254,34 +307,39 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
       dims = shp[],
       giveCsparse = FALSE
     )
-    if (unique.features) {
-      features <- make.unique(names = features)
-    }
     rownames(x = sparse.mat) <- features
     colnames(x = sparse.mat) <- barcodes[]
     sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
     # Split v3 multimodal
-    if (infile$exists(name = paste0(genome, '/features/feature_type'))) {
-      types <- infile[[paste0(genome, '/features/feature_type')]][]
-      types.unique <- unique(x = types)
-      if (length(x = types.unique) > 1) {
-        message("Genome ", genome, " has multiple modalities, returning a list of matrices for this genome")
+    types.unique <- unique(types)
+    output <- lapply(names(genomes), function(genome) {
+      ft.idx <- genomes[[genome]]
+      sparse.mat2 <- sparse.mat[ft.idx, ]
+      types2 <- types[ft.idx]
+      if (length(types.unique) > 1) {
+        message("This data has multiple modalities, returning a list of matrices for each genome")
         sparse.mat <- sapply(
           X = types.unique,
           FUN = function(x) {
-            return(sparse.mat[which(x = types == x), ])
+            return(sparse.mat2[which(x = types2 == x), ])
           },
           simplify = FALSE,
           USE.NAMES = TRUE
         )
       }
+      return(sparse.mat2)
+    })
+    names(output) <- names(genomes)
+    infile$close_all()
+    if (length(x = output) == 1) {
+      output <- output[[1]]
     }
-    output[[genome]] <- sparse.mat
-  }
-  infile$close_all()
-  if (length(x = output) == 1) {
-    return(output[[genome]])
-  } else{
     return(output)
   }
+
+  infile <- H5File$new(filename = filename, mode = 'r')
+  version <- GetVersion(infile)
+  feature.slot <- GetFeatureSlot(version, use.names)
+  GetOutputFunc <- if (version == 2) GetOuputV2 else GetOutputV3
+  return(GetOutputFunc(infile, feature.slot, unique.features))
 }
