@@ -218,7 +218,7 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
 
   # Get version of HDF5 file
   GetVersion <- function(infile) {
-    return if (!infile$attr_exists("PYTABLES_FORMAT_VERSION")) 3 else 2
+    return(if (!infile$attr_exists("PYTABLES_FORMAT_VERSION")) 3 else 2)
   }
 
   # Get row names (for genes)
