@@ -55,7 +55,7 @@ CreateSignacObject <- function(
   return(object)
 }
 
-#' This function was imported from Seurat R package
+#' This function was modified from Seurat R package
 #' citation: Butler et al., Nature Biotechnology 2018
 #'
 #' Load in data from 10X
@@ -66,22 +66,16 @@ CreateSignacObject <- function(
 #' files provided by 10X. A vector or named vector can be given in order to load
 #' several data directories. If a named vector is given, the cell barcode names
 #' will be prefixed with the name.
+#' @param barcode.file Name of the barcode file, usually is raw txt or zipped
+#' @param gene.file Name of the gene file, usually is raw txt or zipped
+#' @param matrix.file Name of the matrix file, usually is raw txt or zipped
 #'
 #' @return Returns a sparse matrix with rows and columns labeled
 #'
 #' @importFrom Matrix readMM
 #'
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' data_dir <- 'path/to/data/directory'
-#' list.files(data_dir) # Should show barcodes.tsv, genes.tsv, and matrix.mtx
-#' expression_matrix <- Read10X(data.dir = data_dir)
-#' signac_object = CreateSignacObject(raw.data = expression_matrix)
-#' }
-#'
-Read10X <- function(data.dir = NULL){
+Read10X_helper <- function(data.dir = NULL, barcode.file = NULL,
+                    gene.file = NULL, matrix.file = NULL) {
   full.data <- list()
   for (i in seq_along(data.dir)) {
     run <- data.dir[i]
@@ -91,9 +85,9 @@ Read10X <- function(data.dir = NULL){
     if(!grepl("\\/$", run)) {
       run <- paste(run, "/", sep = "")
     }
-    barcode.loc <- paste0(run, "barcodes.tsv")
-    gene.loc <- paste0(run, "genes.tsv")
-    matrix.loc <- paste0(run, "matrix.mtx")
+    barcode.loc <- paste0(run, barcode.file)
+    gene.loc <- paste0(run, gene.file)
+    matrix.loc <- paste0(run, matrix.file)
     if (!file.exists(barcode.loc)) {
       stop("Barcode file missing")
     }
@@ -104,30 +98,24 @@ Read10X <- function(data.dir = NULL){
       stop("Expression matrix file missing")
     }
     data <- readMM(file = matrix.loc)
-    cell.names <- readLines(barcode.loc)
-    gene.names <- readLines(gene.loc)
-    if (all(grepl(pattern = "\\-1$", x = cell.names))) {
+    cell.names <- read_tsv(barcode.loc, col_names = F)
+    gene.names <- read_tsv(gene.loc, col_names = F)
+    if (all(grepl(pattern = "\\-1$", x = cell.names[[1]]))) {
       cell.names <- as.vector(
         x = as.character(
           x = sapply(
-            X = cell.names,
+            X = cell.names[[1]],
             FUN = ExtractField,
             field = 1,
             delim = "-"
           )
         )
       )
+    } else{
+      cell.names <- cell.names[[1]]
     }
-    rownames(x = data) <- make.unique(
-      names = as.character(
-        x = sapply(
-          X = gene.names,
-          FUN = ExtractField,
-          field = 2,
-          delim = "\\t"
-        )
-      )
-    )
+    rownames(x = data) <- make.unique(names = gene.names[[2]])
+
     if (is.null(x = names(x = data.dir))) {
       if (i < 2) {
         colnames(x = data) <- cell.names
@@ -140,6 +128,121 @@ Read10X <- function(data.dir = NULL){
     full.data <- append(x = full.data, values = data)
   }
   full.data <- do.call(cbind, full.data)
+  return(full.data)
+}
+
+
+#' Load in data from 10X
+#'
+#' Enables easy loading of sparse data matrices provided by 10X genomics from
+#' chemistry version 2 and chemistry version 3
+#'
+#' @param data.dir folder of filtered cell matrix
+#' @param version chemistry version
+#' @importFrom Matrix readMM
+#' @importFrom readr read_tsv
+#'
+#' @return list of objects for genomes, each object comprises of a list of
+#' sparse matrices for measurements
+#'
+#' @examples
+#' dir <- path2your10Xdir
+#' list.data <- Read10XRAW(dir, version = 2)
+#'
+Read10XRAW <- function(data.dir, version = 2) {
+  triple.files <- ReturnTripleFiles(data.dir)
+
+  GetOutputV2 <- function(){
+      full.data <- Read10X_helper(data.dir     = data.dir,
+                                  barcode.file = triple.files[["barcodes"]],
+                                  gene.file    = triple.files[["genes"]],
+                                  matrix.file  = triple.files[["matrix"]])
+      gene.names <- rownames(full.data)
+      if (all(grepl(pattern = "_", x = gene.names))){
+        genomes <- unique(
+          x = as.character(
+            x = unlist(sapply(rownames(full.data), function(s)
+              strsplit(s, "_")[[1]][1]))
+          )
+        )
+      } else{
+        genomes <- c("")
+      }
+    output <- list()
+    for (genome in genomes){
+      genome.idx <- grepl(pattern = paste0("^", genome), x = gene.names)
+      mat <- full.data[genome.idx, ]
+      sub.genes.names <- make.unique(
+        names = as.character(
+          x = unlist(sapply(rownames(mat), function(s){
+                                    strsplit(s, "_")[[1]][2]
+                                    }
+                            )
+                    )
+          )
+      )
+      rownames(mat) <- sub.genes.names
+      output[[genome]] <- list('Gene Expression' = mat)
+    }
+    if (length(output) == 1)
+      names(output) <- "default"
+    return(output)
+  }
+
+  GetOutputV3 <- function(){
+    full.data <- Read10X_helper(data.dir     = data.dir,
+                                barcode.file = triple.files[["barcodes"]],
+                                gene.file    = triple.files[["genes"]],
+                                matrix.file  = triple.files[["matrix"]])
+    gene.data <- read_tsv(file.path(data.dir, triple.files[["genes"]]),
+                          col_names = F)
+    if (all(grepl(pattern = "_", x = gene.data[[1]]))){
+      genomes <- unique(
+        x = as.character(
+          x = unlist(sapply(gene.data[[1]], function(s)
+            strsplit(s, "_")[[1]][1]))
+        )
+      )
+    } else{
+      genomes <- c("")
+    }
+    output <- list()
+    for (genome in genomes){
+      genome.idx <- grepl(pattern = paste0("^", genome), x = gene.data[[1]])
+      mat <- full.data[genome.idx, ]
+      sub.genes.names <- make.unique(
+        names = as.character(
+          x = unlist(sapply(rownames(mat), function(s){
+                                strsplit(s, "_")[[1]][2]
+                                }
+                            )
+                    )
+          )
+      )
+      rownames(mat) <- sub.genes.names
+      measures <- unique(gene.data[[3]][genome.idx])
+      if (length(measures) > 1) {
+        message("This data has multiple modalities, returning a list of matrices for each genome")
+      }
+      multimodal <- list()
+      for (measure in measures) {
+        multimodal[[measure]] <- mat[gene.data[[3]][genome.idx] == measure, ]
+      }
+      output[[genome]] <- multimodal
+      gc()
+    }
+    if (length(output) == 1)
+      names(output) <- "default"
+    return(output)
+  }
+
+  if (version == 2) {
+    full.data <- GetOutputV2()
+  } else if (version == 3){
+    full.data <- GetOutputV3()
+  } else{
+    stop("Cannot recognize the version!")
+  }
   return(full.data)
 }
 
