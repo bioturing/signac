@@ -38,7 +38,7 @@ CreateSignacObject <- function(
   }
 
   ReadFunction <- switch(type,
-                         `mtx` = Read10X,
+                         `mtx` = function(path, ...) Read10XRAW(path, ...),
                          `csv` = function(path, ...) ReadDelim(path, sep = ",", ...),
                          `tsv` = function(path, ...) ReadDelim(path, sep = "\t", ...),
                          `h5`  = function(path, ...) Read10XH5(path, ...)
@@ -131,7 +131,6 @@ Read10X_helper <- function(data.dir = NULL, barcode.file = NULL,
   return(full.data)
 }
 
-
 #' Load in data from 10X
 #'
 #' Enables easy loading of sparse data matrices provided by 10X genomics from
@@ -159,12 +158,8 @@ Read10XRAW <- function(data.dir, version = 2) {
                                   matrix.file  = triple.files[["matrix"]])
       gene.names <- rownames(full.data)
       if (all(grepl(pattern = "_", x = gene.names))){
-        genomes <- unique(
-          x = as.character(
-            x = unlist(sapply(rownames(full.data), function(s)
-              strsplit(s, "_")[[1]][1]))
-          )
-        )
+        genomes <- unique(as.character(unlist(sapply(rownames(full.data),
+                          function(s) strsplit(s, "_")[[1]][1]))))
       } else{
         genomes <- c("")
       }
@@ -173,19 +168,18 @@ Read10XRAW <- function(data.dir, version = 2) {
       genome.idx <- grepl(pattern = paste0("^", genome), x = gene.names)
       mat <- full.data[genome.idx, ]
       sub.genes.names <- make.unique(
-        names = as.character(
-          x = unlist(sapply(rownames(mat), function(s){
-                                    strsplit(s, "_")[[1]][2]
-                                    }
-                            )
-                    )
-          )
-      )
+        names = as.character(unlist(sapply(rownames(mat), function(s)
+                              strsplit(s, "_")[[1]][2])))
+        )
       rownames(mat) <- sub.genes.names
       output[[genome]] <- list('Gene Expression' = mat)
     }
-    if (length(output) == 1)
+    if (length(output) == 1) {
       names(output) <- "default"
+    } else {
+      opt <- AskForChoices(names(output))
+      output <- output[[opt]]
+    }
     return(output)
   }
 
@@ -211,13 +205,8 @@ Read10XRAW <- function(data.dir, version = 2) {
       genome.idx <- grepl(pattern = paste0("^", genome), x = gene.data[[1]])
       mat <- full.data[genome.idx, ]
       sub.genes.names <- make.unique(
-        names = as.character(
-          x = unlist(sapply(rownames(mat), function(s){
-                                strsplit(s, "_")[[1]][2]
-                                }
-                            )
-                    )
-          )
+        names = as.character(unlist(sapply(rownames(mat), function(s)
+                            strsplit(s, "_")[[1]][2])))
       )
       rownames(mat) <- sub.genes.names
       measures <- unique(gene.data[[3]][genome.idx])
@@ -231,10 +220,17 @@ Read10XRAW <- function(data.dir, version = 2) {
       output[[genome]] <- multimodal
       gc()
     }
-    if (length(output) == 1)
+    if (length(output) == 1) {
       names(output) <- "default"
+    } else {
+      opt <- AskForChoices(names(output))
+      output <- output[[opt]]
+    }
     return(output)
   }
+
+  message("Default is 10XGenomics chemistry version 2")
+  message("Reading with chemistry version ", version)
 
   if (version == 2) {
     full.data <- GetOutputV2()
@@ -296,7 +292,8 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
     progress = FALSE
   ))
   mat <- convertTibbleToSparseMatrix(mat)
-  return(mat)
+  output <- list("Gene Expression" = mat)
+  return(output)
 }
 
 #' This function was initialized by the idea
@@ -361,6 +358,8 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
         dims = shp[],
         giveCsparse = FALSE
       )
+      features <- as.character(unlist(sapply(rownames(mat), function(s)
+                                strsplit(s, "_")[[1]][2])))
       rownames(x = sparse.mat) <- features
       colnames(x = sparse.mat) <- barcodes[]
       sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
@@ -416,6 +415,9 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
     output <- lapply(names(genomes), function(genome) {
       ft.idx <- genomes[[genome]]
       sparse.mat2 <- sparse.mat[ft.idx, ]
+      ft <- as.character(unlist(sapply(rownames(sparse.mat2), function(s)
+        strsplit(s, "_")[[1]][2])))
+      rownames(sparse.mat2) <- ft
       types2 <- types[ft.idx]
       sparse.mat2 <- lapply(types.unique, function(x) sparse.mat2[which(x = types2 == x), ])
       names(sparse.mat2) <- types.unique
@@ -430,5 +432,14 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
   version <- GetVersion(infile)
   feature.slot <- GetFeatureSlot(version, use.names)
   GetOutputFunc <- if (version == 2) GetOuputV2 else GetOutputV3
-  return(GetOutputFunc(infile, feature.slot, unique.features))
+  output <- GetOutputFunc(infile, feature.slot, unique.features)
+
+  if (length(output) == 1) {
+    names(output) <- "default"
+  } else {
+    opt <- AskForChoices(names(output))
+    output <- output[[opt]]
+  }
+
+  return(output)
 }

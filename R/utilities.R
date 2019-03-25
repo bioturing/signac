@@ -143,3 +143,24 @@ ReturnTripleFiles <- function(dir) {
               barcodes = barcodes[bx.exists][[1]],
               matrix   = matrix[matrix.exists][[1]]))
 }
+
+
+#' Ask for a choice. Use to select one genome from multi-species data
+#'
+#' @param choices : multi genomes selection
+#'
+#' @return selected genome
+#'
+AskForChoices <- function(choices) {
+  n <- length(choices)
+  choices.txt <- paste(seq(1, n), choices, sep = ": ")
+  choices.txt <- Colourise(paste(c(choices.txt, ""), collapse = "\n"), "green")
+
+  opts <- as.character(seq(1, n))
+  select <- NA
+  while (! select %in% opts) {
+    message("We only support single-specie analysis. Please select from ", 1, " to ", n)
+    select <- readline(choices.txt)
+  }
+  return(choices[as.numeric(select)])
+}
