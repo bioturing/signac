@@ -264,9 +264,6 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
       output[[genome]] <- sparse.mat
     }
     infile$close_all()
-    if (length(x = output) == 1) {
-      output <- output[[genome]]
-    }
     return(output)
   }
 
@@ -317,24 +314,12 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
       ft.idx <- genomes[[genome]]
       sparse.mat2 <- sparse.mat[ft.idx, ]
       types2 <- types[ft.idx]
-      if (length(types.unique) > 1) {
-        message("This data has multiple modalities, returning a list of matrices for each genome")
-        sparse.mat <- sapply(
-          X = types.unique,
-          FUN = function(x) {
-            return(sparse.mat2[which(x = types2 == x), ])
-          },
-          simplify = FALSE,
-          USE.NAMES = TRUE
-        )
-      }
+      sparse.mat2 <- lapply(types.unique, function(x) sparse.mat2[which(x = types2 == x), ])
+      names(sparse.mat2) <- types.unique
       return(sparse.mat2)
     })
     names(output) <- names(genomes)
     infile$close_all()
-    if (length(x = output) == 1) {
-      output <- output[[1]]
-    }
     return(output)
   }
 
