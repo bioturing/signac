@@ -10,6 +10,7 @@
 #' @param not.expressed Genes that have expression value equal or less than
 #'                      this number is considered not expressed. Default is 0.
 #' @param verbose Talkative or not
+#' @export
 #' @importFrom Matrix rowSums colSums
 FilterDataBasic <- function(
     object,
