@@ -5,7 +5,7 @@
 \title{Filter epxression matrix}
 \usage{
 FilterData(object, slot = "raw.data", min.cells = NULL,
-  min.genes = 200, not.expressed = 0)
+  min.genes = 200, not.expressed = 0, verbose = TRUE)
 }
 \arguments{
 \item{object}{Signac object}
@@ -19,6 +19,8 @@ If NULL, it will be the at least 10 or the 2% of the total cells.}
 
 \item{not.expressed}{Genes that have expression value equal or less than
 this number is considered not expressed. Default is 0.}
+
+\item{verbose}{Talkative or not}
 }
 \description{
 Filter epxression matrix
