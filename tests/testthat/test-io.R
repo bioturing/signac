@@ -12,8 +12,8 @@ test_that("Read from mtx", {
     expect_equal("Signac" %in%  class(obj), TRUE)
 })
 
-test_that("Read from H5") {
-    file.test <- system.file("extdata", "v3input.h5")
+test_that("Read from H5", {
+    file.test <- system.file("extdata", "v3input.h5", package = "Signac")
     obj <- CreateSignacObject(file.test, type = "h5")
     expect_equal("Signac" %in%  class(obj), TRUE)
-}
+})
