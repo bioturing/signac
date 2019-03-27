@@ -11,7 +11,7 @@
 #'                      this number is considered not expressed. Default is 0.
 #' @param verbose Talkative or not
 #' @importFrom Matrix rowSums colSums
-FilterData <- function(
+FilterDataBasic <- function(
     object,
     slot = "raw.data",
     min.cells = NULL,
