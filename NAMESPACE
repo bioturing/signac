@@ -2,7 +2,6 @@
 
 export(CreateSignacObject)
 export(ExtractField)
-export(FilterDataBasic)
 export(Read10X)
 export(Read10XH5)
 importFrom(Matrix,Matrix)
