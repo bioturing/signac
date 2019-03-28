@@ -52,6 +52,43 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastGetRowsOfMat
+arma::mat FastGetRowsOfMat(const arma::mat& mat, arma::uvec vec);
+RcppExport SEXP _Signac_FastGetRowsOfMat(SEXP matSEXP, SEXP vecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type vec(vecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetRowsOfMat(mat, vec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetColsOfMat
+arma::mat FastGetColsOfMat(const arma::mat& mat, arma::uvec vec);
+RcppExport SEXP _Signac_FastGetColsOfMat(SEXP matSEXP, SEXP vecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type vec(vecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetColsOfMat(mat, vec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSubMat
+arma::mat FastGetSubMat(const arma::mat& mat, arma::uvec rvec, arma::uvec cvec);
+RcppExport SEXP _Signac_FastGetSubMat(SEXP matSEXP, SEXP rvecSEXP, SEXP cvecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type rvec(rvecSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type cvec(cvecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSubMat(mat, rvec, cvec));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastCreateSparseMat
 arma::sp_mat FastCreateSparseMat(int nrow, int ncol);
 RcppExport SEXP _Signac_FastCreateSparseMat(SEXP nrowSEXP, SEXP ncolSEXP) {
@@ -76,14 +113,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // FastCreateFromTriplet
-arma::sp_mat FastCreateFromTriplet(arma::urowvec vec1, arma::urowvec vec2, arma::colvec vec_val);
+arma::sp_mat FastCreateFromTriplet(const arma::urowvec& vec1, const arma::urowvec& vec2, const arma::colvec& vec_val);
 RcppExport SEXP _Signac_FastCreateFromTriplet(SEXP vec1SEXP, SEXP vec2SEXP, SEXP vec_valSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::urowvec >::type vec1(vec1SEXP);
-    Rcpp::traits::input_parameter< arma::urowvec >::type vec2(vec2SEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type vec_val(vec_valSEXP);
+    Rcpp::traits::input_parameter< const arma::urowvec& >::type vec1(vec1SEXP);
+    Rcpp::traits::input_parameter< const arma::urowvec& >::type vec2(vec2SEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type vec_val(vec_valSEXP);
     rcpp_result_gen = Rcpp::wrap(FastCreateFromTriplet(vec1, vec2, vec_val));
     return rcpp_result_gen;
 END_RCPP
@@ -247,12 +284,138 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastSparseMatMultSD
+arma::sp_mat FastSparseMatMultSD(const arma::sp_mat& mat1, const arma::mat& mat2);
+RcppExport SEXP _Signac_FastSparseMatMultSD(SEXP mat1SEXP, SEXP mat2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat1(mat1SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat2(mat2SEXP);
+    rcpp_result_gen = Rcpp::wrap(FastSparseMatMultSD(mat1, mat2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastSparseMatMultDS
+arma::sp_mat FastSparseMatMultDS(const arma::mat& mat1, const arma::sp_mat& mat2);
+RcppExport SEXP _Signac_FastSparseMatMultDS(SEXP mat1SEXP, SEXP mat2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat1(mat1SEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat2(mat2SEXP);
+    rcpp_result_gen = Rcpp::wrap(FastSparseMatMultDS(mat1, mat2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastSparseMatMultDD
+arma::sp_mat FastSparseMatMultDD(const arma::mat& mat1, const arma::mat& mat2);
+RcppExport SEXP _Signac_FastSparseMatMultDD(SEXP mat1SEXP, SEXP mat2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat1(mat1SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type mat2(mat2SEXP);
+    rcpp_result_gen = Rcpp::wrap(FastSparseMatMultDD(mat1, mat2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetRowOfSparseMat
+arma::sp_mat FastGetRowOfSparseMat(const arma::sp_mat& mat, const int& i);
+RcppExport SEXP _Signac_FastGetRowOfSparseMat(SEXP matSEXP, SEXP iSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetRowOfSparseMat(mat, i));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetColOfSparseMat
+arma::sp_mat FastGetColOfSparseMat(const arma::sp_mat& mat, const int& j);
+RcppExport SEXP _Signac_FastGetColOfSparseMat(SEXP matSEXP, SEXP jSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const int& >::type j(jSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetColOfSparseMat(mat, j));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetRowsOfSparseMat
+arma::sp_mat FastGetRowsOfSparseMat(const arma::sp_mat& mat, const int& start, const int& end);
+RcppExport SEXP _Signac_FastGetRowsOfSparseMat(SEXP matSEXP, SEXP startSEXP, SEXP endSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const int& >::type start(startSEXP);
+    Rcpp::traits::input_parameter< const int& >::type end(endSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetRowsOfSparseMat(mat, start, end));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetColsOfSparseMat
+arma::sp_mat FastGetColsOfSparseMat(const arma::sp_mat& mat, const int& start, const int& end);
+RcppExport SEXP _Signac_FastGetColsOfSparseMat(SEXP matSEXP, SEXP startSEXP, SEXP endSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const int& >::type start(startSEXP);
+    Rcpp::traits::input_parameter< const int& >::type end(endSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetColsOfSparseMat(mat, start, end));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSubSparseMat
+arma::sp_mat FastGetSubSparseMat(const arma::sp_mat& mat, const arma::urowvec& rrvec, const arma::ucolvec& ccvec);
+RcppExport SEXP _Signac_FastGetSubSparseMat(SEXP matSEXP, SEXP rrvecSEXP, SEXP ccvecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const arma::urowvec& >::type rrvec(rrvecSEXP);
+    Rcpp::traits::input_parameter< const arma::ucolvec& >::type ccvec(ccvecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMat(mat, rrvec, ccvec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSubSparseMatByRows
+arma::sp_mat FastGetSubSparseMatByRows(const arma::sp_mat& mat, const arma::urowvec& rvec);
+RcppExport SEXP _Signac_FastGetSubSparseMatByRows(SEXP matSEXP, SEXP rvecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const arma::urowvec& >::type rvec(rvecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMatByRows(mat, rvec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSubSparseMatByCols
+arma::sp_mat FastGetSubSparseMatByCols(const arma::sp_mat& mat, const arma::ucolvec& cvec);
+RcppExport SEXP _Signac_FastGetSubSparseMatByCols(SEXP matSEXP, SEXP cvecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const arma::ucolvec& >::type cvec(cvecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMatByCols(mat, cvec));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastComputeGCD", (DL_FUNC) &_Signac_FastComputeGCD, 2},
     {"_Signac_FastComputeLCM", (DL_FUNC) &_Signac_FastComputeLCM, 2},
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
+    {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
+    {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},
+    {"_Signac_FastGetSubMat", (DL_FUNC) &_Signac_FastGetSubMat, 3},
     {"_Signac_FastCreateSparseMat", (DL_FUNC) &_Signac_FastCreateSparseMat, 2},
     {"_Signac_FastStatsOfSparseMat", (DL_FUNC) &_Signac_FastStatsOfSparseMat, 1},
     {"_Signac_FastCreateFromTriplet", (DL_FUNC) &_Signac_FastCreateFromTriplet, 3},
@@ -270,6 +433,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastSparseMatSquare", (DL_FUNC) &_Signac_FastSparseMatSquare, 1},
     {"_Signac_FastSparseMatRepmat", (DL_FUNC) &_Signac_FastSparseMatRepmat, 3},
     {"_Signac_FastSparseMatSign", (DL_FUNC) &_Signac_FastSparseMatSign, 1},
+    {"_Signac_FastSparseMatMultSD", (DL_FUNC) &_Signac_FastSparseMatMultSD, 2},
+    {"_Signac_FastSparseMatMultDS", (DL_FUNC) &_Signac_FastSparseMatMultDS, 2},
+    {"_Signac_FastSparseMatMultDD", (DL_FUNC) &_Signac_FastSparseMatMultDD, 2},
+    {"_Signac_FastGetRowOfSparseMat", (DL_FUNC) &_Signac_FastGetRowOfSparseMat, 2},
+    {"_Signac_FastGetColOfSparseMat", (DL_FUNC) &_Signac_FastGetColOfSparseMat, 2},
+    {"_Signac_FastGetRowsOfSparseMat", (DL_FUNC) &_Signac_FastGetRowsOfSparseMat, 3},
+    {"_Signac_FastGetColsOfSparseMat", (DL_FUNC) &_Signac_FastGetColsOfSparseMat, 3},
+    {"_Signac_FastGetSubSparseMat", (DL_FUNC) &_Signac_FastGetSubSparseMat, 3},
+    {"_Signac_FastGetSubSparseMatByRows", (DL_FUNC) &_Signac_FastGetSubSparseMatByRows, 2},
+    {"_Signac_FastGetSubSparseMatByCols", (DL_FUNC) &_Signac_FastGetSubSparseMatByCols, 2},
     {NULL, NULL, 0}
 };
 

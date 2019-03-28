@@ -17,6 +17,18 @@ FastMatMult <- function(mat1, mat2) {
     .Call(`_Signac_FastMatMult`, mat1, mat2)
 }
 
+FastGetRowsOfMat <- function(mat, vec) {
+    .Call(`_Signac_FastGetRowsOfMat`, mat, vec)
+}
+
+FastGetColsOfMat <- function(mat, vec) {
+    .Call(`_Signac_FastGetColsOfMat`, mat, vec)
+}
+
+FastGetSubMat <- function(mat, rvec, cvec) {
+    .Call(`_Signac_FastGetSubMat`, mat, rvec, cvec)
+}
+
 FastCreateSparseMat <- function(nrow, ncol) {
     .Call(`_Signac_FastCreateSparseMat`, nrow, ncol)
 }
@@ -83,5 +95,45 @@ FastSparseMatRepmat <- function(mat, i, j) {
 
 FastSparseMatSign <- function(mat) {
     .Call(`_Signac_FastSparseMatSign`, mat)
+}
+
+FastSparseMatMultSD <- function(mat1, mat2) {
+    .Call(`_Signac_FastSparseMatMultSD`, mat1, mat2)
+}
+
+FastSparseMatMultDS <- function(mat1, mat2) {
+    .Call(`_Signac_FastSparseMatMultDS`, mat1, mat2)
+}
+
+FastSparseMatMultDD <- function(mat1, mat2) {
+    .Call(`_Signac_FastSparseMatMultDD`, mat1, mat2)
+}
+
+FastGetRowOfSparseMat <- function(mat, i) {
+    .Call(`_Signac_FastGetRowOfSparseMat`, mat, i)
+}
+
+FastGetColOfSparseMat <- function(mat, j) {
+    .Call(`_Signac_FastGetColOfSparseMat`, mat, j)
+}
+
+FastGetRowsOfSparseMat <- function(mat, start, end) {
+    .Call(`_Signac_FastGetRowsOfSparseMat`, mat, start, end)
+}
+
+FastGetColsOfSparseMat <- function(mat, start, end) {
+    .Call(`_Signac_FastGetColsOfSparseMat`, mat, start, end)
+}
+
+FastGetSubSparseMat <- function(mat, rrvec, ccvec) {
+    .Call(`_Signac_FastGetSubSparseMat`, mat, rrvec, ccvec)
+}
+
+FastGetSubSparseMatByRows <- function(mat, rvec) {
+    .Call(`_Signac_FastGetSubSparseMatByRows`, mat, rvec)
+}
+
+FastGetSubSparseMatByCols <- function(mat, cvec) {
+    .Call(`_Signac_FastGetSubSparseMatByCols`, mat, cvec)
 }
 
