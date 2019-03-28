@@ -13,6 +13,8 @@ All functions will operate on this object
 \describe{
 \item{\code{raw.data}}{The original expression matrix}
 
+\item{\code{filtered.data}}{The filtered expression matrix}
+
 \item{\code{corrected.data}}{Data after batch effect removal}
 
 \item{\code{scaled.data}}{Data after normalization}

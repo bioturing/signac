@@ -2,6 +2,7 @@
 #'
 #' All functions will operate on this object
 #' @slot raw.data The original expression matrix
+#' @slot filtered.data The filtered expression matrix
 #' @slot corrected.data Data after batch effect removal
 #' @slot scaled.data Data after normalization
 #' @slot log.data Data after log
@@ -18,6 +19,7 @@ signac <- setClass(
     slots = c(
         # Data
         raw.data = "ANY",
+        filtered.data = "ANY",
         corrected.data = "ANY",
         scaled.data = "ANY",
         log.data = "ANY",
