@@ -19,7 +19,8 @@ LinkingTo:
     Rcpp (>= 0.11.0),
     RcppArmadillo,
     RcppParallel,
-    Rhdf5lib
+    Rhdf5lib,
+    BH
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.1.1
 Suggests: 

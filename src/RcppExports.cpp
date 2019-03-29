@@ -407,6 +407,52 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastGetSumSparseMatByRows
+Rcpp::NumericVector FastGetSumSparseMatByRows(const arma::sp_mat& mat, const arma::urowvec& rvec);
+RcppExport SEXP _Signac_FastGetSumSparseMatByRows(SEXP matSEXP, SEXP rvecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const arma::urowvec& >::type rvec(rvecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByRows(mat, rvec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSumSparseMatByCols
+Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat& mat, const arma::ucolvec& cvec);
+RcppExport SEXP _Signac_FastGetSumSparseMatByCols(SEXP matSEXP, SEXP cvecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< const arma::ucolvec& >::type cvec(cvecSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByCols(mat, cvec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSumSparseMatByAllRows
+Rcpp::NumericVector FastGetSumSparseMatByAllRows(const arma::sp_mat& mat);
+RcppExport SEXP _Signac_FastGetSumSparseMatByAllRows(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllRows(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetSumSparseMatByAllCols
+Rcpp::NumericVector FastGetSumSparseMatByAllCols(const arma::sp_mat& mat);
+RcppExport SEXP _Signac_FastGetSumSparseMatByAllCols(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllCols(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastComputeGCD", (DL_FUNC) &_Signac_FastComputeGCD, 2},
@@ -443,6 +489,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSubSparseMat", (DL_FUNC) &_Signac_FastGetSubSparseMat, 3},
     {"_Signac_FastGetSubSparseMatByRows", (DL_FUNC) &_Signac_FastGetSubSparseMatByRows, 2},
     {"_Signac_FastGetSubSparseMatByCols", (DL_FUNC) &_Signac_FastGetSubSparseMatByCols, 2},
+    {"_Signac_FastGetSumSparseMatByRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByRows, 2},
+    {"_Signac_FastGetSumSparseMatByCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByCols, 2},
+    {"_Signac_FastGetSumSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllRows, 1},
+    {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {NULL, NULL, 0}
 };
 

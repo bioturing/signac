@@ -12,6 +12,7 @@
 
 using namespace Rcpp;
 using namespace arma;
+using namespace RcppParallel;
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
@@ -222,4 +223,67 @@ arma::sp_mat FastGetSubSparseMatByCols(const arma::sp_mat &mat, const arma::ucol
         rvec(i) = i;
     }
     return FastGetSubSparseMat(mat, rvec, cvec);
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetSumSparseMatByRows(const arma::sp_mat &mat, const arma::urowvec &rvec) {
+    Rcpp::NumericVector result(rvec.size());
+    arma::urowvec rrvec(rvec.size());
+    PerformRVector(rvec, (int)mat.n_rows, rrvec);
+
+    for(int i = 0; i< rrvec.size(); i++) {
+        double isum = 0;
+        arma::sp_mat row(mat.row(rrvec[i]));
+        for (arma::sp_mat::iterator rij = row.begin(); rij != row.end(); ++rij) {
+            isum += (*rij) * (i + 1);
+        }
+        result[i] = isum;
+    }
+
+    return result;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arma::ucolvec &cvec) {
+    Rcpp::NumericVector result(cvec.size());
+    arma::ucolvec ccvec(cvec.size());
+    PerformRVector(cvec, (int)mat.n_cols, ccvec);
+
+    for(int i = 0; i< cvec.size(); i++) {
+        double isum = 0;
+        arma::sp_mat col(mat.col(cvec[i]));
+        for (arma::sp_mat::iterator cij = col.begin(); cij != col.end(); ++cij) {
+            isum += (*cij) * (i + 1);
+        }
+        result[i] = isum;
+    }
+    return result;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetSumSparseMatByAllRows(const arma::sp_mat &mat) {
+    Rcpp::NumericVector result(mat.n_rows);
+    for (size_t i = 0; i < mat.n_rows; i++) {
+        double isum = 0;
+        arma::sp_mat row(mat.row(i));
+        for (arma::sp_mat::iterator rij = row.begin(); rij != row.end(); ++rij) {
+            isum += (*rij) * (i + 1);
+        }
+        result[i] = isum;
+    }
+    return result;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetSumSparseMatByAllCols(const arma::sp_mat &mat) {
+    Rcpp::NumericVector result(mat.n_cols);
+    for (size_t i = 0; i < mat.n_cols; i++) {
+        double isum = 0;
+        arma::sp_mat col(mat.col(i));
+        for (arma::sp_mat::iterator cij = col.begin(); cij != col.end(); ++cij) {
+            isum += (*cij) * (i + 1);
+        }
+        result[i] = isum;
+    }
+    return result;
 }
