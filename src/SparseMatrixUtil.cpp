@@ -263,13 +263,11 @@ Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arm
 // [[Rcpp::export]]
 Rcpp::NumericVector FastGetSumSparseMatByAllRows(const arma::sp_mat &mat) {
     Rcpp::NumericVector result(mat.n_rows);
-    for (size_t i = 0; i < mat.n_rows; i++) {
-        double isum = 0;
-        arma::sp_mat row(mat.row(i));
-        for (arma::sp_mat::iterator rij = row.begin(); rij != row.end(); ++rij) {
-            isum += (*rij);
+    for (size_t i = 0; i < mat.n_cols; i++) {
+        arma::sp_mat col(mat.col(i));
+        for(size_t j = 0; j < col.n_rows; j++) {
+            result[j] += col.at(j, 0);
         }
-        result[i] = isum;
     }
     return result;
 }
