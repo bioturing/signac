@@ -28,7 +28,7 @@ struct SumSplitVector {
     SumSplitVector(arma::sp_mat * const input, Rcpp::NumericVector *result, bool col_type) : input(input), result(result), sum(0), col_type(col_type) {}
     SumSplitVector(SumSplitVector& body, tbb::split) : input(body.input), result(body.result), sum(0) {}
     void operator()(const tbb::blocked_range<size_t>& r) {
-        for(tbb::blocked_range<size_t>::const_iterator it_col_index = r.begin(); it_col_index != r.end(); it_col_index++) {
+        for(tbb::blocked_range<size_t>::const_iterator it_col_index = r.begin(); it_col_index != r.end(); ++it_col_index) {
             for (arma::sp_mat::const_iterator cij = input->begin_col(it_col_index); cij != input->end_col(it_col_index); ++cij) {
                 if(col_type == true) {
                     (*result)[cij.col()] += (*cij);
@@ -287,7 +287,7 @@ Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arm
 Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat) {
     Rcpp::NumericVector result(mat.n_rows, 0.0);
     SumSplitVector sumBody(&mat, &result, false);
-    tbb::parallel_reduce(tbb::blocked_range<size_t>(0, mat.n_rows), sumBody);
+    tbb::parallel_reduce(tbb::blocked_range<size_t>(0, mat.n_cols), sumBody);
     return result;
 }
 
