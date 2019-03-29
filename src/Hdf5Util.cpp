@@ -23,7 +23,7 @@ using namespace RcppParallel;
 
 // [[Rcpp::export]]
 void FastCreateH5File(const std::string &file_path) {
-    hid_t file_id;
-    file_id = H5Fcreate(file_path.data(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-    H5Fclose(file_id);
+    //hid_t file_id;
+    //file_id = H5Fcreate(file_path.data(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    //H5Fclose(file_id);
 }
