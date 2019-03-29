@@ -442,23 +442,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // FastGetSumSparseMatByAllRows
-Rcpp::NumericVector FastGetSumSparseMatByAllRows(const arma::sp_mat& mat);
+Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat& mat);
 RcppExport SEXP _Signac_FastGetSumSparseMatByAllRows(SEXP matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
     rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllRows(mat));
     return rcpp_result_gen;
 END_RCPP
 }
 // FastGetSumSparseMatByAllCols
-Rcpp::NumericVector FastGetSumSparseMatByAllCols(const arma::sp_mat& mat);
+Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat& mat);
 RcppExport SEXP _Signac_FastGetSumSparseMatByAllCols(SEXP matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
     rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllCols(mat));
     return rcpp_result_gen;
 END_RCPP
