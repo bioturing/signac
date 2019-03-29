@@ -40,6 +40,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastCreateH5File
+void FastCreateH5File(const std::string& file_path);
+RcppExport SEXP _Signac_FastCreateH5File(SEXP file_pathSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type file_path(file_pathSEXP);
+    FastCreateH5File(file_path);
+    return R_NilValue;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -458,6 +468,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastComputeGCD", (DL_FUNC) &_Signac_FastComputeGCD, 2},
     {"_Signac_FastComputeLCM", (DL_FUNC) &_Signac_FastComputeLCM, 2},
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
+    {"_Signac_FastCreateH5File", (DL_FUNC) &_Signac_FastCreateH5File, 1},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
     {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},

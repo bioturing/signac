@@ -13,6 +13,10 @@ FastGetCurrentDate <- function() {
     .Call(`_Signac_FastGetCurrentDate`)
 }
 
+FastCreateH5File <- function(file_path) {
+    invisible(.Call(`_Signac_FastCreateH5File`, file_path))
+}
+
 FastMatMult <- function(mat1, mat2) {
     .Call(`_Signac_FastMatMult`, mat1, mat2)
 }
