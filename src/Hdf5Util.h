@@ -2,15 +2,18 @@
 #define HDF5_UTIL
 
 #include <RcppArmadillo.h>
+#include <RcppParallel.h>
+#include <cmath>
 #include <unordered_map>
 #include <fstream>
 #include <string>
-#include <highfive/H5File.hpp>
-#include <highfive/H5DataSet.hpp>
-#include <highfive/H5DataSpace.hpp>
+#include <hdf5.h>
+#include "CommonUtil.h"
 
 using namespace Rcpp;
+using namespace arma;
+using namespace RcppParallel;
 
-void FastCreateH5File(const std::string &file_path);
+//h5::fd_t FastOpenH5File(const std::string &file_path);
 
 #endif //HDF5_UTIL

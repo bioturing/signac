@@ -40,14 +40,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// FastCreateH5File
-void FastCreateH5File(const std::string& file_path);
-RcppExport SEXP _Signac_FastCreateH5File(SEXP file_pathSEXP) {
+// FastDiffVector
+arma::uvec FastDiffVector(const arma::uvec& a, const arma::uvec& b);
+RcppExport SEXP _Signac_FastDiffVector(SEXP aSEXP, SEXP bSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type file_path(file_pathSEXP);
-    FastCreateH5File(file_path);
-    return R_NilValue;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type b(bSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastDiffVector(a, b));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastRandVector
+arma::uvec FastRandVector(int num);
+RcppExport SEXP _Signac_FastRandVector(SEXP numSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type num(numSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastRandVector(num));
+    return rcpp_result_gen;
 END_RCPP
 }
 // FastMatMult
@@ -452,6 +465,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastGetSumSparseMatByAllRowsV2
+Rcpp::NumericVector FastGetSumSparseMatByAllRowsV2(arma::sp_mat& mat);
+RcppExport SEXP _Signac_FastGetSumSparseMatByAllRowsV2(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllRowsV2(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastGetSumSparseMatByAllCols
 Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat& mat);
 RcppExport SEXP _Signac_FastGetSumSparseMatByAllCols(SEXP matSEXP) {
@@ -468,7 +492,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastComputeGCD", (DL_FUNC) &_Signac_FastComputeGCD, 2},
     {"_Signac_FastComputeLCM", (DL_FUNC) &_Signac_FastComputeLCM, 2},
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
-    {"_Signac_FastCreateH5File", (DL_FUNC) &_Signac_FastCreateH5File, 1},
+    {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
+    {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
     {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},
@@ -503,6 +528,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByRows, 2},
     {"_Signac_FastGetSumSparseMatByCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByCols, 2},
     {"_Signac_FastGetSumSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllRows, 1},
+    {"_Signac_FastGetSumSparseMatByAllRowsV2", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllRowsV2, 1},
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {NULL, NULL, 0}
 };

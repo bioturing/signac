@@ -17,5 +17,7 @@ void PerformRVector(const arma::uvec &vec, const int &total, arma::uvec &new_vec
 void PerformRVector(const arma::urowvec &vec, const int &total, arma::urowvec &new_vec);
 void PerformRIndex(const int &i, const int &total, int &new_i);
 void PerformRMultiIndex(const int &start, const int &total_start, int &new_start, const int &end, const int &total_end, int &new_end);
+arma::uvec FastDiffVector(const arma::uvec& a, const arma::uvec& b);
+arma::uvec FastRandVector(int num);
 
 #endif //COMMON_MATRIX_UTIL

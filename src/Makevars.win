@@ -3,8 +3,13 @@ CXX_STD = CXX11
 USER_INCLUDE_DIR=${R_PACKAGE_DIR}/include
 USER_LIB_DIR=${R_PACKAGE_DIR}/lib${R_ARCH}/
 
-HDF5_INCLUDE=./hdf5
-HDF5_CXX_INCLUDE=./hdf5/c++
+HDF5_ROOT=$(shell echo 'find.package("Rhdf5lib")'| "${R_HOME}/bin/R" --vanilla --slave)
+HDF5_INCLUDE = ${HDF5_ROOT}/include
+HDF5_LIB=$(shell echo 'Rhdf5lib::pkgconfig("PKG_C_LIBS")'| "${R_HOME}/bin/R" --vanilla --slave)
 
 PKG_CFLAGS =  $(SHLIB_OPENMP_CXXFLAGS) -I${HDF5_INCLUDE}
-PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) ${USER_LIB_DIR}/Rhdf5lib/winlib${R_ARCH}/libhdf5.a ${USER_LIB_DIR}/Rhdf5lib/winlib${R_ARCH}/libszip.a -lpsapi -lz
+has_hdf5_hl := $(shell (echo "${HDF5_LIB}" | grep hdf5_hl > /dev/null) && echo "1")
+ifeq (${has_hdf5_hl},1)
+	PKG_CFLAGS=$(PKG_CFLAGS) -DHAS_HDF5_HL
+endif
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) ${HDF5_LIB}

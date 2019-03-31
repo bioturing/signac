@@ -13,8 +13,12 @@ FastGetCurrentDate <- function() {
     .Call(`_Signac_FastGetCurrentDate`)
 }
 
-FastCreateH5File <- function(file_path) {
-    invisible(.Call(`_Signac_FastCreateH5File`, file_path))
+FastDiffVector <- function(a, b) {
+    .Call(`_Signac_FastDiffVector`, a, b)
+}
+
+FastRandVector <- function(num) {
+    .Call(`_Signac_FastRandVector`, num)
 }
 
 FastMatMult <- function(mat1, mat2) {
@@ -151,6 +155,10 @@ FastGetSumSparseMatByCols <- function(mat, cvec) {
 
 FastGetSumSparseMatByAllRows <- function(mat) {
     .Call(`_Signac_FastGetSumSparseMatByAllRows`, mat)
+}
+
+FastGetSumSparseMatByAllRowsV2 <- function(mat) {
+    .Call(`_Signac_FastGetSumSparseMatByAllRowsV2`, mat)
 }
 
 FastGetSumSparseMatByAllCols <- function(mat) {

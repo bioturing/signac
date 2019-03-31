@@ -38,10 +38,13 @@ export(FastGetSumSparseMatByRows)
 export(FastGetSumSparseMatByCols)
 export(FastGetSumSparseMatByAllRows)
 export(FastGetSumSparseMatByAllCols)
+export(FastGetSumSparseMatByAllRowsV2)
 
 export(FastComputeGCD)
 export(FastComputeLCM)
 export(FastGetCurrentDate)
+export(FastDiffVector)
+export(FastRandVector)
 
 export(FastMatMult)
 export(FastGetRowsOfMat)

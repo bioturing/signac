@@ -9,9 +9,6 @@
 #include <string>
 #include <hdf5.h>
 #include "CommonUtil.h"
-#include "highfive/H5File.hpp"
-#include "highfive/H5DataSet.hpp"
-#include "highfive/H5DataSpace.hpp"
 
 using namespace Rcpp;
 using namespace arma;
@@ -21,9 +18,18 @@ using namespace RcppParallel;
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
 
-// [[Rcpp::export]]
-void FastCreateH5File(const std::string &file_path) {
-    //hid_t file_id;
-    //file_id = H5Fcreate(file_path.data(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-    //H5Fclose(file_id);
+/*
+h5::fd_t FastOpenH5File(const std::string &file_path) {
+    h5::fd_t file;
+    try {
+        file = h5::create(file_path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    }
+    catch (std::exception& err) {
+#ifdef DEBUG
+        std::cerr << "Open file with error=" << err.what() << std::endl;
+#endif
+    }
+    return file;
 }
+*/
+

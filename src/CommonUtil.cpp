@@ -304,3 +304,23 @@ Rcpp::Date FastGetCurrentDate() {
     boost::gregorian::date current_date(boost::gregorian::day_clock::local_day());
     return Rcpp::wrap(Rcpp::Date(current_date.year(), current_date.month(), current_date.day()));
 }
+
+// [[Rcpp::export]]
+arma::uvec FastDiffVector(const arma::uvec& a, const arma::uvec& b) {
+    std::vector<int> x = arma::conv_to< std::vector<int> >::from(arma::sort(a));
+    std::vector<int> y = arma::conv_to< std::vector<int> >::from(arma::sort(b));
+    std::vector<int> z;
+    std::set_difference(x.begin(), x.end(), y.begin(), y.end(),
+                        std::inserter(z, z.end()));
+    return arma::conv_to<arma::uvec>::from(z);
+}
+
+// [[Rcpp::export]]
+arma::uvec FastRandVector(int num) {
+    arma::uvec result(num);
+    for (int i=0; i < num; ++i) {
+        result(i) = i;
+    }
+    std::random_shuffle(result.begin(), result.end());
+    return result;
+}
