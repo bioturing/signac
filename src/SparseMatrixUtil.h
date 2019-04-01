@@ -38,7 +38,6 @@ arma::sp_mat FastGetSubSparseMatByCols(const arma::sp_mat &mat, const arma::ucol
 Rcpp::NumericVector FastGetSumSparseMatByRows(const arma::sp_mat &mat, const arma::urowvec &rvec);
 Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arma::ucolvec &cvec);
 Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat);
-Rcpp::NumericVector FastGetSumSparseMatByAllRowsV2(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat);
 
 

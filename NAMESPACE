@@ -38,7 +38,6 @@ export(FastGetSumSparseMatByRows)
 export(FastGetSumSparseMatByCols)
 export(FastGetSumSparseMatByAllRows)
 export(FastGetSumSparseMatByAllCols)
-export(FastGetSumSparseMatByAllRowsV2)
 
 export(FastComputeGCD)
 export(FastComputeLCM)

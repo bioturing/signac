@@ -157,10 +157,6 @@ FastGetSumSparseMatByAllRows <- function(mat) {
     .Call(`_Signac_FastGetSumSparseMatByAllRows`, mat)
 }
 
-FastGetSumSparseMatByAllRowsV2 <- function(mat) {
-    .Call(`_Signac_FastGetSumSparseMatByAllRowsV2`, mat)
-}
-
 FastGetSumSparseMatByAllCols <- function(mat) {
     .Call(`_Signac_FastGetSumSparseMatByAllCols`, mat)
 }

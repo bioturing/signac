@@ -282,16 +282,6 @@ test_that("FastGetSumSparseMatByAllRows", {
     expect_equal(length(FinalMAT), 20)
 })
 
-test_that("FastGetSumSparseMatByAllRowsV2", {
-    set.seed(123)
-    v1 <- sample(1e3)
-    m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
-                  length(v1), length(v1), sparse = F)
-    MAT1 <- Matrix(m1, sparse = T)
-    ListSum <- Signac::FastGetSumSparseMatByAllRowsV2(MAT1)
-    expect_equal(length(FinalMAT), 20)
-})
-
 test_that("FastGetSumSparseMatByAllCols", {
     set.seed(123)
     v1 <- sample(1e3)
