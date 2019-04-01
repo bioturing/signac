@@ -258,18 +258,6 @@ Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arm
     return result;
 }
 
-// [[Rcpp::export]]
-Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat) {
-    Rcpp::NumericVector result(mat.n_rows);
-    for (int i= 0; i< mat.n_cols; i++)
-    {
-        for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
-            result[cij.row()] += (*cij);
-        }
-    }
-    return result;
-}
-
 struct SumColumWorker : public RcppParallel::Worker
 {
     const arma::sp_mat *input;
@@ -294,6 +282,26 @@ Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat) {
 
     SumColumWorker sumColWorker(&mat, result);
     RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
+
+    return result;
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat) {
+    /*Rcpp::NumericVector result(mat.n_rows);
+     for (int i= 0; i< mat.n_cols; i++)
+     {
+     for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
+     result[cij.row()] += (*cij);
+     }
+     }
+     return result;
+     */
+    arma::sp_mat tmat = mat.t();
+    Rcpp::NumericVector result(tmat.n_cols);
+
+    SumColumWorker sumColWorker(&tmat, result);
+    RcppParallel::parallelFor(0, tmat.n_cols, sumColWorker);
 
     return result;
 }
