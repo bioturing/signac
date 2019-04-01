@@ -51,43 +51,14 @@ bool compare(int i, int j, const std::vector<double> &res) {
     return res[i] < res[j];
 }
 
-void read_cluster(const std::string barcode,
-                  const std::string cluster,
-                  std::vector<std::pair<std::string, int> > &result)
+void read_cluster(const Rcpp::NumericVector &col_idx,
+                  std::vector<int> &result)
 {
-    std::unordered_map<std::string, int> m;
-    std::ifstream fin;
-    fin.open(barcode, std::ios::in);
-    while(fin) {
-        std::string bar;
-        std::getline(fin, bar);
-
-        bar = bar.substr(0, bar.find('-'));
-        m[bar] = result.size();
-        result.push_back(std::make_pair(bar, -1));
+    int i;
+    for (i = 0; i < col_idx.length(); ++i) {
+        assert(i < (result.size() - 1) && "Index must be smaller than number of columns");
+        result[col_idx[i] - 1] = 1; //Convert
     }
-
-    fin.close();
-
-    fin.open(cluster, std::ios::in);
-
-    fin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-    while (fin) {
-        std::string bar;
-        int clus;
-
-        fin >> bar >> clus;
-
-        auto i = m.find(bar);
-
-        if (i == m.end())
-            continue;
-
-        result[i->second].second = clus;
-    }
-
-    fin.close();
 }
 
 void read_gene(std::string file,
@@ -107,7 +78,7 @@ void read_gene(std::string file,
 }
 
 void HarmonyFit(const arma::sp_mat &mtx,
-                const std::vector<std::pair<std::string, int>> &cluster,
+                const std::vector<int> &cluster,
                 int cid,
                 std::vector<std::pair<double,double> > &res)
 {
@@ -116,7 +87,7 @@ void HarmonyFit(const arma::sp_mat &mtx,
 
     for (int i = 0; i < mtx.n_cols; ++i) {
         for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
-            if (cluster[i].second != cid)
+            if (cluster[i] != cid)
                 continue;
 
             res[c_it.row()].first += (*c_it);
@@ -125,7 +96,7 @@ void HarmonyFit(const arma::sp_mat &mtx,
 
     int total = 0;
     for (int i = 0 ; i < mtx.n_cols; ++i)
-        total += (cluster[i].second == cid);
+        total += (cluster[i] == cid);
 
     for (int i = 0; i < mtx.n_rows; ++i)
         res[i].first /= total;
@@ -135,7 +106,7 @@ void HarmonyFit(const arma::sp_mat &mtx,
 
     for (int i = 0; i < mtx.n_cols; ++i) {
         for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
-            if (cluster[i].second != cid)
+            if (cluster[i] != cid)
                 continue;
             res[c_it.row()].second += std::pow((*c_it) - res[c_it.row()].first, 2);
             --zero[c_it.row()];
@@ -153,7 +124,7 @@ void HarmonyFit(const arma::sp_mat &mtx,
 
 void HarmonyCheck(
         const arma::sp_mat &mtx,
-        const std::vector<std::pair<std::string, int>> &cluster,
+        const std::vector<int> &cluster,
         int cid,
         const std::vector<std::pair<double, double>> &dist,
         std::vector<std::tuple<double, double, double, double> > &res)
@@ -172,7 +143,7 @@ void HarmonyCheck(
             if (cnt >= r_cnt.size())
                 r_cnt.resize(cnt + 1);
 
-            if (cluster[i].second == cid)
+            if (cluster[i] == cid)
                 ++r_cnt[cnt].first;
             else
                 ++r_cnt[cnt].second;
@@ -182,7 +153,7 @@ void HarmonyCheck(
     int total_in = 0;
 
     for (int i = 0; i < mtx.n_cols; ++i)
-        if (cluster[i].second == cid)
+        if (cluster[i] == cid)
             ++total_in;
 
         int total_out = mtx.n_cols - total_in;
@@ -280,22 +251,21 @@ void HarmonyCheck(
 // [[Rcpp::export]]
 int Harmony(const arma::sp_mat &mtx,
             const std::string matrix_dir,
-            const std::string cluster_f,
-            const int cid,
+            const Rcpp::NumericVector &col_idx,
             const int ordering,
             const std::string out_f)
 {
 
-    std::vector<std::pair<std::string, int>> cluster;
-    read_cluster(matrix_dir + "/barcodes.tsv", cluster_f, cluster);
+    std::vector<int> cluster(mtx.n_cols, 0);
+    read_cluster(col_idx, cluster);
     std::cout << "Done read cluster" << std::endl;
 
     std::vector<std::pair<double, double>> f;
-    HarmonyFit(mtx, cluster, cid, f);
+    HarmonyFit(mtx, cluster, 1, f);
     std::cout << "Done fit distribution" << std::endl;
 
     std::vector<std::tuple<double, double, double, double>> res;
-    HarmonyCheck(mtx, cluster, cid, f, res);
+    HarmonyCheck(mtx, cluster, 1, f, res);
     std::cout << "Done calculate" << std::endl;
 
     std::vector<std::string> genes;
