@@ -21,8 +21,8 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
-Harmony <- function(mtx, matrix_dir, col_idx, ordering, out_f) {
-    .Call(`_Signac_Harmony`, mtx, matrix_dir, col_idx, ordering, out_f)
+Harmony <- function(mtx, col_idx, ordering) {
+    .Call(`_Signac_Harmony`, mtx, col_idx, ordering)
 }
 
 FastMatMult <- function(mat1, mat2) {

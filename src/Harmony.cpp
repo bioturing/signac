@@ -249,27 +249,22 @@ void HarmonyCheck(
 }
 
 // [[Rcpp::export]]
-int Harmony(const arma::sp_mat &mtx,
-            const std::string matrix_dir,
+DataFrame Harmony(const arma::sp_mat &mtx,
             const Rcpp::NumericVector &col_idx,
-            const int ordering,
-            const std::string out_f)
+            const int ordering)
 {
 
     std::vector<int> cluster(mtx.n_cols, 0);
     read_cluster(col_idx, cluster);
-    std::cout << "Done read cluster" << std::endl;
+    Rcout << "Done read cluster" << std::endl;
 
     std::vector<std::pair<double, double>> f;
     HarmonyFit(mtx, cluster, 1, f);
-    std::cout << "Done fit distribution" << std::endl;
+    Rcout << "Done fit distribution" << std::endl;
 
     std::vector<std::tuple<double, double, double, double>> res;
     HarmonyCheck(mtx, cluster, 1, f, res);
-    std::cout << "Done calculate" << std::endl;
-
-    std::vector<std::string> genes;
-    read_gene(matrix_dir + "/genes.tsv", genes);
+    Rcout << "Done calculate" << std::endl;
 
     std::vector<int> order, porder;
     std::vector<double> rate;
@@ -307,16 +302,13 @@ int Harmony(const arma::sp_mat &mtx,
             rate[i] = std::get<3>(res[i]);
             break;
         default:
-            std::cout << "unknown ordering method\n" << std::endl;
-        return 0;
+            Rcout << "unknown ordering method\n" << std::endl;
+        perror("unknown ordering method\n");
         }
     }
 
     std::sort(order.begin(), order.end(), std::bind(compare, std::placeholders::_1, std::placeholders::_2, rate));
     std::sort(porder.begin(), porder.end(), std::bind(compare, std::placeholders::_1, std::placeholders::_2, pvalue));
-
-    std::ofstream fout;
-    fout.open(out_f, std::ios::out);
 
     double prev = 0;
     for(int i = 0; i < mtx.n_rows; ++i) {
@@ -332,14 +324,21 @@ int Harmony(const arma::sp_mat &mtx,
         pvalue[k] = prev;
     }
 
-    for(int i = 0; i <mtx.n_rows; ++i) {
+    std::vector<double> p_value(mtx.n_rows), similatiry(mtx.n_rows);
+    std::vector<double> p_adjusted(mtx.n_rows);
+    std::vector<int> g_index(mtx.n_rows);
+
+    for(int i = 0; i < mtx.n_rows; ++i) {
         int k = order[i];
-        fout << genes[k] << " " << rate[k] << " " << f[k].first << " " << f[k].second << " " << std::get<0>(res[k]) << " " << std::get<1>(res[k]) << " " << std::get<2>(res[k]) << " " << std::get<3>(res[k]) << " " << pvalue[k] << std::endl;
+        g_index[i] = i;
+        similatiry[i] = std::get<2>(res[k]);
+        p_value[i] = std::get<3>(res[k]);
+        p_adjusted[i] = pvalue[k];
+        //fout << genes[k] << " " << rate[k] << " " << f[k].first << " " << f[k].second << " " << std::get<0>(res[k]) << " " << std::get<1>(res[k]) << " " << std::get<2>(res[k]) << " " << std::get<3>(res[k]) << " " << pvalue[k] << std::endl;
     }
-
-    fout.close();
-
-    std::cout << "Done all" << std::endl;
-
-    return 0;
+    Rcout << "Done all" << std::endl;
+    return DataFrame::create( Named("Gene Index") = wrap(g_index),
+                              Named("Similarity") = wrap(similatiry),
+                              Named("P value") = wrap(p_value),
+                              Named("P-adjusted value") = wrap(p_adjusted));
 }
