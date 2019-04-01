@@ -8,7 +8,7 @@
 #include <fstream>
 #include <string>
 #include "CommonUtil.h"
-#include <h5cpp/hdf5.hpp>
+#include <highfive/H5File.hpp>
 
 using namespace Rcpp;
 using namespace arma;
