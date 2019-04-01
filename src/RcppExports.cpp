@@ -63,6 +63,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Harmony
+int Harmony(const arma::sp_mat& mtx, const std::string matrix_dir, const std::string cluster_f, const int cid, const int ordering, const std::string out_f);
+RcppExport SEXP _Signac_Harmony(SEXP mtxSEXP, SEXP matrix_dirSEXP, SEXP cluster_fSEXP, SEXP cidSEXP, SEXP orderingSEXP, SEXP out_fSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mtx(mtxSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type matrix_dir(matrix_dirSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type cluster_f(cluster_fSEXP);
+    Rcpp::traits::input_parameter< const int >::type cid(cidSEXP);
+    Rcpp::traits::input_parameter< const int >::type ordering(orderingSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type out_f(out_fSEXP);
+    rcpp_result_gen = Rcpp::wrap(Harmony(mtx, matrix_dir, cluster_f, cid, ordering, out_f));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -505,6 +521,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
+    {"_Signac_Harmony", (DL_FUNC) &_Signac_Harmony, 6},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
     {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},

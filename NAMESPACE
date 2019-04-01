@@ -6,6 +6,7 @@ export(CreateSignacObject)
 export(ExtractField)
 export(Read10X)
 export(Read10XH5)
+export(Harmony)
 
 export(FastConvertToSparseMat)
 export(FastConvertToTripletMat)

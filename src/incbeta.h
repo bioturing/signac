@@ -27,7 +27,6 @@
 #ifndef __INCBETA_H__
 #define __INCBETA_H__
 
-
 double incbeta(double a, double b, double x);
 
 
