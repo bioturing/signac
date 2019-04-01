@@ -1,9 +1,9 @@
 #define ARMA_USE_CXX11
 #define ARMA_NO_DEBUG
+#define ARMA_USE_HDF5
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
-#include <tbb/tbb.h>
 #include <cmath>
 #include <unordered_map>
 #include <fstream>
@@ -258,6 +258,18 @@ Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arm
     return result;
 }
 
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat) {
+    Rcpp::NumericVector result(mat.n_rows);
+    for (int i= 0; i< mat.n_cols; i++)
+    {
+        for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
+            result[cij.row()] += (*cij);
+        }
+    }
+    return result;
+}
+
 struct SumColumWorker : public RcppParallel::Worker
 {
     const arma::sp_mat *input;
@@ -283,25 +295,41 @@ Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat) {
     SumColumWorker sumColWorker(&mat, result);
     RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
 
+    /*for (int i= 0; i< mat.n_cols; i++)
+    {
+        result[i] += arma::accu(mat.col(i));
+    }*/
+
     return result;
 }
 
 // [[Rcpp::export]]
-Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat) {
-    /*Rcpp::NumericVector result(mat.n_rows);
-     for (int i= 0; i< mat.n_cols; i++)
-     {
-     for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
-     result[cij.row()] += (*cij);
-     }
-     }
-     return result;
-     */
+Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat) {
+    Rcpp::NumericVector result(mat.n_cols);
     arma::sp_mat tmat = mat.t();
-    Rcpp::NumericVector result(tmat.n_cols);
+    for (int i= 0; i< tmat.n_cols; i++)
+    {
+        arma::vec ccvec(tmat.col(i).n_nonzero);
+        unsigned int index = 0;
+        for (arma::sp_mat::const_col_iterator cij = tmat.begin_col(i); cij != tmat.end_col(i); ++cij) {
+            ccvec[index++] = (*cij);
+        }
+        result[i] += arma::median(ccvec);
+    }
+    return result;
+}
 
-    SumColumWorker sumColWorker(&tmat, result);
-    RcppParallel::parallelFor(0, tmat.n_cols, sumColWorker);
-
+// [[Rcpp::export]]
+Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat &mat) {
+    Rcpp::NumericVector result(mat.n_cols);
+    for (int i= 0; i< mat.n_cols; i++)
+    {
+        arma::vec ccvec(mat.col(i).n_nonzero);
+        unsigned int index = 0;
+        for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
+            ccvec[index++] = (*cij);
+        }
+        result[i] += arma::median(ccvec);
+    }
     return result;
 }

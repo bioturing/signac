@@ -454,6 +454,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastGetSumSparseMatByAllRows
+Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat& mat);
+RcppExport SEXP _Signac_FastGetSumSparseMatByAllRows(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllRows(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastGetSumSparseMatByAllCols
 Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat& mat);
 RcppExport SEXP _Signac_FastGetSumSparseMatByAllCols(SEXP matSEXP) {
@@ -465,14 +476,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// FastGetSumSparseMatByAllRows
-Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat& mat);
-RcppExport SEXP _Signac_FastGetSumSparseMatByAllRows(SEXP matSEXP) {
+// FastGetMedianSparseMatByAllRows
+Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat& mat);
+RcppExport SEXP _Signac_FastGetMedianSparseMatByAllRows(SEXP matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(FastGetSumSparseMatByAllRows(mat));
+    rcpp_result_gen = Rcpp::wrap(FastGetMedianSparseMatByAllRows(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// FastGetMedianSparseMatByAllCols
+Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat& mat);
+RcppExport SEXP _Signac_FastGetMedianSparseMatByAllCols(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetMedianSparseMatByAllCols(mat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -516,8 +538,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSubSparseMatByCols", (DL_FUNC) &_Signac_FastGetSubSparseMatByCols, 2},
     {"_Signac_FastGetSumSparseMatByRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByRows, 2},
     {"_Signac_FastGetSumSparseMatByCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByCols, 2},
-    {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetSumSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllRows, 1},
+    {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
+    {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
+    {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
     {NULL, NULL, 0}
 };
 

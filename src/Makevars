@@ -3,7 +3,7 @@ CXX_STD = CXX11
 USER_INCLUDE = ${R_PACKAGE_DIR}/include
 USER_LIB_DIR = ${R_PACKAGE_DIR}/lib${R_ARCH}
 
-PKG_CXXFLAGS = -DH5_USE_BOOST $(SHLIB_OPENMP_CXXFLAGS) -I${ZLIB_HOME}/include -L${ZLIB_HOME}/lib
+PKG_CXXFLAGS = -DH5_USE_BOOST $(SHLIB_OPENMP_CXXFLAGS) -I${ZLIB_HOME}/include -L${ZLIB_HOME}/lib -I"../include"
 has_hdf5_hl := $(shell (echo "${RHDF5LIB_LIBS}" | grep hdf5_hl > /dev/null) && echo "1")
 ifeq (${has_hdf5_hl},1)
 	PKG_CXXFLAGS=$(PKG_CXXFLAGS) -DHAS_HDF5_HL

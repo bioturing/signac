@@ -18,8 +18,4 @@ res <- microbenchmark::microbenchmark(rFast = Signac::FastGetSumSparseMatByAllRo
                  cFast = Signac::FastGetSumSparseMatByAllCols(MAT),
                  cBultin = Matrix::colSums(MAT), times = 500)
 
-#res <- microbenchmark(Matrix::rowSums(MAT),
-#                 Signac::FastGetSumSparseMatByAllRows(MAT),
-#                 order="relative")
-
 print(res)

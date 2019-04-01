@@ -1,5 +1,5 @@
-#ifndef HDF5_UTIL
-#define HDF5_UTIL
+#define ARMA_USE_CXX11
+#define ARMA_NO_DEBUG
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -7,13 +7,16 @@
 #include <unordered_map>
 #include <fstream>
 #include <string>
-#include <hdf5.h>
 #include "CommonUtil.h"
+#include <h5cpp/hdf5.hpp>
 
 using namespace Rcpp;
 using namespace arma;
 using namespace RcppParallel;
 
-//h5::fd_t FastOpenH5File(const std::string &file_path);
+// [[Rcpp::depends(RcppParallel)]]
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(Rhdf5lib)]]
 
-#endif //HDF5_UTIL
+
+

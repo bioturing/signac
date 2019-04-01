@@ -39,6 +39,8 @@ Rcpp::NumericVector FastGetSumSparseMatByRows(const arma::sp_mat &mat, const arm
 Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arma::ucolvec &cvec);
 Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat);
-
+Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat);
+Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat);
+Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat &mat);
 
 #endif //SPARSE_MATRIX_UTIL
