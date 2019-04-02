@@ -18,7 +18,7 @@ bool WriteSpMtFromS4(const std::string &filePath, const std::string &groupName, 
 }
 
 // [[Rcpp::export]]
-arma::sp_mat ReadSpMtAsArma(const std::string &filePath, const std::string &groupName) {
+arma::sp_mat ReadSpMt(const std::string &filePath, const std::string &groupName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     return oHdf5Util.ReadSpMtAsArma(groupName);
 }
@@ -26,5 +26,5 @@ arma::sp_mat ReadSpMtAsArma(const std::string &filePath, const std::string &grou
 // [[Rcpp::export]]
 arma::sp_mat ReadSpMtAsS4(const std::string &filePath, const std::string &groupName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
-    //return oHdf5Util.ReadSpMtAsS4(groupName);
+    return oHdf5Util.ReadSpMtAsS4(groupName);
 }

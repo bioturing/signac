@@ -79,15 +79,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadSpMtAsArma
-arma::sp_mat ReadSpMtAsArma(const std::string& filePath, const std::string& groupName);
-RcppExport SEXP _Signac_ReadSpMtAsArma(SEXP filePathSEXP, SEXP groupNameSEXP) {
+// ReadSpMt
+arma::sp_mat ReadSpMt(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMt(SEXP filePathSEXP, SEXP groupNameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadSpMtAsArma(filePath, groupName));
+    rcpp_result_gen = Rcpp::wrap(ReadSpMt(filePath, groupName));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -546,7 +546,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_Harmony", (DL_FUNC) &_Signac_Harmony, 3},
     {"_Signac_WriteSpMtFromArma", (DL_FUNC) &_Signac_WriteSpMtFromArma, 3},
     {"_Signac_WriteSpMtFromS4", (DL_FUNC) &_Signac_WriteSpMtFromS4, 3},
-    {"_Signac_ReadSpMtAsArma", (DL_FUNC) &_Signac_ReadSpMtAsArma, 2},
+    {"_Signac_ReadSpMt", (DL_FUNC) &_Signac_ReadSpMt, 2},
     {"_Signac_ReadSpMtAsS4", (DL_FUNC) &_Signac_ReadSpMtAsS4, 2},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
