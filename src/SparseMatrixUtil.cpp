@@ -132,31 +132,71 @@ arma::sp_mat FastSparseMatMultDD(const arma::mat &mat1, const arma::mat &mat2) {
 // [[Rcpp::export]]
 arma::sp_mat FastGetRowOfSparseMat(const arma::sp_mat &mat, const int &i) {
     int irow = i;
-    PerformRIndex(i, (int)mat.n_rows, irow);
-    return mat.row(irow - 1);
+
+    try {
+        PerformRIndex(i, (int)mat.n_rows, irow);
+        return mat.row(irow - 1);
+    } catch(std::exception &ex) {
+        forward_exception_to_r(ex);
+    } catch(...) {
+        ::Rf_error("Signac exception (unknown reason)");
+    }
+
+    arma::sp_mat emat;
+    return emat;
 }
 
 // [[Rcpp::export]]
 arma::sp_mat FastGetColOfSparseMat(const arma::sp_mat &mat, const int &j) {
     int icol = j;
-    PerformRIndex(j, (int)mat.n_cols, icol);
-    return mat.col(icol);
+
+    try {
+        PerformRIndex(j, (int)mat.n_cols, icol);
+        return mat.col(icol);
+    } catch(std::exception &ex) {
+        forward_exception_to_r(ex);
+    } catch(...) {
+        ::Rf_error("Signac exception (unknown reason)");
+    }
+
+    arma::sp_mat emat;
+    return emat;
 }
 
 // [[Rcpp::export]]
 arma::sp_mat FastGetRowsOfSparseMat(const arma::sp_mat &mat, const int &start, const int &end) {
     int irow_start = start;
     int irow_end = end;
-    PerformRMultiIndex(start, (int)mat.n_rows, irow_start, end, (int)mat.n_rows, irow_end);
-    return mat.rows(irow_start, irow_end);
+
+    try {
+        PerformRMultiIndex(start, (int)mat.n_rows, irow_start, end, (int)mat.n_rows, irow_end);
+        return mat.rows(irow_start, irow_end);
+    } catch(std::exception &ex) {
+        forward_exception_to_r(ex);
+    } catch(...) {
+        ::Rf_error("Signac exception (unknown reason)");
+    }
+
+    arma::sp_mat emat;
+    return emat;
 }
 
 // [[Rcpp::export]]
 arma::sp_mat FastGetColsOfSparseMat(const arma::sp_mat &mat, const int &start, const int &end) {
     int icol_start = start;
     int icol_end = end;
-    PerformRMultiIndex(start, (int)mat.n_cols, icol_start, end, (int)mat.n_cols, icol_end);
-    return mat.cols(icol_start, icol_end);
+
+    try {
+        PerformRMultiIndex(start, (int)mat.n_cols, icol_start, end, (int)mat.n_cols, icol_end);
+        return mat.cols(icol_start, icol_end);
+    } catch(std::exception &ex) {
+        forward_exception_to_r(ex);
+    } catch(...) {
+        ::Rf_error("Signac exception (unknown reason)");
+    }
+
+    arma::sp_mat emat;
+    return emat;
 }
 
 // [[Rcpp::export]]
@@ -164,48 +204,56 @@ arma::sp_mat FastGetSubSparseMat(const arma::sp_mat &mat, const arma::urowvec &r
     arma::urowvec rvec(rrvec.size());
     PerformRVector(rrvec, (int)mat.n_rows, rvec);
     arma::ucolvec cvec(ccvec.size());
-    PerformRVector(ccvec, (int)mat.n_cols, cvec);
-
     std::size_t total_rows = rvec.size();
     std::size_t total_cols = cvec.size();
+    try {
+        PerformRVector(ccvec, (int)mat.n_cols, cvec);
 
-    bool found = false;
-    std::size_t n = 0;
-    std::size_t p = 0;
-    std::size_t found_idx = 0;
+        bool found = false;
+        std::size_t n = 0;
+        std::size_t p = 0;
+        std::size_t found_idx = 0;
 
-    arma::vec new_val(mat.n_nonzero);
-    arma::uvec new_rvec(mat.n_nonzero);
-    arma::uvec new_cvec(total_cols + 1);
-    new_cvec(p) = 0;
+        arma::vec new_val(mat.n_nonzero);
+        arma::uvec new_rvec(mat.n_nonzero);
+        arma::uvec new_cvec(total_cols + 1);
+        new_cvec(p) = 0;
 
-    for (auto const& j: cvec) {
-        for (std::size_t k = mat.col_ptrs[j]; k < mat.col_ptrs[j + 1]; k++) {
-            found = false;
-            found_idx = 0;
-            while (!found && found_idx < total_rows) {
-                if (mat.row_indices[k] == rvec.at(found_idx)) {
-                    found = true;
+        for (auto const& j: cvec) {
+            for (std::size_t k = mat.col_ptrs[j]; k < mat.col_ptrs[j + 1]; k++) {
+                found = false;
+                found_idx = 0;
+                while (!found && found_idx < total_rows) {
+                    if (mat.row_indices[k] == rvec.at(found_idx)) {
+                        found = true;
+                    }
+                    found_idx++;
                 }
-                found_idx++;
+
+                if (found) {
+                    new_val(n) = mat.values[k];
+                    new_rvec(n) = found_idx - 1;
+                    n++;
+                }
             }
 
-            if (found) {
-                new_val(n) = mat.values[k];
-                new_rvec(n) = found_idx - 1;
-                n++;
-            }
+            p++;
+            new_cvec(p) = n;
         }
+        new_cvec(p) = n ;
 
-        p++;
-        new_cvec(p) = n;
+        new_val.reshape(n, 1);
+        new_rvec.reshape(n, 1);
+
+        return arma::sp_mat(new_rvec, new_cvec, new_val, total_rows, total_cols);
+    } catch(std::exception &ex) {
+        forward_exception_to_r(ex);
+    } catch(...) {
+        ::Rf_error("Signac exception (unknown reason)");
     }
-    new_cvec(p) = n ;
 
-    new_val.reshape(n, 1);
-    new_rvec.reshape(n, 1);
-
-    return arma::sp_mat(new_rvec, new_cvec, new_val, total_rows, total_cols);
+    arma::sp_mat emat;
+    return emat;
 }
 
 // [[Rcpp::export]]
@@ -246,13 +294,21 @@ Rcpp::NumericVector FastGetSumSparseMatByRows(const arma::sp_mat &mat, const arm
 Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arma::ucolvec &cvec) {
     Rcpp::NumericVector result(cvec.size());
     arma::ucolvec ccvec(cvec.size());
-    PerformRVector(cvec, (int)mat.n_cols, ccvec);
 
-    for (int i = 0; i< cvec.size(); i++)
-    {
-        for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
-            result[cij.col()] += (*cij);
+    try {
+        PerformRVector(cvec, (int)mat.n_cols, ccvec);
+        for (int i = 0; i< cvec.size(); i++)
+        {
+            for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
+                result[cij.col()] += (*cij);
+            }
         }
+
+        return result;
+    } catch(std::exception &ex) {
+        forward_exception_to_r(ex);
+    } catch(...) {
+        ::Rf_error("Signac exception (unknown reason)");
     }
 
     return result;
@@ -294,11 +350,6 @@ Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat) {
 
     SumColumWorker sumColWorker(&mat, result);
     RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
-
-    /*for (int i= 0; i< mat.n_cols; i++)
-    {
-        result[i] += arma::accu(mat.col(i));
-    }*/
 
     return result;
 }

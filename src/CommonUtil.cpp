@@ -229,11 +229,15 @@ void PerformRVector(const T &vec, const int &total, T &new_vec) {
     for(int i = 0; i < vec.size(); i++) {
         int ival = vec.at(i);
         if(ival <= 0) {
-            ival = 1;
+            std::stringstream ostr;
+            ostr << "Invalid start index:" << ival;
+            throw std::range_error(ostr.str());
         }
 
         if(ival > total) {
-            ival = total;
+            std::stringstream ostr;
+            ostr << "Invalid end index:" << ival;
+            throw std::range_error(ostr.str());
         }
         new_vec(i) = (ival - 1);
     }
@@ -250,11 +254,15 @@ void PerformRVector(const arma::urowvec &vec, const int &total, arma::urowvec &n
 void PerformRIndex(const int &i, const int &total, int &new_i) {
     new_i = i;
     if(i <= 0) {
-        new_i = 1;
+        std::stringstream ostr;
+        ostr << "Invalid index:" << i;
+        throw std::range_error(ostr.str());
     }
 
     if(i > total) {
-        new_i = total;
+        std::stringstream ostr;
+        ostr << "Invalid index:" << i;
+        throw std::range_error(ostr.str());
     }
 
     new_i = new_i - 1;
@@ -263,20 +271,28 @@ void PerformRIndex(const int &i, const int &total, int &new_i) {
 void PerformRMultiIndex(const int &start, const int &total_start, int &new_start, const int &end, const int &total_end, int &new_end) {
     new_start = start;
     if(start <= 0) {
-        new_start = 1;
+        std::stringstream ostr;
+        ostr << "Invalid start index:" << start;
+        throw std::range_error(ostr.str());
     }
 
     if(start > total_start) {
-        new_start = total_start;
+        std::stringstream ostr;
+        ostr << "Invalid start index:" << start;
+        throw std::range_error(ostr.str());
     }
 
     new_end = end;
     if(end <= 0) {
-        new_end = 1;
+        std::stringstream ostr;
+        ostr << "Invalid end index:" << start;
+        throw std::range_error(ostr.str());
     }
 
     if(end > total_end) {
-        new_end = total_end;
+        std::stringstream ostr;
+        ostr << "Invalid end index:" << start;
+        throw std::range_error(ostr.str());
     }
 
     if(new_start > new_end) {
