@@ -63,16 +63,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// Harmony
-DataFrame Harmony(const arma::sp_mat& mtx, const Rcpp::NumericVector& col_idx, const int ordering);
-RcppExport SEXP _Signac_Harmony(SEXP mtxSEXP, SEXP col_idxSEXP, SEXP orderingSEXP) {
+// HarmonyMarker
+DataFrame HarmonyMarker(const arma::sp_mat& mtx, const Rcpp::NumericVector& col_idx);
+RcppExport SEXP _Signac_HarmonyMarker(SEXP mtxSEXP, SEXP col_idxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mtx(mtxSEXP);
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type col_idx(col_idxSEXP);
-    Rcpp::traits::input_parameter< const int >::type ordering(orderingSEXP);
-    rcpp_result_gen = Rcpp::wrap(Harmony(mtx, col_idx, ordering));
+    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(mtx, col_idx));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -518,7 +517,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
-    {"_Signac_Harmony", (DL_FUNC) &_Signac_Harmony, 3},
+    {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 2},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
     {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},
