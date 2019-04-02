@@ -1,14 +1,18 @@
 #ifndef COMMON_MATRIX_UTIL
 #define COMMON_MATRIX_UTIL
 
+#define ARMA_USE_CXX11
+#define ARMA_NO_DEBUG
+#define ARMA_USE_HDF5
+
 #include <RcppArmadillo.h>
 #include <cmath>
 #include <unordered_map>
 #include <fstream>
 #include <string>
-#include <boost/math/common_factor.hpp>
-#include <boost/date_time/gregorian/gregorian_types.hpp>
+
 using namespace Rcpp;
+using namespace arma;
 
 int FastComputeGCD(const int &num1, const int &num2);
 int FastComputeLCM(const int &num1, const int &num2);

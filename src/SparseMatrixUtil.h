@@ -5,8 +5,10 @@
 #include <unordered_map>
 #include <fstream>
 #include <string>
+#include "Hdf5Util.h"
 
 using namespace Rcpp;
+using namespace arma;
 
 arma::sp_mat FastConvertToSparseMat(const SEXP &s);
 Rcpp::List FastConvertToTripletMat(const SEXP &s);
@@ -42,5 +44,7 @@ Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat &mat);
+bool SyncSpMt(const std::string &fileName, const arma::sp_mat &mat);
+bool SyncSpMtFromS4(const std::string &fileName, const std::string &groupName, const Rcpp::S4 &mat);
 
 #endif //SPARSE_MATRIX_UTIL

@@ -1,19 +1,4 @@
-#define ARMA_USE_CXX11
-#define ARMA_NO_DEBUG
-#define ARMA_USE_HDF5
-
-#include <RcppArmadillo.h>
-#include <RcppParallel.h>
-#include <cmath>
-#include <unordered_map>
-#include <fstream>
-#include <string>
-#include <hdf5.h>
-#include "CommonUtil.h"
-
-using namespace Rcpp;
-using namespace arma;
-using namespace RcppParallel;
+#include "Hdf5Util.h"
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]

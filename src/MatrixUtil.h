@@ -1,12 +1,7 @@
 #ifndef MATRIX_UTIL
 #define MATRIX_UTIL
 
-#include <RcppArmadillo.h>
-#include <unordered_map>
-#include <fstream>
-#include <string>
-
-using namespace Rcpp;
+#include "Hdf5Util.h"
 
 arma::mat FastMatMult(const arma::mat &mat1, const arma::mat &mat2);
 arma::mat FastGetRowsOfMat(const arma::mat &mat, arma::uvec vec);
