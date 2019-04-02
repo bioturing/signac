@@ -12,6 +12,7 @@
 #include <boost/algorithm/string.hpp>
 #include "CommonUtil.h"
 #include <highfive/H5File.hpp>
+#include <highfive/H5Group.hpp>
 
 using namespace Rcpp;
 using namespace arma;
@@ -68,7 +69,7 @@ public:
     }
 
     void GetListAttributes(const std::string &groupName, std::vector<std::string> &arrList) {
-        boost::shared_ptr<HighFive::File> file = Open(HighFive::File::ReadOnly);
+        boost::shared_ptr<HighFive::File> file = Open(1);
 
         if(file.get() == nullptr) {
             return;
@@ -101,32 +102,28 @@ public:
             arma::urowvec p = Rcpp::as<arma::urowvec>(mat.slot("p"));
             arma::vec x = Rcpp::as<arma::vec>(mat.slot("x"));
 
-            // Write name data
-            HighFive::DataSet datasetGroup = file->createDataSet<std::string>(groupName, HighFive::DataSpace::From(groupName));
-            datasetGroup.write(groupName);
+            // Write group name data
+            file->createGroup(groupName);
 
             // Write DIM data
             std::vector<unsigned int> arrDims(dims.begin(), dims.end());
-            HighFive::Attribute datasetDim = datasetGroup.createAttribute<unsigned int>(
-                "shape", HighFive::DataSpace::From(arrDims));
+            HighFive::DataSet datasetDim = file->createDataSet<unsigned int>(groupName + "/shape", HighFive::DataSpace::From(arrDims));
             datasetDim.write(arrDims);
 
             //Write i data
+            std::cout << "aaaa2" << std::endl;
             std::vector<unsigned int> arrI(i.begin(), i.end());
-            HighFive::Attribute datasetI = datasetGroup.createAttribute<unsigned int>(
-                "indices", HighFive::DataSpace::From(arrI));
+            HighFive::DataSet datasetI = file->createDataSet<unsigned int>(groupName + "/indices", HighFive::DataSpace::From(arrI));
             datasetI.write(arrI);
 
             //Write p data
             std::vector<unsigned int> arrP(p.begin(), p.end());
-            HighFive::Attribute datasetP = datasetGroup.createAttribute<double>(
-                "indptr", HighFive::DataSpace::From(arrP));
+            HighFive::DataSet datasetP = file->createDataSet<unsigned int>(groupName + "/indptr", HighFive::DataSpace::From(arrP));
             datasetP.write(arrP);
 
             //Write x data
             std::vector<double> arrX(x.begin(), x.end());
-            HighFive::Attribute datasetX = datasetGroup.createAttribute<double>(
-                "data", HighFive::DataSpace::From(arrX));
+            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrP));
             datasetX.write(arrX);
 
             file->flush();
@@ -141,12 +138,16 @@ public:
         arma::sp_mat mat;
         boost::filesystem::path groupPath;
         GetH5FilePathOfGroupName(groupName, groupPath);
-        mat.load(groupPath.c_str());
-        return mat;
+        if(boost::filesystem::exists(groupPath.c_str()) == true)
+        {
+            mat.load(groupPath.c_str());
+            return mat;
+        }
+        return ReadSpMtAsS4(groupName);
     }
 
     arma::sp_mat ReadSpMtAsS4(const std::string &groupName){
-        boost::shared_ptr<HighFive::File> file = Open(HighFive::File::ReadOnly);
+        boost::shared_ptr<HighFive::File> file = Open(1);
         arma::sp_mat mat;
 
         if(file.get() == nullptr) {
@@ -154,39 +155,28 @@ public:
         }
 
         try {
-            HighFive::DataSet datasetGroup = file->getDataSet(groupName);
+            HighFive::DataSet datasetShape = file->getDataSet(groupName + "/shape");
+            HighFive::DataSet datasetIndices = file->getDataSet(groupName + "/indices");
+            HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
+            HighFive::DataSet datasetData = file->getDataSet(groupName + "/data");
 
-            if(datasetGroup.hasAttribute("shape") == false) {
-                std::stringstream ostr;
-                ostr << "Can not see shape entry in [" << groupName << "]";
-                throw std::range_error(ostr.str());
-            }
             std::vector<unsigned int> arrDims;
-            datasetGroup.getAttribute("shape").read(arrDims);
+            datasetShape.read(arrDims);
 
-            if(datasetGroup.hasAttribute("indices") == false) {
-                std::stringstream ostr;
-                ostr << "Can not see indices entry in [" << groupName << "]";
-                throw std::range_error(ostr.str());
-            }
-            arma::urowvec idx;
-            datasetGroup.getAttribute("indices").read(idx);
+            std::vector<unsigned int> arrD1;
+            datasetIndices.read(arrD1);
+            arma::urowvec idx(arrD1);
+            arrD1.clear();
 
-            if(datasetGroup.hasAttribute("indptr") == false) {
-                std::stringstream ostr;
-                ostr << "Can not see indptr entry in [" << groupName << "]";
-                throw std::range_error(ostr.str());
-            }
-            arma::ucolvec ptr;
-            datasetGroup.getAttribute("indptr").read(ptr);
+            std::vector<unsigned int> arrD2;
+            datasetIndptr.read(arrD2);
+            arma::ucolvec ptr(arrD2);
+            arrD2.clear();
 
-            if(datasetGroup.hasAttribute("data") == false) {
-                std::stringstream ostr;
-                ostr << "Can not see data entry in [" << groupName << "]";
-                throw std::range_error(ostr.str());
-            }
-            arma::colvec x;
-            datasetGroup.getAttribute("data").read(x);
+            std::vector<double> arrD3;
+            datasetData.read(arrD3);
+            arma::vec x(arrD3);
+            arrD3.clear();
 
             arma::sp_mat res(idx, ptr, x, arrDims[0], arrDims[1]);
             return res;
@@ -203,9 +193,14 @@ private:
     boost::shared_ptr<HighFive::File> Open(const int &mode) {
         boost::shared_ptr<HighFive::File> file;
         try {
-            int new_mode = mode;
-            if(new_mode == -1) {
-                new_mode = HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Overwrite;
+            int new_mode = HighFive::File::ReadWrite | HighFive::File::Create;
+            switch(mode) {
+                case -1:
+                    new_mode = HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Overwrite;
+                    break;
+                default:
+                    new_mode = HighFive::File::ReadWrite | HighFive::File::Create;
+                    break;
             }
             file.reset(new HighFive::File(file_name, new_mode));
         } catch (HighFive::Exception& err) {
@@ -220,7 +215,7 @@ private:
         std::string fileName = boost::replace_all_copy(groupName, "/", "_");
         fileName = boost::replace_all_copy(fileName, "\\/", "_");
         std::stringstream ss;
-        ss << filePath.filename() << "_" << fileName << ".h5";
+        ss << filePath.stem().string() << "_" << fileName << ".h5";
         boost::filesystem::path fileH5Name(ss.str());
         groupPath = dirPath / fileH5Name;
     }

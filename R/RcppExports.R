@@ -25,8 +25,8 @@ WriteSpMtFromS4 <- function(filePath, groupName, mat) {
     .Call(`_Signac_WriteSpMtFromS4`, filePath, groupName, mat)
 }
 
-ReadSpMtAsArma <- function(filePath, groupName) {
-    .Call(`_Signac_ReadSpMtAsArma`, filePath, groupName)
+ReadSpMt <- function(filePath, groupName) {
+    .Call(`_Signac_ReadSpMt`, filePath, groupName)
 }
 
 ReadSpMtAsS4 <- function(filePath, groupName) {
