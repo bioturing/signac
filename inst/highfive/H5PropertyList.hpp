@@ -15,150 +15,93 @@
 
 namespace HighFive {
 
-
-enum class PropertyType : int {
-    OBJECT_CREATE,
-    FILE_CREATE,
-    FILE_ACCESS,
-    DATASET_CREATE,
-    DATASET_ACCESS,
-    DATASET_XFER,
-    GROUP_CREATE,
-    GROUP_ACCESS,
-    DATATYPE_CREATE,
-    DATATYPE_ACCESS,
-    STRING_CREATE,
-    ATTRIBUTE_CREATE,
-    OBJECT_COPY,
-    LINK_CREATE,
-    LINK_ACCESS,
-};
-
 ///
-/// \brief Base HDF5 property List
+/// \brief Generic HDF5 property List
 ///
-template <PropertyType T>
-class PropertyList {
+class Properties {
   public:
-    ~PropertyList();
+    enum Type
+    {
+       FILE_ACCESS,
+       DATASET_CREATE
+    };
+
+    ~Properties();
 
 #ifdef H5_USE_CXX11
-    PropertyList(PropertyList&& other);
-    PropertyList& operator=(PropertyList&& other);
+    Properties(Properties&& other);
+    Properties& operator=(Properties&& other);
 #endif
-    constexpr PropertyType getType() const { return T; }
+
+    Type getType() const { return _type; }
 
     hid_t getId() const { return _hid; }
 
-    PropertyList();
-
-    template <typename P>
-    PropertyList(std::initializer_list<P>);
-
-    ///
-    /// Add a property to this property list.
-    /// A property is an object which is expected to have a method with the
-    /// following signature void apply(hid_t hid) const
-    ///
-    template <typename P>
-    void add(const P& property);
+    /**
+     * Add a property to this property list.
+     * A property is an object which is expected to have a method with the
+     * following signature void apply(hid_t hid) const
+     */
+    template <typename Property>
+    void add(const Property& property);
 
   protected:
-    void _initializeIfNeeded();
 
-    hid_t _hid;
+    // protected constructor
+    explicit Properties(Type type);
 
   private:
 #ifdef H5_USE_CXX11
-    PropertyList(const PropertyList<T>&) = delete;
-    PropertyList& operator=(const PropertyList<T>&) = delete;
+    Properties(const Properties&) = delete;
+    Properties& operator=(const Properties&) = delete;
 #else
-    PropertyList(const PropertyList<T>&);
-    PropertyList& operator=(const PropertyList<T>&);
+    Properties(const Properties&);
+    Properties& operator=(const Properties&);
 #endif
+
+    Type _type;
+    hid_t _hid;
 };
 
-typedef PropertyList<PropertyType::FILE_CREATE> FileCreateProps;
-typedef PropertyList<PropertyType::FILE_ACCESS> FileAccessProps ;
-typedef PropertyList<PropertyType::DATASET_CREATE> DataSetCreateProps;
-typedef PropertyList<PropertyType::DATASET_ACCESS> DataSetAccessProps;
-typedef PropertyList<PropertyType::DATASET_XFER> DataTransferProps;
-
-///
-/// RawPropertieLists are to be used when advanced H5 properties
-/// are desired and are not part of the HighFive API.
-/// Therefore this class is mainly for internal use.
-template <PropertyType T>
-class RawPropertyList : public PropertyList<T> {
-  public:
-    template <typename F, typename... Args>
-    void add(const F& funct, const Args&... args);
+class DataSetCreateProps : public Properties {
+public:
+  DataSetCreateProps() : Properties(DATASET_CREATE) {}
 };
 
-
-class Chunking {
+class Chunking
+{
   public:
-    Chunking(const std::vector<hsize_t>& dims)
-        : _dims(dims) {}
-
-    Chunking(std::initializer_list<hsize_t> items)
-        : Chunking(std::vector<hsize_t>{items}) {}
-
-    template <typename... Args>
-    Chunking(hsize_t item, Args... args)
-        : Chunking(std::vector<hsize_t>{item, static_cast<hsize_t>(args)...}) {}
-
-    const std::vector<hsize_t>& getDimensions() const { return _dims; }
+    Chunking(const std::vector<hsize_t>& dims) : _dims(dims) {}
 
   private:
-    friend DataSetCreateProps;
+    friend class Properties;
     void apply(hid_t hid) const;
-    const std::vector<hsize_t> _dims;
+    std::vector<hsize_t> _dims;
 };
 
-class Deflate {
+class Deflate
+{
   public:
-    Deflate(unsigned level)
-        : _level(level) {}
+    Deflate(int level) : _level(level) {}
 
   private:
-    friend DataSetCreateProps;
+    friend class Properties;
     void apply(hid_t hid) const;
-    const unsigned _level;
+    int _level;
 };
 
-class Shuffle {
+class Shuffle
+{
   public:
     Shuffle() {}
 
   private:
-    friend DataSetCreateProps;
+    friend class Properties;
     void apply(hid_t hid) const;
 };
 
-/// Dataset access property to control chunk cache configuration.
-/// Do not confuse with the similar file access property for H5Pset_cache
-class Caching {
-  public:
-    /// https://support.hdfgroup.org/HDF5/doc/RM/H5P/H5Pset_chunk_cache.html for
-    /// details.
-    Caching(const size_t numSlots,
-            const size_t cacheSize,
-            const double w0 = static_cast<double>(H5D_CHUNK_CACHE_W0_DEFAULT))
-        : _numSlots(numSlots)
-        , _cacheSize(cacheSize)
-        , _w0(w0) {}
-
-  private:
-    friend DataSetAccessProps;
-    void apply(hid_t hid) const;
-    const size_t _numSlots;
-    const size_t _cacheSize;
-    const double _w0;
-};
-
-}  // namespace HighFive
+} // HighFive
 
 #include "bits/H5PropertyList_misc.hpp"
 
-#endif  // H5PROPERTY_LIST_HPP
+#endif // H5PROPERTY_LIST_HPP

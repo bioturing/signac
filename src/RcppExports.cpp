@@ -235,6 +235,56 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// WriteSpMtFromArma
+bool WriteSpMtFromArma(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
+RcppExport SEXP _Signac_WriteSpMtFromArma(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(WriteSpMtFromArma(filePath, groupName, mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// WriteSpMtFromS4
+bool WriteSpMtFromS4(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
+RcppExport SEXP _Signac_WriteSpMtFromS4(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(WriteSpMtFromS4(filePath, groupName, mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ReadSpMtAsArma
+arma::sp_mat ReadSpMtAsArma(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMtAsArma(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadSpMtAsArma(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ReadSpMtAsS4
+arma::sp_mat ReadSpMtAsS4(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMtAsS4(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadSpMtAsS4(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
