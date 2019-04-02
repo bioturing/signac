@@ -653,6 +653,7 @@ public:
             datasetDim.write(arrDims);
 
             //Write i data
+            std::cout << "aaaa2" << std::endl;
             std::vector<unsigned int> arrI(i.begin(), i.end());
             HighFive::DataSet datasetI = file->createDataSet<unsigned int>(groupName + "/indices", HighFive::DataSpace::From(arrI));
             datasetI.write(arrI);
