@@ -29,14 +29,16 @@ using namespace RcppParallel;
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
 
-double HarmonicMean(double a, double b) {
+double HarmonicMean(double a, double b)
+{
     if (fmin(a,b) < HARMONY_EPS)
         return 0;
 
     return 2 * a * b / (a + b);
 }
 
-bool Compare(int i, int j, const std::vector<double> &res) {
+bool Compare(int i, int j, const std::vector<double> &res)
+{
     return res[i] < res[j];
 }
 
@@ -45,25 +47,29 @@ void SetCluster(const Rcpp::NumericVector &col_idx,
 {
     //result.fill(2); //default is 2
     for (int i = 0; i < col_idx.length(); ++i) {
-        assert(i < (result.size() - 1) && "Index must be smaller than number of columns");
+        assert( 0 < col_idx[i] && col_idx[i] <= (result.size()) && "Index must be smaller than number of columns");
         result[col_idx[i] - 1] = 1; //Convert
     }
 }
 
-double LnPvalue(double score, int n1, int n2, int bin_cnt) {
-        --bin_cnt;
-        assert(bin_cnt >= 0);
+double LnPvalue(double score, int n1, int n2, int bin_cnt)
+{
+    assert(bin_cnt > 0);
 
-        double mean = 0.25 * bin_cnt * (1.0/n1 + 1.0/n2);
-        assert(mean >= 0);
-        double var = 0.125 * bin_cnt * pow(1.0/n1 + 1.0/n2,2);
-        double scale =  (mean * (1 - mean) / var - 1);
-        double shape1 = (1 - mean) * scale;
-        double shape2 = mean * scale;
+    if (bin_cnt == 1)
+        return std::numeric_limits<double>::infinity();
 
-        assert(shape1 > 0 && shape2 > 0);
+    double mean = 0.25 * (bin_cnt - 1) * (1.0 / n1 + 1.0 / n2);
+    assert(mean >= 0);
 
-        return logincbeta(shape1, shape2, score);
+    double var = 0.125 * (bin_cnt - 1) * pow(1.0 / n1 + 1.0 / n2,2);
+    double scale =  (mean * (1 - mean) / var - 1);
+    double shape1 = (1 - mean) * scale;
+    double shape2 = mean * scale;
+
+    assert(shape1 > 0 && shape2 > 0);
+
+    return logincbeta(shape1, shape2, score);
 }
 
 void HarmonyTest(
@@ -102,6 +108,8 @@ void HarmonyTest(
 
     int total = total_in + total_out;
 
+    Rcout << total_in << " " << total_out << " " << total << std::endl;
+
     for (int i = 0; i < mtx.n_rows; ++i) {
         int zero_in = total_in;
         int zero_out = total_out;
@@ -117,36 +125,39 @@ void HarmonyTest(
         count[i][0] = std::make_pair(zero_in, zero_out);
     }
 
-    double thres = std::max(std::min<double>(total,5.0),std::pow(total,0.6))/total;
+    int thres = std::max(std::min(total, 5),
+                         (int) std::pow(total,0.6));
 
-    assert(thres < 0.5);
+    Rcout << thres << std::endl;
+    assert(thres * 2 <= total);
 
     for (int i = 0; i < mtx.n_rows; ++i) {
 
-        double prob_in = 0;
-        double prob_out = 0;
-        double prob = 0;
-        double prob_rem = 1;
+        int cnt_in = 0;
+        int cnt_out = 0;
+        int cnt_both = 0;
 
-        int bin_cnt = 1; //bin_count actually
+        int bin_cnt = 1;
 
         for(int j = 0; j < count[i].size(); ++j) {
-            prob_in += (double)count[i][j].first/total_in;
-            prob_out += (double)count[i][j].second/total_out;
+            cnt_in += count[i][j].first;
+            cnt_out += count[i][j].second;
 
-            double p = (double)(count[i][j].first + count[i][j].second)/total;
-            prob += p;
-            prob_rem -= p;
+            cnt_both += count[i][j].first + count[i][j].second;
 
-            if (prob >= thres && prob_rem >= thres) {
-                std::get<0>(res[i]) += HarmonicMean(prob_in, prob_out);
-                prob_in = prob_out = prob = 0;
+            if (cnt_both >= thres) {
+                std::get<0>(res[i]) += HarmonicMean((double)cnt_in/total_in,
+                                                    (double)cnt_out/total_out);
+                cnt_in = cnt_out = cnt_both = 0;
                 ++bin_cnt;
             }
         }
 
-        std::get<0>(res[i]) += HarmonicMean(prob_in, prob_out);
-        std::get<1>(res[i]) = LnPvalue(std::get<0>(res[i]), total_in, total_out, bin_cnt);
+        std::get<0>(res[i]) += HarmonicMean((double)cnt_in/total_in,
+                                            (double)cnt_out/total_out);
+
+        std::get<1>(res[i]) = LnPvalue(std::get<0>(res[i]),
+                                        total_in, total_out, bin_cnt);
     }
 }
 
