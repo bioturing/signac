@@ -23,6 +23,7 @@
 
 #include <H5Dpublic.h>
 #include <H5Ppublic.h>
+#include <RcppArmadillo.h>
 
 #include "../H5DataSpace.hpp"
 #include "../H5DataType.hpp"
@@ -108,11 +109,11 @@ template <typename Scalar, class Enable = void>
 struct data_converter {
     inline data_converter(Scalar& datamem, DataSpace& space) {
 
-        static_assert((std::is_arithmetic<Scalar>::value ||
+        /*static_assert((std::is_arithmetic<Scalar>::value ||
                        std::is_enum<Scalar>::value ||
                        std::is_same<std::string, Scalar>::value),
                       "supported datatype should be an arithmetic value, a "
-                      "std::string or a container/array");
+                      "std::string or a container/array");*/
         (void)datamem;
         (void)space; // do nothing
     }
@@ -239,6 +240,44 @@ struct data_converter<boost::numeric::ublas::matrix<T>, void> {
     std::vector<size_t> _dims;
 };
 #endif
+
+// apply conversion for arma vector
+template <typename T>
+struct data_converter<arma::Col<T>,
+    typename std::enable_if<(is_container<T>::value)>::type> {
+       inline data_converter(arma::Col<T>& vec, DataSpace& space, size_t dim = 0)
+           : _dims(space.getDimensions()), _dim(dim), _vec_align() {
+           (void)vec;
+       }
+
+       inline typename type_of_array<T>::type*
+           transform_read(arma::Col<T>& vec) {
+               (void)vec;
+               _vec_align.resize(get_total_size());
+               return &(_vec_align[0]);
+           }
+
+       inline typename type_of_array<T>::type*
+           transform_write(arma::Col<T>& vec) {
+               _vec_align.reserve(get_total_size());
+               vectors_to_single_buffer<T>(vec, _dims, 0, _vec_align);
+               return &(_vec_align[0]);
+           }
+
+       inline void process_result(arma::Col<T>& vec) {
+           single_buffer_to_vectors<typename type_of_array<T>::type, T>(
+                   _vec_align.begin(), _vec_align.end(), _dims, 0, vec);
+       }
+
+       inline size_t get_total_size() {
+           return std::accumulate(_dims.begin(), _dims.end(), 1,
+                                  std::multiplies<size_t>());
+       }
+
+       std::vector<size_t> _dims;
+       size_t _dim;
+       std::vector<typename type_of_array<T>::type> _vec_align;
+};
 
 // apply conversion for vectors nested vectors
 template <typename T>

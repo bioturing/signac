@@ -1,15 +1,9 @@
 #define ARMA_USE_CXX11
 #define ARMA_NO_DEBUG
 
-#include <RcppArmadillo.h>
-#include <cmath>
-#include <unordered_map>
-#include <fstream>
-#include <string>
-#include <boost/math/common_factor.hpp>
+#include "CommonUtil.h"
+//#include <boost/math/common_factor.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
-
-using namespace Rcpp;
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(BH)]]
@@ -296,15 +290,16 @@ void PerformRMultiIndex(const int &start, const int &total_start, int &new_start
     }
 
     if(new_start > new_end) {
-        int item = new_end;
-        new_end = new_start;
-        new_start = item;
+        std::stringstream ostr;
+        ostr << "Invalid start/end index:" << start << ">" << end;
+        throw std::range_error(ostr.str());
     }
 
     new_start = new_start -1;
     new_end = new_end - 1;
 }
 
+/*
 // [[Rcpp::export]]
 int FastComputeGCD(const int &num1, const int &num2) {
     return boost::math::gcd(num1, num2);
@@ -314,6 +309,7 @@ int FastComputeGCD(const int &num1, const int &num2) {
 int FastComputeLCM(const int &num1, const int &num2) {
     return boost::math::lcm(num1, num2);
 }
+*/
 
 // [[Rcpp::export]]
 Rcpp::Date FastGetCurrentDate() {
