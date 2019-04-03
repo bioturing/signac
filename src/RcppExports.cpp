@@ -235,53 +235,53 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// WriteSpMtFromArma
-bool WriteSpMtFromArma(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
-RcppExport SEXP _Signac_WriteSpMtFromArma(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+// WriteSpMtV2
+bool WriteSpMtV2(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
+RcppExport SEXP _Signac_WriteSpMtV2(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(WriteSpMtFromArma(filePath, groupName, mat));
+    rcpp_result_gen = Rcpp::wrap(WriteSpMtV2(filePath, groupName, mat));
     return rcpp_result_gen;
 END_RCPP
 }
-// WriteSpMtFromS4
-bool WriteSpMtFromS4(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
-RcppExport SEXP _Signac_WriteSpMtFromS4(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+// WriteSpMtV1
+bool WriteSpMtV1(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
+RcppExport SEXP _Signac_WriteSpMtV1(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(WriteSpMtFromS4(filePath, groupName, mat));
+    rcpp_result_gen = Rcpp::wrap(WriteSpMtV1(filePath, groupName, mat));
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadSpMt
-arma::sp_mat ReadSpMt(const std::string& filePath, const std::string& groupName);
-RcppExport SEXP _Signac_ReadSpMt(SEXP filePathSEXP, SEXP groupNameSEXP) {
+// ReadSpMtV2
+arma::sp_mat ReadSpMtV2(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMtV2(SEXP filePathSEXP, SEXP groupNameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadSpMt(filePath, groupName));
+    rcpp_result_gen = Rcpp::wrap(ReadSpMtV2(filePath, groupName));
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadSpMtAsS4
-arma::sp_mat ReadSpMtAsS4(const std::string& filePath, const std::string& groupName);
-RcppExport SEXP _Signac_ReadSpMtAsS4(SEXP filePathSEXP, SEXP groupNameSEXP) {
+// ReadSpMtV1
+Rcpp::S4 ReadSpMtV1(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMtV1(SEXP filePathSEXP, SEXP groupNameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadSpMtAsS4(filePath, groupName));
+    rcpp_result_gen = Rcpp::wrap(ReadSpMtV1(filePath, groupName));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -715,7 +715,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
-    {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 2},
     {"_Signac_HarmonyMarkerH5", (DL_FUNC) &_Signac_HarmonyMarkerH5, 2},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
@@ -732,13 +731,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_ReadIntegerVector", (DL_FUNC) &_Signac_ReadIntegerVector, 3},
     {"_Signac_ReadDoubleVector", (DL_FUNC) &_Signac_ReadDoubleVector, 3},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
-    {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
-    {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},
-    {"_Signac_FastGetSubMat", (DL_FUNC) &_Signac_FastGetSubMat, 3},
-    {"_Signac_FastCreateSparseMat", (DL_FUNC) &_Signac_FastCreateSparseMat, 2},
-    {"_Signac_FastStatsOfSparseMat", (DL_FUNC) &_Signac_FastStatsOfSparseMat, 1},
-    {"_Signac_FastCreateFromTriplet", (DL_FUNC) &_Signac_FastCreateFromTriplet, 3},
-    {"_Signac_FastConvertToSparseMat", (DL_FUNC) &_Signac_FastConvertToSparseMat, 1},
     {"_Signac_FastConvertToTripletMat", (DL_FUNC) &_Signac_FastConvertToTripletMat, 1},
     {"_Signac_FastSparseMatSqrt", (DL_FUNC) &_Signac_FastSparseMatSqrt, 1},
     {"_Signac_FastSparseMatMult", (DL_FUNC) &_Signac_FastSparseMatMult, 2},
