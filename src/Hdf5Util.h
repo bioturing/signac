@@ -143,15 +143,16 @@ public:
             mat.load(groupPath.c_str());
             return mat;
         }
-        return ReadSpMtAsS4(groupName);
+        return mat;
     }
 
-    arma::sp_mat ReadSpMtAsS4(const std::string &groupName){
+    Rcpp::S4 ReadSpMtAsS4(const std::string &groupName){
         boost::shared_ptr<HighFive::File> file = Open(1);
-        arma::sp_mat mat;
+        std::string klass = "dgCMatrix";
+        Rcpp::S4 s(klass);
 
         if(file.get() == nullptr) {
-            return mat;
+            return s;
         }
 
         try {
@@ -162,29 +163,23 @@ public:
 
             std::vector<unsigned int> arrDims;
             datasetShape.read(arrDims);
-
             std::vector<unsigned int> arrD1;
             datasetIndices.read(arrD1);
-            arma::urowvec idx(arrD1);
-            arrD1.clear();
-
             std::vector<unsigned int> arrD2;
             datasetIndptr.read(arrD2);
-            arma::ucolvec ptr(arrD2);
-            arrD2.clear();
-
             std::vector<double> arrD3;
             datasetData.read(arrD3);
-            arma::vec x(arrD3);
-            arrD3.clear();
 
-            arma::sp_mat res(idx, ptr, x, arrDims[0], arrDims[1]);
-            return res;
+            s.slot("i") = std::move(arrD1);
+            s.slot("p") = std::move(arrD2);
+            s.slot("x") = std::move(arrD3);
+            s.slot("Dim") = std::move(arrDims);
+            return s;
         } catch (HighFive::Exception& err) {
             std::cerr << "ReadSpMtAsS4 in HDF5 format, error=" << err.what() << std::endl;
         }
 
-        return mat;
+        return s;
     }
 
 private:

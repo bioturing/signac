@@ -282,3 +282,22 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
     return(output)
   }
 }
+
+#' Read sparse matrix from HDF5 file
+#' @param h5.path Path to HDF5 file
+#' @param group.name Group name in dataset. Default is "bioturing"
+#'
+#'
+#' @export
+#'
+#' @examples
+#' spMat <- ReadSpMt(h5.path = path2hdf5, group.name = "bioturing")
+#' spMat
+#'
+ReadSpMt <- function(h5.path, group.name = "bioturing") {
+    mat <- Signac::ReadSpMtV2(h5.path, group.name)
+    if (length(mat) == 0) {
+        mat <- Signac::ReadSpMtV1(h5.path, group.name)
+    }
+    return(mat)
+}

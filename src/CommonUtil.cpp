@@ -2,221 +2,10 @@
 #define ARMA_NO_DEBUG
 
 #include "CommonUtil.h"
-//#include <boost/math/common_factor.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(BH)]]
-
-/*
-Source:
-http://www.unicode.org/versions/Unicode7.0.0/UnicodeStandard-7.0.pdf
-*/
-size_t IsUtf8Str(unsigned char *str, size_t len, int *faulty_bytes)
-{
-    size_t i = 0;
-    *faulty_bytes = 0;
-
-    while (i < len)
-    {
-        if (str[i] <= 0x7F) /* 00..7F */
-        {
-            i += 1;
-        }
-        else if (str[i] >= 0xC2 && str[i] <= 0xDF) /* C2..DF 80..BF */
-        {
-            if (i + 1 < len) /* Expect a 2nd byte */
-            {
-                if (str[i + 1] < 0x80 || str[i + 1] > 0xBF)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 2;
-        }
-        else if (str[i] == 0xE0) /* E0 A0..BF 80..BF */
-        {
-            if (i + 2 < len) /* Expect a 2nd and 3rd byte */
-            {
-                if (str[i + 1] < 0xA0 || str[i + 1] > 0xBF)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 3;
-        }
-        else if (str[i] >= 0xE1 && str[i] <= 0xEC) /* E1..EC 80..BF 80..BF */
-        {
-            if (i + 2 < len) /* Expect a 2nd and 3rd byte */
-            {
-                if (str[i + 1] < 0x80 || str[i + 1] > 0xBF)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 3;
-        }
-        else if (str[i] == 0xED) /* ED 80..9F 80..BF */
-        {
-            if (i + 2 < len) /* Expect a 2nd and 3rd byte */
-            {
-                if (str[i + 1] < 0x80 || str[i + 1] > 0x9F)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 3;
-        }
-        else if (str[i] >= 0xEE && str[i] <= 0xEF) /* EE..EF 80..BF 80..BF */
-        {
-            if (i + 2 < len) /* Expect a 2nd and 3rd byte */
-            {
-                if (str[i + 1] < 0x80 || str[i + 1] > 0xBF)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 3;
-        }
-        else if (str[i] == 0xF0) /* F0 90..BF 80..BF 80..BF */
-        {
-            if (i + 3 < len) /* Expect a 2nd, 3rd 3th byte */
-            {
-                if (str[i + 1] < 0x90 || str[i + 1] > 0xBF)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-                if (str[i + 3] < 0x80 || str[i + 3] > 0xBF)
-                {
-                    *faulty_bytes = 4;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 4;
-        }
-        else if (str[i] >= 0xF1 && str[i] <= 0xF3) /* F1..F3 80..BF 80..BF 80..BF */
-        {
-            if (i + 3 < len) /* Expect a 2nd, 3rd 3th byte */
-            {
-                if (str[i + 1] < 0x80 || str[i + 1] > 0xBF)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-                if (str[i + 3] < 0x80 || str[i + 3] > 0xBF)
-                {
-                    *faulty_bytes = 4;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 4;
-        }
-        else if (str[i] == 0xF4) /* F4 80..8F 80..BF 80..BF */
-        {
-            if (i + 3 < len) /* Expect a 2nd, 3rd 3th byte */
-            {
-                if (str[i + 1] < 0x80 || str[i + 1] > 0x8F)
-                {
-                    *faulty_bytes = 2;
-                    return i;
-                }
-                if (str[i + 2] < 0x80 || str[i + 2] > 0xBF)
-                {
-                    *faulty_bytes = 3;
-                    return i;
-                }
-                if (str[i + 3] < 0x80 || str[i + 3] > 0xBF)
-                {
-                    *faulty_bytes = 4;
-                    return i;
-                }
-            }
-            else
-            {
-                *faulty_bytes = 1;
-                return i;
-            }
-            i += 4;
-        }
-        else
-        {
-            *faulty_bytes = 1;
-            return i;
-        }
-    }
-    return 0;
-}
 
 template <typename T>
 void PerformRVector(const T &vec, const int &total, T &new_vec) {
@@ -299,24 +88,24 @@ void PerformRMultiIndex(const int &start, const int &total_start, int &new_start
     new_end = new_end - 1;
 }
 
-/*
-// [[Rcpp::export]]
-int FastComputeGCD(const int &num1, const int &num2) {
-    return boost::math::gcd(num1, num2);
-}
-
-// [[Rcpp::export]]
-int FastComputeLCM(const int &num1, const int &num2) {
-    return boost::math::lcm(num1, num2);
-}
-*/
-
+//' FastGetCurrentDate
+//'
+//' This function returns a current date (YYYY-MM-DD)
+//'
+//' @export
 // [[Rcpp::export]]
 Rcpp::Date FastGetCurrentDate() {
     boost::gregorian::date current_date(boost::gregorian::day_clock::local_day());
     return Rcpp::wrap(Rcpp::Date(current_date.year(), current_date.month(), current_date.day()));
 }
 
+//' FastDiffVector
+//'
+//' This function is used to diff 2 vector
+//'
+//' @param a An integer vector
+//' @param b An integer vector
+//' @export
 // [[Rcpp::export]]
 arma::uvec FastDiffVector(const arma::uvec& a, const arma::uvec& b) {
     std::vector<int> x = arma::conv_to< std::vector<int> >::from(arma::sort(a));
@@ -327,6 +116,12 @@ arma::uvec FastDiffVector(const arma::uvec& a, const arma::uvec& b) {
     return arma::conv_to<arma::uvec>::from(z);
 }
 
+//' FastRandVector
+//'
+//' This function create a random vector
+//'
+//' @param num An integer number
+//' @export
 // [[Rcpp::export]]
 arma::uvec FastRandVector(int num) {
     arma::uvec result(num);

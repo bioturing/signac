@@ -187,21 +187,6 @@ test_that("FastSparseMatMultSD", {
     expect_equal(length(FinalMAT), 2500)
 })
 
-test_that("FastSparseMatMultDS", {
-    set.seed(123)
-    n <- 5e3
-    m1 <- rsparsematrix(n, n, 0.11, rand.x=function(n) rpois(n, 1) + 1)
-    MAT1 <- as.matrix(m1)
-
-    v2 <- sample(5e3)
-    m2  <- Matrix(sample(c(0, 1), length(v2) ^ 2, T, c(.89, .01)),
-                  length(v2), length(v2), sparse = F)
-    MAT2 <- Matrix(m2, sparse = T)
-
-    FinalMAT <- Signac::FastSparseMatMultDS(MAT1, MAT2)
-    expect_equal(length(FinalMAT), 25000000)
-})
-
 test_that("FastSparseMatMultDD", {
     set.seed(123)
     n <- 5e3
