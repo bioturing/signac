@@ -72,6 +72,7 @@ importFrom(methods,new)
 importFrom(readr,read_delim)
 importFrom(readr,read_lines)
 importFrom(utils,packageVersion)
+<<<<<<< 65ec9059176b35ff936c1f9f6f371662db7a66e9
 <<<<<<< 40f7625740ebd9330602897d1ed37fe84e4fdf69
 <<<<<<< ea21e403549eb85588dd75dcfe7385682ded0d9f
 <<<<<<< 94aeae12e784d494627be0d983c4837fbbda202b
@@ -89,3 +90,6 @@ useDynLib(Signac, .registration = TRUE)
 >>>>>>> Fix read HDF5 to S4
 =======
 >>>>>>> Add sparse matrix + hdf5 methods
+=======
+useDynLib(Signac, .registration = TRUE)
+>>>>>>> Fix read HDF5 to S4

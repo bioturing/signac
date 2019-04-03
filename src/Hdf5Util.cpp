@@ -274,3 +274,70 @@ Rcpp::NumericVector ReadDoubleVector(const std::string &filePath,
     oHdf5Util.Close(file);
     return Rcpp::wrap(dataVec);
 }
+
+//' ReadRowSumSpMt
+//'
+//' Read rows sums
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::string &groupName) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    std::vector<double> sumVec;
+
+    std::string vecGroupName = groupName + "_" + "rowsum";
+    oHdf5Util.ReadVector(sumVec, vecGroupName);
+    if(sumVec.size() == 0) {
+        arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
+        if(mat.size() == 0) {
+            Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(groupName);
+            mat = com::bioturing::Hdf5Util::FastConvertS4ToSparseMT(s);
+        }
+
+        sumVec.resize(mat.n_rows);
+        for (int i= 0; i< mat.n_cols; i++)
+        {
+            for (arma::sp_mat::const_col_iterator cij = mat.begin_col(i); cij != mat.end_col(i); ++cij) {
+                sumVec[cij.row()] += (*cij);
+            }
+        }
+        oHdf5Util.WriteVector(sumVec, vecGroupName);
+    }
+
+    Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
+    return result;
+}
+
+//' ReadColSumSpMt
+//'
+//' Read cols sums
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::string &groupName) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    std::vector<double> sumVec;
+
+    std::string vecGroupName = groupName + "_" + "colsum";
+    oHdf5Util.ReadVector(sumVec, vecGroupName);
+    if(sumVec.size() == 0) {
+        arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
+        if(mat.size() == 0) {
+            Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(groupName);
+            mat = com::bioturing::Hdf5Util::FastConvertS4ToSparseMT(s);
+        }
+
+        sumVec.resize(mat.n_cols);
+        com::bioturing::SumColumWorker<std::vector<double>> sumColWorker(&mat, sumVec);
+        RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
+        oHdf5Util.WriteVector(sumVec, vecGroupName);
+    }
+
+    Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
+    return result;
+}
+

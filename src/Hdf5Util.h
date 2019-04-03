@@ -653,7 +653,6 @@ public:
             datasetDim.write(arrDims);
 
             //Write i data
-            std::cout << "aaaa2" << std::endl;
             std::vector<unsigned int> arrI(i.begin(), i.end());
             HighFive::DataSet datasetI = file->createDataSet<unsigned int>(groupName + "/indices", HighFive::DataSpace::From(arrI));
             datasetI.write(arrI);
@@ -694,6 +693,41 @@ public:
     {
         std::ifstream infile(file_path);
         return infile.good();
+    }
+
+    bool WriteVector(const std::vector<double> &vvec, const std::string &groupName) {
+        boost::shared_ptr<HighFive::File> file = Open(-1);
+
+        if(file.get() == nullptr) {
+            return false;
+        }
+
+        try {
+            HighFive::DataSet datasetVec = file->createDataSet<double>(groupName, HighFive::DataSpace::From(vvec));
+            datasetVec.write(vvec);
+            file->flush();
+            return true;
+        } catch (HighFive::Exception& err) {
+            std::cerr << "WriteVector in HDF5 format, error=" << err.what() << std::endl;
+        }
+        return false;
+    }
+
+    bool ReadVector(std::vector<double> &vvec, const std::string &groupName) {
+        boost::shared_ptr<HighFive::File> file = Open(-1);
+
+        if(file.get() == nullptr) {
+            return false;
+        }
+
+        try {
+            HighFive::DataSet datasetVec = file->getDataSet(groupName);
+            datasetVec.read(vvec);
+            return true;
+        } catch (HighFive::Exception& err) {
+            std::cerr << "ReadVector in HDF5 format, error=" << err.what() << std::endl;
+        }
+        return false;
     }
 
     arma::sp_mat ReadSpMtAsArma(const std::string &groupName) {

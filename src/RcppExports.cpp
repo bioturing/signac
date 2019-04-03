@@ -285,6 +285,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ReadRowSumSpMt
+Rcpp::NumericVector ReadRowSumSpMt(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadRowSumSpMt(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadRowSumSpMt(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ReadColSumSpMt
+Rcpp::NumericVector ReadColSumSpMt(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadColSumSpMt(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadColSumSpMt(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -710,11 +734,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastConvertS4ToSparseMT
+arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4& mat);
+RcppExport SEXP _Signac_FastConvertS4ToSparseMT(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastConvertS4ToSparseMT(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
+<<<<<<< 65ec9059176b35ff936c1f9f6f371662db7a66e9
     {"_Signac_HarmonyMarkerH5", (DL_FUNC) &_Signac_HarmonyMarkerH5, 2},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
@@ -730,6 +766,15 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_ReadRootDataset", (DL_FUNC) &_Signac_ReadRootDataset, 2},
     {"_Signac_ReadIntegerVector", (DL_FUNC) &_Signac_ReadIntegerVector, 3},
     {"_Signac_ReadDoubleVector", (DL_FUNC) &_Signac_ReadDoubleVector, 3},
+=======
+    {"_Signac_Harmony", (DL_FUNC) &_Signac_Harmony, 3},
+    {"_Signac_WriteSpMtV2", (DL_FUNC) &_Signac_WriteSpMtV2, 3},
+    {"_Signac_WriteSpMtV1", (DL_FUNC) &_Signac_WriteSpMtV1, 3},
+    {"_Signac_ReadSpMtV2", (DL_FUNC) &_Signac_ReadSpMtV2, 2},
+    {"_Signac_ReadSpMtV1", (DL_FUNC) &_Signac_ReadSpMtV1, 2},
+    {"_Signac_ReadRowSumSpMt", (DL_FUNC) &_Signac_ReadRowSumSpMt, 2},
+    {"_Signac_ReadColSumSpMt", (DL_FUNC) &_Signac_ReadColSumSpMt, 2},
+>>>>>>> Fix read HDF5 to S4
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastConvertToTripletMat", (DL_FUNC) &_Signac_FastConvertToTripletMat, 1},
     {"_Signac_FastSparseMatSqrt", (DL_FUNC) &_Signac_FastSparseMatSqrt, 1},
@@ -759,6 +804,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
+    {"_Signac_FastConvertS4ToSparseMT", (DL_FUNC) &_Signac_FastConvertS4ToSparseMT, 1},
     {NULL, NULL, 0}
 };
 
