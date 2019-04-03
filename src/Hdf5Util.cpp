@@ -71,8 +71,21 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     std::vector<double> sumVec;
 
-    std::string vecGroupName = groupName + "_" + "rowsum";
-    oHdf5Util.ReadVector(sumVec, vecGroupName);
+    int status = oHdf5Util.ReadVector(sumVec, groupName, "rowsums");
+    if(status == -1) {
+        std::stringstream ostr;
+        ostr << "Can not open file :" << filePath;
+        ::Rf_error(ostr.str().c_str());
+        throw;
+    } else if(status == -2) {
+        std::stringstream ostr;
+        ostr << "Can not exist dataset :" << groupName;
+        ::Rf_error(ostr.str().c_str());
+        throw;
+    } else if(status == 1) {
+        throw;
+    }
+
     if(sumVec.size() == 0) {
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
@@ -87,7 +100,7 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
                 sumVec[cij.row()] += (*cij);
             }
         }
-        oHdf5Util.WriteVector(sumVec, vecGroupName);
+        oHdf5Util.WriteVector(sumVec, groupName, "rowsums");
     }
 
     Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
@@ -106,8 +119,21 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     std::vector<double> sumVec;
 
-    std::string vecGroupName = groupName + "_" + "colsum";
-    oHdf5Util.ReadVector(sumVec, vecGroupName);
+    int status = oHdf5Util.ReadVector(sumVec, groupName, "colsums");
+    if(status == -1) {
+        std::stringstream ostr;
+        ostr << "Can not open file :" << filePath;
+        ::Rf_error(ostr.str().c_str());
+        throw;
+    } else if(status == -2) {
+        std::stringstream ostr;
+        ostr << "Can not exist dataset :" << groupName;
+        ::Rf_error(ostr.str().c_str());
+        throw;
+    } else if(status == 1) {
+        throw;
+    }
+
     if(sumVec.size() == 0) {
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
@@ -118,7 +144,7 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
         sumVec.resize(mat.n_cols);
         com::bioturing::SumColumWorker<std::vector<double>> sumColWorker(&mat, sumVec);
         RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
-        oHdf5Util.WriteVector(sumVec, vecGroupName);
+        oHdf5Util.WriteVector(sumVec, groupName, "colsums");
     }
 
     Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
