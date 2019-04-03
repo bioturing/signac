@@ -34,7 +34,7 @@ arma::sp_mat FastGetRowOfSparseMat(const arma::sp_mat &mat, const int &i);
 arma::sp_mat FastGetColOfSparseMat(const arma::sp_mat &mat, const int &j);
 arma::sp_mat FastGetRowsOfSparseMat(const arma::sp_mat &mat, const int &start, const int &end);
 arma::sp_mat FastGetColsOfSparseMat(const arma::sp_mat &mat, const int &start, const int &end);
-arma::sp_mat FastGetSubSparseMat(const arma::sp_mat &mat, const arma::urowvec &rvec, const arma::ucolvec &cvec);
+arma::sp_mat FastGetSubSparseMat(const arma::sp_mat &mat, const arma::urowvec &rrvec, const arma::ucolvec &ccvec, const bool &need_perform_row, const bool &need_perform_col);
 arma::sp_mat FastGetSubSparseMatByRows(const arma::sp_mat &mat, const arma::urowvec &rvec);
 arma::sp_mat FastGetSubSparseMatByCols(const arma::sp_mat &mat, const arma::ucolvec &cvec);
 Rcpp::NumericVector FastGetSumSparseMatByRows(const arma::sp_mat &mat, const arma::urowvec &rvec);
@@ -42,9 +42,9 @@ Rcpp::NumericVector FastGetSumSparseMatByCols(const arma::sp_mat &mat, const arm
 Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat);
-Rcpp::NumericVector FastGetMedianSparseMatByAllRows(arma::sp_mat &mat);
 Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat &mat);
 bool SyncSpMt(const std::string &fileName, const arma::sp_mat &mat);
 bool SyncSpMtFromS4(const std::string &fileName, const std::string &groupName, const Rcpp::S4 &mat);
+arma::sp_mat FastConvertS4ToSpMt(Rcpp::S4 &mat);
 
 #endif //SPARSE_MATRIX_UTIL

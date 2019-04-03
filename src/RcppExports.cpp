@@ -102,6 +102,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ReadRowSumSpMt
+Rcpp::NumericVector ReadRowSumSpMt(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadRowSumSpMt(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadRowSumSpMt(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ReadColSumSpMt
+Rcpp::NumericVector ReadColSumSpMt(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadColSumSpMt(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadColSumSpMt(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -421,15 +445,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // FastGetSubSparseMat
-arma::sp_mat FastGetSubSparseMat(const arma::sp_mat& mat, const arma::urowvec& rrvec, const arma::ucolvec& ccvec);
-RcppExport SEXP _Signac_FastGetSubSparseMat(SEXP matSEXP, SEXP rrvecSEXP, SEXP ccvecSEXP) {
+arma::sp_mat FastGetSubSparseMat(const arma::sp_mat& mat, const arma::urowvec& rrvec, const arma::ucolvec& ccvec, const bool& need_perform_row, const bool& need_perform_col);
+RcppExport SEXP _Signac_FastGetSubSparseMat(SEXP matSEXP, SEXP rrvecSEXP, SEXP ccvecSEXP, SEXP need_perform_rowSEXP, SEXP need_perform_colSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
     Rcpp::traits::input_parameter< const arma::urowvec& >::type rrvec(rrvecSEXP);
     Rcpp::traits::input_parameter< const arma::ucolvec& >::type ccvec(ccvecSEXP);
-    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMat(mat, rrvec, ccvec));
+    Rcpp::traits::input_parameter< const bool& >::type need_perform_row(need_perform_rowSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type need_perform_col(need_perform_colSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMat(mat, rrvec, ccvec, need_perform_row, need_perform_col));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -525,6 +551,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastConvertS4ToSparseMT
+arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4& mat);
+RcppExport SEXP _Signac_FastConvertS4ToSparseMT(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastConvertS4ToSparseMT(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
@@ -562,7 +599,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetColOfSparseMat", (DL_FUNC) &_Signac_FastGetColOfSparseMat, 2},
     {"_Signac_FastGetRowsOfSparseMat", (DL_FUNC) &_Signac_FastGetRowsOfSparseMat, 3},
     {"_Signac_FastGetColsOfSparseMat", (DL_FUNC) &_Signac_FastGetColsOfSparseMat, 3},
-    {"_Signac_FastGetSubSparseMat", (DL_FUNC) &_Signac_FastGetSubSparseMat, 3},
+    {"_Signac_FastGetSubSparseMat", (DL_FUNC) &_Signac_FastGetSubSparseMat, 5},
     {"_Signac_FastGetSubSparseMatByRows", (DL_FUNC) &_Signac_FastGetSubSparseMatByRows, 2},
     {"_Signac_FastGetSubSparseMatByCols", (DL_FUNC) &_Signac_FastGetSubSparseMatByCols, 2},
     {"_Signac_FastGetSumSparseMatByRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByRows, 2},
@@ -571,6 +608,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
+    {"_Signac_FastConvertS4ToSparseMT", (DL_FUNC) &_Signac_FastConvertS4ToSparseMT, 1},
     {NULL, NULL, 0}
 };
 

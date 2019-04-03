@@ -4,7 +4,7 @@
 \alias{FastGetSubSparseMat}
 \title{FastGetSubSparseMat}
 \usage{
-FastGetSubSparseMat(mat, rrvec, ccvec)
+FastGetSubSparseMat(mat, rrvec, ccvec, need_perform_row, need_perform_col)
 }
 \arguments{
 \item{mat}{A sparse matrix}
@@ -12,7 +12,11 @@ FastGetSubSparseMat(mat, rrvec, ccvec)
 \item{rrvec}{A row vector}
 
 \item{ccvec}{A col vector}
+
+\item{need_perform_row}{A bool}
+
+\item{need_perform_col}{A bool}
 }
 \description{
-Get subview of a sparse matrix
+Subview sparse matrix
 }
