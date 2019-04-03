@@ -242,7 +242,7 @@ arma::sp_mat FastGetRowOfSparseMat(const arma::sp_mat &mat, const int &i) {
 
     try {
         PerformRIndex(i, (int)mat.n_rows, irow);
-        return mat.row(irow - 1);
+        return mat.row(irow);
     } catch(std::exception &ex) {
         forward_exception_to_r(ex);
     } catch(...) {
@@ -331,21 +331,33 @@ arma::sp_mat FastGetColsOfSparseMat(const arma::sp_mat &mat, const int &start, c
 
 //' FastGetSubSparseMat
 //'
-//' Get subview of a sparse matrix
+//' Subview sparse matrix
 //'
 //' @param mat A sparse matrix
 //' @param rrvec A row vector
 //' @param ccvec A col vector
+//' @param need_perform_row A bool
+//' @param need_perform_col A bool
 //' @export
 // [[Rcpp::export]]
-arma::sp_mat FastGetSubSparseMat(const arma::sp_mat &mat, const arma::urowvec &rrvec, const arma::ucolvec &ccvec) {
-    arma::urowvec rvec(rrvec.size());
-    PerformRVector(rrvec, (int)mat.n_rows, rvec);
-    arma::ucolvec cvec(ccvec.size());
-    std::size_t total_rows = rvec.size();
-    std::size_t total_cols = cvec.size();
+arma::sp_mat FastGetSubSparseMat(const arma::sp_mat &mat, const arma::urowvec &rrvec, const arma::ucolvec &ccvec, const bool &need_perform_row, const bool &need_perform_col) {
     try {
-        PerformRVector(ccvec, (int)mat.n_cols, cvec);
+        arma::urowvec rvec(rrvec.size());
+        if(need_perform_row) {
+            PerformRVector(rrvec, (int)mat.n_rows, rvec);
+        } else {
+            rvec = std::move(rrvec);
+        }
+
+        arma::ucolvec cvec(ccvec.size());
+        if(need_perform_col) {
+            PerformRVector(ccvec, (int)mat.n_cols, cvec);
+        } else {
+            cvec = std::move(ccvec);
+        }
+
+        std::size_t total_rows = rvec.size();
+        std::size_t total_cols = cvec.size();
 
         bool found = false;
         std::size_t n = 0;
@@ -407,7 +419,8 @@ arma::sp_mat FastGetSubSparseMatByRows(const arma::sp_mat &mat, const arma::urow
     for(int i = 0; i< mat.n_cols; i++) {
         cvec(i) = i;
     }
-    return FastGetSubSparseMat(mat, rvec, cvec);
+
+    return FastGetSubSparseMat(mat, rvec, cvec, true, false);
 }
 
 //' FastGetSubSparseMatByCols
@@ -423,7 +436,8 @@ arma::sp_mat FastGetSubSparseMatByCols(const arma::sp_mat &mat, const arma::ucol
     for(int i = 0; i< mat.n_rows; i++) {
         rvec(i) = i;
     }
-    return FastGetSubSparseMat(mat, rvec, cvec);
+
+    return FastGetSubSparseMat(mat, rvec, cvec, false, true);
 }
 
 //' FastGetSumSparseMatByRows
@@ -498,24 +512,6 @@ Rcpp::NumericVector FastGetSumSparseMatByAllRows(arma::sp_mat &mat) {
     return result;
 }
 
-struct SumColumWorker : public RcppParallel::Worker
-{
-    const arma::sp_mat *input;
-    Rcpp::NumericVector &output;
-
-    SumColumWorker(const arma::sp_mat *input, Rcpp::NumericVector &output)
-        : input(input), output(output) {}
-
-    void operator()(std::size_t begin, std::size_t end) {
-        for (int i= begin; i< end; ++i)
-        {
-            for (arma::sp_mat::const_col_iterator cij = input->begin_col(i); cij != input->end_col(i); ++cij) {
-                output[cij.col()] += (*cij);
-            }
-        }
-    }
-};
-
 //' FastGetSumSparseMatByAllCols
 //'
 //' Sum all cols in a sparse matrix
@@ -526,7 +522,7 @@ struct SumColumWorker : public RcppParallel::Worker
 Rcpp::NumericVector FastGetSumSparseMatByAllCols(arma::sp_mat &mat) {
     Rcpp::NumericVector result(mat.n_cols);
 
-    SumColumWorker sumColWorker(&mat, result);
+    com::bioturing::SumColumWorker<Rcpp::NumericVector> sumColWorker(&mat, result);
     RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
 
     return result;
@@ -573,4 +569,15 @@ Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat &mat) {
         result[i] += arma::median(ccvec);
     }
     return result;
+}
+
+//' FastConvertS4ToSparseMT
+//'
+//' Convert from S4 to SpMat
+//'
+//' @param mat A S4 matrix
+//' @export
+// [[Rcpp::export]]
+arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4 &mat) {
+    return com::bioturing::Hdf5Util::FastConvertS4ToSparseMT(mat);
 }

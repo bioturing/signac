@@ -223,7 +223,7 @@ test_that("FastGetSubSparseMat", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    FinalMAT <- Signac::FastGetSubSparseMat(MAT1, c(3,4), c(2,5,7))
+    FinalMAT <- Signac::FastGetSubSparseMat(MAT1, c(3,4), c(2,5,7), TRUE, TRUE)
     expect_equal(length(FinalMAT), 6)
 })
 
@@ -233,7 +233,7 @@ test_that("FastGetSubSparseMatByRows", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    FinalMAT <- Signac::FastGetSubSparseMatByRows(MAT1, c(4992,4997))
+    FinalMAT <- Signac::FastGetSubSparseMatByRows(MAT1, c(4,9))
     expect_equal(length(FinalMAT), 20)
 })
 
@@ -243,7 +243,7 @@ test_that("FastGetSubSparseMatByCols", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    FinalMAT <- Signac::FastGetSubSparseMatByCols(MAT1, c(5,16))
+    FinalMAT <- Signac::FastGetSubSparseMatByCols(MAT1, c(2,4))
     expect_equal(length(FinalMAT), 20)
 })
 
@@ -253,7 +253,7 @@ test_that("FastGetSumSparseMatByRows", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    ListSum <- Signac::FastGetSumSparseMatByRows(MAT1, c(4,16))
+    ListSum <- Signac::FastGetSumSparseMatByRows(MAT1, c(4,9))
     expect_equal(length(ListSum), 2)
 })
 
@@ -264,7 +264,7 @@ test_that("FastGetSumSparseMatByAllRows", {
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
     ListSum <- Signac::FastGetSumSparseMatByAllRows(MAT1)
-    expect_equal(length(FinalMAT), 20)
+    expect_equal(length(ListSum), 1000)
 })
 
 test_that("FastGetSumSparseMatByAllCols", {
@@ -274,5 +274,5 @@ test_that("FastGetSumSparseMatByAllCols", {
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
     ListSum <- Signac::FastGetSumSparseMatByAllCols(MAT1)
-    expect_equal(length(FinalMAT), 20)
+    expect_equal(length(ListSum), 1000)
 })

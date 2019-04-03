@@ -21,6 +21,25 @@ using namespace RcppParallel;
 namespace com {
 namespace bioturing {
 
+template <typename T>
+struct SumColumWorker : public RcppParallel::Worker
+{
+    const arma::sp_mat *input;
+    T &output;
+
+    SumColumWorker(const arma::sp_mat *input, T &output)
+        : input(input), output(output) {}
+
+    void operator()(std::size_t begin, std::size_t end) {
+        for (int i= begin; i< end; ++i)
+        {
+            for (arma::sp_mat::const_col_iterator cij = input->begin_col(i); cij != input->end_col(i); ++cij) {
+                output[cij.col()] += (*cij);
+            }
+        }
+    }
+};
+
 class Hdf5Util {
 public:
     Hdf5Util(const std::string &file_name_) {
@@ -111,7 +130,6 @@ public:
             datasetDim.write(arrDims);
 
             //Write i data
-            std::cout << "aaaa2" << std::endl;
             std::vector<unsigned int> arrI(i.begin(), i.end());
             HighFive::DataSet datasetI = file->createDataSet<unsigned int>(groupName + "/indices", HighFive::DataSpace::From(arrI));
             datasetI.write(arrI);
@@ -130,6 +148,41 @@ public:
             return true;
         } catch (HighFive::Exception& err) {
             std::cerr << "WriteSpMtFromS4 in HDF5 format, error=" << err.what() << std::endl;
+        }
+        return false;
+    }
+
+    bool WriteVector(const std::vector<double> &vvec, const std::string &groupName) {
+        boost::shared_ptr<HighFive::File> file = Open(-1);
+
+        if(file.get() == nullptr) {
+            return false;
+        }
+
+        try {
+            HighFive::DataSet datasetVec = file->createDataSet<double>(groupName, HighFive::DataSpace::From(vvec));
+            datasetVec.write(vvec);
+            file->flush();
+            return true;
+        } catch (HighFive::Exception& err) {
+            std::cerr << "WriteVector in HDF5 format, error=" << err.what() << std::endl;
+        }
+        return false;
+    }
+
+    bool ReadVector(std::vector<double> &vvec, const std::string &groupName) {
+        boost::shared_ptr<HighFive::File> file = Open(-1);
+
+        if(file.get() == nullptr) {
+            return false;
+        }
+
+        try {
+            HighFive::DataSet datasetVec = file->getDataSet(groupName);
+            datasetVec.read(vvec);
+            return true;
+        } catch (HighFive::Exception& err) {
+            std::cerr << "ReadVector in HDF5 format, error=" << err.what() << std::endl;
         }
         return false;
     }
@@ -161,11 +214,11 @@ public:
             HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
             HighFive::DataSet datasetData = file->getDataSet(groupName + "/data");
 
-            std::vector<unsigned int> arrDims;
+            std::vector<int> arrDims;
             datasetShape.read(arrDims);
-            std::vector<unsigned int> arrD1;
+            std::vector<int> arrD1;
             datasetIndices.read(arrD1);
-            std::vector<unsigned int> arrD2;
+            std::vector<int> arrD2;
             datasetIndptr.read(arrD2);
             std::vector<double> arrD3;
             datasetData.read(arrD3);
@@ -182,19 +235,43 @@ public:
         return s;
     }
 
+    static arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4 &mat) {
+        IntegerVector dims = mat.slot("Dim");
+        arma::urowvec i = Rcpp::as<arma::urowvec>(mat.slot("i"));
+        arma::urowvec p = Rcpp::as<arma::urowvec>(mat.slot("p"));
+        arma::vec x = Rcpp::as<arma::vec>(mat.slot("x"));
+
+        int nrow = dims[0], ncol = dims[1];
+        arma::sp_mat res(nrow, ncol);
+
+        arma::access::rw(res.values) = arma::memory::acquire_chunked<double>(x.size() + 1);
+        arma::arrayops::copy(arma::access::rwp(res.values), x.begin(), x.size() + 1);
+
+        arma::access::rw(res.row_indices) = arma::memory::acquire_chunked<arma::uword>(i.size() + 1);
+        arma::arrayops::copy(arma::access::rwp(res.row_indices), i.begin(), i.size() + 1);
+
+        arma::access::rw(res.col_ptrs) = arma::memory::acquire<arma::uword>(p.size() + 2);
+        arma::arrayops::copy(arma::access::rwp(res.col_ptrs), p.begin(), p.size() + 1);
+
+        arma::access::rwp(res.col_ptrs)[p.size()+1] = std::numeric_limits<arma::uword>::max();
+
+        arma::access::rw(res.n_nonzero) = x.size();
+        return res;
+    }
+
 private:
     std::string file_name;
 
     boost::shared_ptr<HighFive::File> Open(const int &mode) {
         boost::shared_ptr<HighFive::File> file;
         try {
-            int new_mode = HighFive::File::ReadWrite | HighFive::File::Create;
+            int new_mode = HighFive::File::OpenOrCreate;
             switch(mode) {
                 case -1:
-                    new_mode = HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Overwrite;
+                    new_mode = HighFive::File::OpenOrCreate;
                     break;
                 default:
-                    new_mode = HighFive::File::ReadWrite | HighFive::File::Create;
+                    new_mode = HighFive::File::ReadOnly;
                     break;
             }
             file.reset(new HighFive::File(file_name, new_mode));

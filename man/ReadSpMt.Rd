@@ -4,12 +4,14 @@
 \alias{ReadSpMt}
 \title{Read sparse matrix from HDF5 file}
 \usage{
-ReadSpMt(h5.path, group.name = "bioturing")
+ReadSpMt(h5.path, group.name = "bioturing", auto.update = FALSE)
 }
 \arguments{
 \item{h5.path}{Path to HDF5 file}
 
 \item{group.name}{Group name in dataset. Default is "bioturing"}
+
+\item{auto.update}{Auto sync if missing V2 data. Default is FALSE}
 }
 \description{
 Read sparse matrix from HDF5 file
