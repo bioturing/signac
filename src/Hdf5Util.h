@@ -152,39 +152,51 @@ public:
         return false;
     }
 
-    bool WriteVector(const std::vector<double> &vvec, const std::string &groupName) {
+    int WriteVector(const std::vector<double> &vvec, const std::string &groupName, const std::string &datasetName) {
         boost::shared_ptr<HighFive::File> file = Open(-1);
 
         if(file.get() == nullptr) {
-            return false;
+            return -1;
         }
 
         try {
-            HighFive::DataSet datasetVec = file->createDataSet<double>(groupName, HighFive::DataSpace::From(vvec));
+            if(file->exist(groupName) == false) {
+                return -2;
+            }
+
+            HighFive::DataSet datasetVec = file->createDataSet<double>(groupName + "/" + datasetName, HighFive::DataSpace::From(vvec));
             datasetVec.write(vvec);
             file->flush();
-            return true;
+
+            return 0;
         } catch (HighFive::Exception& err) {
             std::cerr << "WriteVector in HDF5 format, error=" << err.what() << std::endl;
         }
-        return false;
+        return 1;
     }
 
-    bool ReadVector(std::vector<double> &vvec, const std::string &groupName) {
+    int ReadVector(std::vector<double> &vvec, const std::string &groupName, const std::string &datasetName) {
         boost::shared_ptr<HighFive::File> file = Open(-1);
 
         if(file.get() == nullptr) {
-            return false;
+            return -1;
         }
 
         try {
-            HighFive::DataSet datasetVec = file->getDataSet(groupName);
-            datasetVec.read(vvec);
-            return true;
+            if(file->exist(groupName) == false) {
+                return -2;
+            }
+
+            if(file->exist(groupName + "/" + datasetName) == true) {
+                HighFive::DataSet datasetVec = file->getDataSet(groupName + "/" + datasetName);
+                datasetVec.read(vvec);
+            }
+
+            return 0;
         } catch (HighFive::Exception& err) {
             std::cerr << "ReadVector in HDF5 format, error=" << err.what() << std::endl;
         }
-        return false;
+        return 1;
     }
 
     arma::sp_mat ReadSpMtAsArma(const std::string &groupName) {
