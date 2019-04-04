@@ -3,6 +3,8 @@
 
 #define HARMONY_RATIO 1e-5
 #define HARMONY_EPS 1e-50
+#define MINIMAL_SAMPLE 5
+#define GROUPING_RATE 0.6
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -16,7 +18,6 @@
 #include <cmath>
 #include <algorithm>
 #include <functional>
-#include <assert.h>
 
 #include "CommonUtil.h"
 #include "incbeta.h"
@@ -24,6 +25,7 @@
 using namespace Rcpp;
 using namespace arma;
 using namespace RcppParallel;
+using namespace std::placeholders;
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
@@ -42,44 +44,75 @@ bool Compare(int i, int j, const std::vector<double> &res)
     return res[i] < res[j];
 }
 
-void SetCluster(const Rcpp::NumericVector &col_idx,
-                  std::vector<int> &result)
+void SetCluster(std::vector<int> &cluster,
+                const Rcpp::NumericVector &col_idx,
+                int id)
 {
-    //result.fill(2); //default is 2
     for (int i = 0; i < col_idx.length(); ++i) {
-        assert( 0 < col_idx[i] && col_idx[i] <= (result.size()) && "Index must be smaller than number of columns");
-        result[col_idx[i] - 1] = 1; //Convert
+        if(col_idx[i] <= 0 || col_idx[i] > cluster.size())
+            throw std::runtime_error("Index must be smaller than "
+                                    "number of columns");
+
+        if (cluster[col_idx[i] - 1])
+            throw std::runtime_error("Each cell should only "
+                                    "be assigned to one cluster");
+
+        cluster[col_idx[i] - 1] = id;
+    }
+}
+
+void FillRest(std::vector<int> &cluster, int id) {
+
+    for (int i = 0; i < cluster.size(); ++i) {
+        if (cluster[i] == 0)
+            cluster[i] = id;
     }
 }
 
 double LnPvalue(double score, int n1, int n2, int bin_cnt)
 {
-    assert(bin_cnt > 0);
+    if (bin_cnt <= 0)
+        throw std::domain_error("Bin count should be positive");
 
     if (bin_cnt == 1)
         return std::numeric_limits<double>::infinity();
 
     double mean = 0.25 * (bin_cnt - 1) * (1.0 / n1 + 1.0 / n2);
-    assert(mean >= 0);
+
+    if (mean > 1 || mean < 0) {
+        throw std::runtime_error("Mean estimation lies outside [0,1] range. "
+                                 "Cluster sizes may be too small.");
+    }
 
     double var = 0.125 * (bin_cnt - 1) * pow(1.0 / n1 + 1.0 / n2,2);
     double scale =  (mean * (1 - mean) / var - 1);
     double shape1 = (1 - mean) * scale;
     double shape2 = mean * scale;
 
-    assert(shape1 > 0 && shape2 > 0);
-
     return logincbeta(shape1, shape2, score);
+}
+
+std::string classify(double down, double mid, double up) {
+    if (down > 0 && up < 0)
+        return "Down";
+    else if (up > 0 && down < 0)
+        return "Up";
+    else if (up > 0 && down > 0)
+        return "Mid-down";
+    else if (up < 0 && down < 0)
+        return "Mid-up";
+
+    return "Other";
 }
 
 void HarmonyTest(
         const arma::sp_mat &mtx,
         const std::vector<int> &cluster,
-        std::vector<std::tuple<double, double> > &res)
+        std::vector<std::tuple<double, double, std::string> > &res)
 {
     std::vector<std::vector<std::pair<int,int>>> count(mtx.n_rows);
 
-    res.resize(mtx.n_rows, std::make_tuple(0.0, 1.0));
+    res.resize(mtx.n_rows);
     arma::sp_mat::const_col_iterator c_it;
 
     for(int i = 0; i < mtx.n_cols; ++i) {
@@ -125,11 +158,14 @@ void HarmonyTest(
         count[i][0] = std::make_pair(zero_in, zero_out);
     }
 
-    int thres = std::max(std::min(total, 5),
-                         (int) std::pow(total,0.6));
+    int thres = std::max(std::min(total, MINIMAL_SAMPLE),
+                         (int) std::pow(total,GROUPING_RATE));
 
     Rcout << thres << std::endl;
-    assert(thres * 2 <= total);
+
+    if(thres * 2 > total)
+        throw std::runtime_error("Not enough bins to compare. "
+                                "Please choose larger clusters to compare");
 
     for (int i = 0; i < mtx.n_rows; ++i) {
 
@@ -137,38 +173,79 @@ void HarmonyTest(
         int cnt_out = 0;
         int cnt_both = 0;
 
-        int bin_cnt = 1;
+        int l = 0;
+        int bin_cnt = 0;
+
+        double up_cnt = 0;
+        double down_cnt = 0;
+        double mid_cnt = 0;
+
+        double sim = 0;
+
+        double mean_cnt = (double) total_in * total_in * total_out / 3;
 
         for(int j = 0; j < count[i].size(); ++j) {
-            cnt_in += count[i][j].first;
-            cnt_out += count[i][j].second;
+            int a = count[i][j].first;
+            int b = count[i][j].second;
 
-            cnt_both += count[i][j].first + count[i][j].second;
+            cnt_in += a;
+            cnt_out += b;
+            cnt_both += a + b;
+
+            int r = total_in - l - a;
+            double up  = 0.5 * (l + 1) * l + 0.5 * l * a + 1.0/6 * a * (a + 1);
+            double down = 0.5 * (r + 1) * r + 0.5 * r * a + 1.0/6 * a * (a + 1);
+            double mid = (total_in) * (total_in + 1) / 2 - up - down;
+            l += a;
+
+            up_cnt += up * b;
+            down_cnt += down * b;
+            mid_cnt += mid * b;
 
             if (cnt_both >= thres) {
-                std::get<0>(res[i]) += HarmonicMean((double)cnt_in/total_in,
-                                                    (double)cnt_out/total_out);
+                sim += HarmonicMean((double)cnt_in/total_in,
+                                    (double)cnt_out/total_out);
                 cnt_in = cnt_out = cnt_both = 0;
                 ++bin_cnt;
             }
         }
 
-        std::get<0>(res[i]) += HarmonicMean((double)cnt_in/total_in,
-                                            (double)cnt_out/total_out);
+        if (cnt_both >= MINIMAL_SAMPLE) {
+            sim += HarmonicMean((double)cnt_in/total_in,
+                                (double)cnt_out/total_out);
+            ++bin_cnt;
+        } else {
+            sim += ((double) cnt_in / total_in
+                  + (double) cnt_out / total_out) / 2.0;
+        }
 
-        std::get<1>(res[i]) = LnPvalue(std::get<0>(res[i]),
-                                        total_in, total_out, bin_cnt);
+        res[i] = std::make_tuple(
+                    sim,
+                    LnPvalue(sim, total_in, total_out, bin_cnt),
+                    classify(down_cnt - mean_cnt,
+                            mid_cnt - mean_cnt,
+                            up_cnt - mean_cnt
+                    )
+                );
     }
 }
 
 // [[Rcpp::export]]
 DataFrame HarmonyMarker(const arma::sp_mat &mtx,
-            const Rcpp::NumericVector &col_idx)
+            const Rcpp::NumericVector &in_idx,
+            const Rcpp::Nullable<Rcpp::NumericVector> &out_idx = R_NilValue)
 {
-    std::vector<int> cluster(mtx.n_cols, 2);
-    SetCluster(col_idx, cluster);
+    std::vector<int> cluster(mtx.n_cols);
 
-    std::vector<std::tuple<double, double>> res;
+    SetCluster(cluster, in_idx, 1);
+
+    if (out_idx.isNull())
+        FillRest(cluster, 2);
+    else
+        SetCluster(cluster, out_idx.get(), 2);
+
+
+    std::vector<std::tuple<double, double, std::string>> res;
     HarmonyTest(mtx, cluster, res);
     Rcout << "Done calculate" << std::endl;
 
@@ -180,11 +257,14 @@ DataFrame HarmonyMarker(const arma::sp_mat &mtx,
         pvalue[i] = std::get<1>(res[i]);
     }
 
-    std::sort(order.begin(), order.end(), std::bind(Compare, std::placeholders::_1, std::placeholders::_2, pvalue));
+    std::sort(order.begin(), order.end(),
+              std::bind(Compare, _1, _2, pvalue));
 
     std::vector<double> p_value(mtx.n_rows), similatiry(mtx.n_rows);
     std::vector<double> p_adjusted(mtx.n_rows);
     std::vector<int> g_index(mtx.n_rows);
+    std::vector<std::string> diff_class(mtx.n_rows);
+
 
     //Adjust p value
     double prev = 0;
@@ -206,11 +286,14 @@ DataFrame HarmonyMarker(const arma::sp_mat &mtx,
         g_index[i] = k + 1;
         similatiry[i] = std::get<0>(res[k]);
         p_value[i] = std::get<1>(res[k]);
+        diff_class[i] = std::get<2>(res[k]);
     }
 
     Rcout << "Done all" << std::endl;
     return DataFrame::create( Named("Gene Index") = wrap(g_index),
                               Named("Similarity") = wrap(similatiry),
                               Named("Log P value") = wrap(p_value),
-                              Named("P-adjusted value") = wrap(p_adjusted));
+                              Named("P-adjusted value") = wrap(p_adjusted),
+                              Named("Type") = wrap(diff_class)
+                            );
 }

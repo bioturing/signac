@@ -21,8 +21,8 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
-HarmonyMarker <- function(mtx, col_idx) {
-    .Call(`_Signac_HarmonyMarker`, mtx, col_idx)
+HarmonyMarker <- function(mtx, in_idx, out_idx = NULL) {
+    .Call(`_Signac_HarmonyMarker`, mtx, in_idx, out_idx)
 }
 
 FastMatMult <- function(mat1, mat2) {
