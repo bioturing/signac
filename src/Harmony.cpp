@@ -111,6 +111,7 @@ void HarmonyTest(
         const std::vector<int> &cluster,
         std::vector<std::tuple<double, double, std::string> > &res)
 {
+    std::vector<std::vector<std::pair<int,int>>> count(mtx.n_rows);
 
     res.resize(mtx.n_rows);
     arma::sp_mat::const_col_iterator c_it;
