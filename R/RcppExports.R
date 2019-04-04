@@ -189,6 +189,49 @@ ReadDoubleVector <- function(filePath, groupName, datasetName) {
     .Call(`_Signac_ReadDoubleVector`, filePath, groupName, datasetName)
 }
 
+#' GetListAttributes
+#'
+#' Get list attribute of a dataset
+#'
+#' @param filePath A HDF5 path
+#' @param groupName A string (HDF5 dataset)
+#' @param datasetName A dataset name
+#' @export
+GetListAttributes <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_GetListAttributes`, filePath, groupName, datasetName)
+}
+
+#' GetListObjectNames
+#'
+#' Get list object of a group
+#'
+#' @param filePath A HDF5 path
+#' @param groupName A string (HDF5 dataset)
+#' @export
+GetListObjectNames <- function(filePath, groupName) {
+    .Call(`_Signac_GetListObjectNames`, filePath, groupName)
+}
+
+#' GetListRootObjectNames
+#'
+#' Get list groups
+#'
+#' @param filePath An HDF5 path
+#' @export
+GetListRootObjectNames <- function(filePath) {
+    .Call(`_Signac_GetListRootObjectNames`, filePath)
+}
+
+#' Read10XH5
+#'
+#' Get list triplet of SEXP
+#'
+#' @param s A SEXP type
+#' @export
+Read10XH5Content <- function(filePath, use_names, unique_features) {
+    .Call(`_Signac_Read10XH5Content`, filePath, use_names, unique_features)
+}
+
 #' FastMatMult
 #'
 #' This function is used to add two matrix

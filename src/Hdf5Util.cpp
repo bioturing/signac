@@ -341,3 +341,61 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
     return result;
 }
 
+//' GetListAttributes
+//'
+//' Get list attribute of a dataset
+//'
+//' @param filePath A HDF5 path
+//' @param groupName A string (HDF5 dataset)
+//' @param datasetName A dataset name
+//' @export
+// [[Rcpp::export]]
+Rcpp::StringVector GetListAttributes(const std::string &filePath, const std::string &groupName, const std::string &datasetName) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    std::vector<std::string> dataVec;
+    oHdf5Util.GetListAttributes(groupName, datasetName, dataVec);
+    Rcpp::StringVector result(dataVec.begin(), dataVec.end());
+    return result;
+}
+
+//' GetListObjectNames
+//'
+//' Get list object of a group
+//'
+//' @param filePath A HDF5 path
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+Rcpp::StringVector GetListObjectNames(const std::string &filePath, const std::string &groupName) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    std::vector<std::string> dataVec;
+    oHdf5Util.GetListObjectNames(groupName, dataVec);
+    Rcpp::StringVector result(dataVec.begin(), dataVec.end());
+    return result;
+}
+
+//' GetListRootObjectNames
+//'
+//' Get list groups
+//'
+//' @param filePath An HDF5 path
+//' @export
+// [[Rcpp::export]]
+Rcpp::StringVector GetListRootObjectNames(const std::string &filePath) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    std::vector<std::string> dataVec;
+    oHdf5Util.GetListRootObjectNames(dataVec);
+    Rcpp::StringVector result(dataVec.begin(), dataVec.end());
+    return result;
+}
+
+//' Read10XH5
+//'
+//' Get list triplet of SEXP
+//'
+//' @param s A SEXP type
+//' @export
+// [[Rcpp::export]]
+Rcpp::List Read10XH5Content(const std::string &filePath, const bool &use_names, const bool &unique_features) {
+    return Rcpp::List::create();
+}

@@ -791,6 +791,7 @@ public:
             s.slot("Dim") = std::move(arrDims);
             s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
             return s;
+
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadSpMtAsS4 in HDF5 format, error=" << err.what();
@@ -799,7 +800,92 @@ public:
             throw;
         }
 
-        return s;
+        try {
+            std::vector<std::string> genomes;
+            GetListRootObjectNames(genomes);
+
+            for(std::string &groupName : genomes) {
+                if(file->exist(groupName) == false) {
+                    std::stringstream ostr;
+                    ostr << "Can not exist group :" << groupName;
+                    ::Rf_error(ostr.str().c_str());
+                    throw;
+                }
+
+                std::string feature_slot;
+                if(file->exist(groupName + "/features") == true) {
+                    ::Rf_warning("FORMAT_VERSION >= 3");
+                    feature_slot = "features/id";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "features/name";
+                    }
+                } else {
+                    ::Rf_warning("FORMAT_VERSION < 3");
+                    feature_slot = "genes";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "gene_names";
+                    }
+                }
+
+                std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot, "barcodes"};
+                for(const std::string &datasetName : arrDatasetName) {
+                    if(file->exist(groupName + "/" + datasetName) == false) {
+                        std::stringstream ostr;
+                        ostr << "Can not exist dataset : " << datasetName << " in " << groupName;
+                        ::Rf_error(ostr.str().c_str());
+                        throw;
+                    }
+                }
+
+                HighFive::DataSet datasetShape = file->getDataSet(groupName + "/shape");
+                HighFive::DataSet datasetIndices = file->getDataSet(groupName + "/indices");
+                HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
+                HighFive::DataSet datasetData = file->getDataSet(groupName + "/data");
+                HighFive::DataSet datasetFeature = file->getDataSet(groupName + "/" + feature_slot);
+                HighFive::DataSet datasetBarcode = file->getDataSet(groupName + "/barcodes");
+
+                std::vector<int> arrDims;
+                datasetShape.read(arrDims);
+                std::vector<int> arrD1;
+                datasetIndices.read(arrD1);
+                std::vector<int> arrD2;
+                datasetIndptr.read(arrD2);
+                std::vector<double> arrD3;
+                datasetData.read(arrD3);
+                std::vector<std::string> arrFeature;
+                datasetFeature.read(arrFeature);
+                std::vector<std::string> arrBarcode;
+                datasetBarcode.read(arrBarcode);
+
+                std::string klass = "dgCMatrix";
+                if(give_csparse == false) {
+                    klass = "dgTMatrix";
+                }
+                Rcpp::S4 s(klass);
+                s.slot("i") = std::move(arrD1);
+                s.slot("p") = std::move(arrD2);
+                s.slot("x") = std::move(arrD3);
+                s.slot("Dim") = std::move(arrDims);
+
+                if (unique_features == true) {
+                    std::vector<std::string>::iterator it;
+                    it = std::unique (arrFeature.begin(), arrFeature.end());
+                    arrFeature.resize(std::distance(arrFeature.begin(),it));
+                }
+                s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
+
+                if(file->exist(groupName + "/features/feature_type") == false) {
+                    HighFive::DataSet datasetFeatureType = file->getDataSet(groupName + "/features/feature_type");
+                    std::vector<std::string> arrFeatureType;
+                    datasetFeatureType.read(arrBarcode);
+                }
+            }
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "Read10XH5 HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
     }
 
     Rcpp::List Read10XH5(HighFive::File *file, const std::string &filePath, const bool &use_names, const bool &unique_features) {
