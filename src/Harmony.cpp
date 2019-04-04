@@ -193,13 +193,13 @@ void HarmonyTest(
             cnt_both += a + b;
 
             int r = total_in - l - a;
-            double up  = 0.5 * (l + 1) * l + 0.5 * l * a + 1.0/6 * a * (a + 1);
-            double down = 0.5 * (r + 1) * r + 0.5 * r * a + 1.0/6 * a * (a + 1);
+            double down  = 0.5 * (l + 1) * l + 0.5 * l * a + 1.0/6 * a * (a + 1);
+            double up = 0.5 * (r + 1) * r + 0.5 * r * a + 1.0/6 * a * (a + 1);
             double mid = (total_in) * (total_in + 1) / 2 - up - down;
             l += a;
 
-            up_cnt += up * b;
             down_cnt += down * b;
+            up_cnt += up * b;
             mid_cnt += mid * b;
 
             if (cnt_both >= thres) {
