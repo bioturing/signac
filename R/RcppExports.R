@@ -424,13 +424,3 @@ FastGetMedianSparseMatByAllCols <- function(mat) {
     .Call(`_Signac_FastGetMedianSparseMatByAllCols`, mat)
 }
 
-#' FastConvertS4ToSparseMT
-#'
-#' Convert from S4 to SpMat
-#'
-#' @param mat A S4 matrix
-#' @export
-FastConvertS4ToSparseMT <- function(mat) {
-    .Call(`_Signac_FastConvertS4ToSparseMT`, mat)
-}
-

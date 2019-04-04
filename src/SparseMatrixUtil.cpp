@@ -571,13 +571,3 @@ Rcpp::NumericVector FastGetMedianSparseMatByAllCols(arma::sp_mat &mat) {
     return result;
 }
 
-//' FastConvertS4ToSparseMT
-//'
-//' Convert from S4 to SpMat
-//'
-//' @param mat A S4 matrix
-//' @export
-// [[Rcpp::export]]
-arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4 &mat) {
-    return com::bioturing::Hdf5Util::FastConvertS4ToSparseMT(mat);
-}

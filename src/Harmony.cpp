@@ -236,7 +236,7 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx,
             const Rcpp::NumericVector &in_idx,
             const Rcpp::Nullable<Rcpp::NumericVector> &out_idx = R_NilValue)
 {
-    const arma::sp_mat mtx = FastConvertS4ToSpMt(S4_mtx);
+    const arma::sp_mat mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
     std::vector<std::vector<std::pair<int,int>>> count(mtx.n_rows);
 
     std::vector<int> cluster(mtx.n_cols);
