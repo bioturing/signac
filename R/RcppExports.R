@@ -21,8 +21,8 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
-HarmonyMarker <- function(mtx, in_idx, out_idx = NULL) {
-    .Call(`_Signac_HarmonyMarker`, mtx, in_idx, out_idx)
+HarmonyMarker <- function(S4_mtx, in_idx, out_idx = NULL) {
+    .Call(`_Signac_HarmonyMarker`, S4_mtx, in_idx, out_idx)
 }
 
 FastMatMult <- function(mat1, mat2) {
@@ -41,135 +41,355 @@ FastGetSubMat <- function(mat, rvec, cvec) {
     .Call(`_Signac_FastGetSubMat`, mat, rvec, cvec)
 }
 
+#' FastCreateSparseMat
+#'
+#' Generate a sparse matrix with the elements along the main diagonal set to one and off-diagonal elements set to zero
+#'
+#' @param nrow An integer number
+#' @param ncol An integer number
+#' @export
 FastCreateSparseMat <- function(nrow, ncol) {
     .Call(`_Signac_FastCreateSparseMat`, nrow, ncol)
 }
 
+#' FastStatsOfSparseMat
+#'
+#' Get statistic of sparse matrix
+#'
+#' @param mat An sparse matrix
+#' @export
 FastStatsOfSparseMat <- function(mat) {
     .Call(`_Signac_FastStatsOfSparseMat`, mat)
 }
 
+#' FastCreateFromTriplet
+#'
+#' Create sparse matrix from triplet
+#'
+#' @param vec1 An integer vector
+#' @param vec2 An integer vector
+#' @param vec_val An double vector
+#' @export
 FastCreateFromTriplet <- function(vec1, vec2, vec_val) {
     .Call(`_Signac_FastCreateFromTriplet`, vec1, vec2, vec_val)
 }
 
+#' FastConvertToSparseMat
+#'
+#' Convert SEXP to sparse matrix
+#'
+#' @param s A SEXP type
+#' @export
 FastConvertToSparseMat <- function(s) {
     .Call(`_Signac_FastConvertToSparseMat`, s)
 }
 
+#' FastConvertToTripletMat
+#'
+#' Get list triplet of SEXP
+#'
+#' @param s A SEXP type
+#' @export
 FastConvertToTripletMat <- function(s) {
     .Call(`_Signac_FastConvertToTripletMat`, s)
 }
 
+#' FastSparseMatSqrt
+#'
+#' SQRT element i,j in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatSqrt <- function(mat) {
     .Call(`_Signac_FastSparseMatSqrt`, mat)
 }
 
+#' FastSparseMatMult
+#'
+#' Multiply two sparse matrix
+#'
+#' @param mat1 A sparse matrix
+#' @param mat2 A sparse matrix
+#' @export
 FastSparseMatMult <- function(mat1, mat2) {
     .Call(`_Signac_FastSparseMatMult`, mat1, mat2)
 }
 
+#' FastSparseMatAddition
+#'
+#' Add two sparse matrix
+#'
+#' @param mat1 A sparse matrix
+#' @param mat2 A sparse matrix
+#' @export
 FastSparseMatAddition <- function(mat1, mat2) {
     .Call(`_Signac_FastSparseMatAddition`, mat1, mat2)
 }
 
+#' FastSparseMatMultWithNum
+#'
+#' Multiply sparse matrix with number
+#'
+#' @param mat A sparse matrix
+#' @param k A integer number
+#' @export
 FastSparseMatMultWithNum <- function(mat, k) {
     .Call(`_Signac_FastSparseMatMultWithNum`, mat, k)
 }
 
+#' FastSparseMatSymmatl
+#'
+#' Symmatl sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatSymmatl <- function(mat) {
     .Call(`_Signac_FastSparseMatSymmatl`, mat)
 }
 
+#' FastSparseMatTranspose
+#'
+#' Transpose sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatTranspose <- function(mat) {
     .Call(`_Signac_FastSparseMatTranspose`, mat)
 }
 
+#' FastSparseMatTrimatu
+#'
+#' Trimatu sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatTrimatu <- function(mat) {
     .Call(`_Signac_FastSparseMatTrimatu`, mat)
 }
 
+#' FastSparseMatTrace
+#'
+#' Trace sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatTrace <- function(mat) {
     .Call(`_Signac_FastSparseMatTrace`, mat)
 }
 
+#' FastConvertToDiagonalSparseMat
+#'
+#' Get diag sparse matrix from a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastConvertToDiagonalSparseMat <- function(mat) {
     .Call(`_Signac_FastConvertToDiagonalSparseMat`, mat)
 }
 
+#' FastSparseMatSquare
+#'
+#' Square a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatSquare <- function(mat) {
     .Call(`_Signac_FastSparseMatSquare`, mat)
 }
 
+#' FastSparseMatRepmat
+#'
+#' Repmat a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatRepmat <- function(mat, i, j) {
     .Call(`_Signac_FastSparseMatRepmat`, mat, i, j)
 }
 
+#' FastSparseMatSign
+#'
+#' Sign a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastSparseMatSign <- function(mat) {
     .Call(`_Signac_FastSparseMatSign`, mat)
 }
 
+#' FastSparseMatMultSD
+#'
+#' Multiply a sparse matrix with a dense matrix
+#'
+#' @param mat1 A sparse matrix
+#' @param mat2 A dense matrix
+#' @export
 FastSparseMatMultSD <- function(mat1, mat2) {
     .Call(`_Signac_FastSparseMatMultSD`, mat1, mat2)
 }
 
-FastSparseMatMultDS <- function(mat1, mat2) {
-    .Call(`_Signac_FastSparseMatMultDS`, mat1, mat2)
-}
-
+#' FastSparseMatMultDD
+#'
+#' Multiply two dense matrix
+#'
+#' @param mat1 A dense matrix
+#' @param mat2 A dense matrix
+#' @export
 FastSparseMatMultDD <- function(mat1, mat2) {
     .Call(`_Signac_FastSparseMatMultDD`, mat1, mat2)
 }
 
+#' FastGetRowOfSparseMat
+#'
+#' Get row of sparse matrix
+#'
+#' @param mat A dense matrix
+#' @param i A integer number
+#' @export
 FastGetRowOfSparseMat <- function(mat, i) {
     .Call(`_Signac_FastGetRowOfSparseMat`, mat, i)
 }
 
+#' FastGetColOfSparseMat
+#'
+#' Get col of sparse matrix
+#'
+#' @param mat A dense matrix
+#' @param i A integer number
+#' @export
 FastGetColOfSparseMat <- function(mat, j) {
     .Call(`_Signac_FastGetColOfSparseMat`, mat, j)
 }
 
+#' FastGetRowsOfSparseMat
+#'
+#' Get rows of sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @param start A integer number
+#' @param end A integer number
+#' @export
 FastGetRowsOfSparseMat <- function(mat, start, end) {
     .Call(`_Signac_FastGetRowsOfSparseMat`, mat, start, end)
 }
 
+#' FastGetColsOfSparseMat
+#'
+#' Get cols of sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @param start A integer number
+#' @param end A integer number
+#' @export
 FastGetColsOfSparseMat <- function(mat, start, end) {
     .Call(`_Signac_FastGetColsOfSparseMat`, mat, start, end)
 }
 
-FastGetSubSparseMat <- function(mat, rrvec, ccvec) {
-    .Call(`_Signac_FastGetSubSparseMat`, mat, rrvec, ccvec)
+#' FastGetSubSparseMat
+#'
+#' Subview sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @param rrvec A row vector
+#' @param ccvec A col vector
+#' @param need_perform_row A bool
+#' @param need_perform_col A bool
+#' @export
+FastGetSubSparseMat <- function(mat, rrvec, ccvec, need_perform_row, need_perform_col) {
+    .Call(`_Signac_FastGetSubSparseMat`, mat, rrvec, ccvec, need_perform_row, need_perform_col)
 }
 
+#' FastGetSubSparseMatByRows
+#'
+#' Get subview of a sparse matrix by rows
+#'
+#' @param mat A sparse matrix
+#' @param rvec A row vector
+#' @export
 FastGetSubSparseMatByRows <- function(mat, rvec) {
     .Call(`_Signac_FastGetSubSparseMatByRows`, mat, rvec)
 }
 
+#' FastGetSubSparseMatByCols
+#'
+#' Get subview of a sparse matrix by cols
+#'
+#' @param mat A sparse matrix
+#' @param cvec A col vector
+#' @export
 FastGetSubSparseMatByCols <- function(mat, cvec) {
     .Call(`_Signac_FastGetSubSparseMatByCols`, mat, cvec)
 }
 
+#' FastGetSumSparseMatByRows
+#'
+#' Sum of rows in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @param rvec A col vector
+#' @export
 FastGetSumSparseMatByRows <- function(mat, rvec) {
     .Call(`_Signac_FastGetSumSparseMatByRows`, mat, rvec)
 }
 
+#' FastGetSumSparseMatByCols
+#'
+#' Sum of cols in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @param cvec A col vector
+#' @export
 FastGetSumSparseMatByCols <- function(mat, cvec) {
     .Call(`_Signac_FastGetSumSparseMatByCols`, mat, cvec)
 }
 
+#' FastGetSumSparseMatByAllRows
+#'
+#' Sum all rows in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastGetSumSparseMatByAllRows <- function(mat) {
     .Call(`_Signac_FastGetSumSparseMatByAllRows`, mat)
 }
 
+#' FastGetSumSparseMatByAllCols
+#'
+#' Sum all cols in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastGetSumSparseMatByAllCols <- function(mat) {
     .Call(`_Signac_FastGetSumSparseMatByAllCols`, mat)
 }
 
+#' FastGetMedianSparseMatByAllRows
+#'
+#' Median all rows in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastGetMedianSparseMatByAllRows <- function(mat) {
     .Call(`_Signac_FastGetMedianSparseMatByAllRows`, mat)
 }
 
+#' FastGetMedianSparseMatByAllCols
+#'
+#' Median all cols in a sparse matrix
+#'
+#' @param mat A sparse matrix
+#' @export
 FastGetMedianSparseMatByAllCols <- function(mat) {
     .Call(`_Signac_FastGetMedianSparseMatByAllCols`, mat)
+}
+
+#' FastConvertS4ToSparseMT
+#'
+#' Convert from S4 to SpMat
+#'
+#' @param mat A S4 matrix
+#' @export
+FastConvertS4ToSparseMT <- function(mat) {
+    .Call(`_Signac_FastConvertS4ToSparseMT`, mat)
 }
 

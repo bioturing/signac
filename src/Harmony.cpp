@@ -20,6 +20,7 @@
 #include <functional>
 
 #include "CommonUtil.h"
+#include "SparseMatrixUtil.h"
 #include "incbeta.h"
 
 using namespace Rcpp;
@@ -110,7 +111,6 @@ void HarmonyTest(
         const std::vector<int> &cluster,
         std::vector<std::tuple<double, double, std::string> > &res)
 {
-    std::vector<std::vector<std::pair<int,int>>> count(mtx.n_rows);
 
     res.resize(mtx.n_rows);
     arma::sp_mat::const_col_iterator c_it;
@@ -231,10 +231,13 @@ void HarmonyTest(
 }
 
 // [[Rcpp::export]]
-DataFrame HarmonyMarker(const arma::sp_mat &mtx,
+DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx,
             const Rcpp::NumericVector &in_idx,
             const Rcpp::Nullable<Rcpp::NumericVector> &out_idx = R_NilValue)
 {
+    const arma::sp_mat mtx = FastConvertS4ToSpMt(S4_mtx);
+    std::vector<std::vector<std::pair<int,int>>> count(mtx.n_rows);
+
     std::vector<int> cluster(mtx.n_cols);
 
     SetCluster(cluster, in_idx, 1);
@@ -262,7 +265,7 @@ DataFrame HarmonyMarker(const arma::sp_mat &mtx,
 
     std::vector<double> p_value(mtx.n_rows), similatiry(mtx.n_rows);
     std::vector<double> p_adjusted(mtx.n_rows);
-    std::vector<int> g_index(mtx.n_rows);
+    std::vector<std::string> g_names(mtx.n_rows);
     std::vector<std::string> diff_class(mtx.n_rows);
 
 
@@ -281,16 +284,18 @@ DataFrame HarmonyMarker(const arma::sp_mat &mtx,
         p_adjusted[i] = prev;
     }
 
+    Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("dimnames"));
+    Rcpp::CharacterVector rownames = dim_names[0];
     for(int i = 0; i < mtx.n_rows; ++i) {
         int k = order[i];
-        g_index[i] = k + 1;
+        g_names[i] = rownames[k];
         similatiry[i] = std::get<0>(res[k]);
         p_value[i] = std::get<1>(res[k]);
         diff_class[i] = std::get<2>(res[k]);
     }
 
     Rcout << "Done all" << std::endl;
-    return DataFrame::create( Named("Gene Index") = wrap(g_index),
+    return DataFrame::create( Named("Gene Name") = wrap(g_names),
                               Named("Similarity") = wrap(similatiry),
                               Named("Log P value") = wrap(p_value),
                               Named("P-adjusted value") = wrap(p_adjusted),

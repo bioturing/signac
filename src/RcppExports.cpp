@@ -64,15 +64,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // HarmonyMarker
-DataFrame HarmonyMarker(const arma::sp_mat& mtx, const Rcpp::NumericVector& in_idx, const Rcpp::Nullable<Rcpp::NumericVector>& out_idx);
-RcppExport SEXP _Signac_HarmonyMarker(SEXP mtxSEXP, SEXP in_idxSEXP, SEXP out_idxSEXP) {
+DataFrame HarmonyMarker(Rcpp::S4& S4_mtx, const Rcpp::NumericVector& in_idx, const Rcpp::Nullable<Rcpp::NumericVector>& out_idx);
+RcppExport SEXP _Signac_HarmonyMarker(SEXP S4_mtxSEXP, SEXP in_idxSEXP, SEXP out_idxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mtx(mtxSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type in_idx(in_idxSEXP);
     Rcpp::traits::input_parameter< const Rcpp::Nullable<Rcpp::NumericVector>& >::type out_idx(out_idxSEXP);
-    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(mtx, in_idx, out_idx));
+    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(S4_mtx, in_idx, out_idx));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -332,18 +332,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// FastSparseMatMultDS
-arma::sp_mat FastSparseMatMultDS(const arma::mat& mat1, const arma::sp_mat& mat2);
-RcppExport SEXP _Signac_FastSparseMatMultDS(SEXP mat1SEXP, SEXP mat2SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type mat1(mat1SEXP);
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat2(mat2SEXP);
-    rcpp_result_gen = Rcpp::wrap(FastSparseMatMultDS(mat1, mat2));
-    return rcpp_result_gen;
-END_RCPP
-}
 // FastSparseMatMultDD
 arma::sp_mat FastSparseMatMultDD(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastSparseMatMultDD(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -407,15 +395,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // FastGetSubSparseMat
-arma::sp_mat FastGetSubSparseMat(const arma::sp_mat& mat, const arma::urowvec& rrvec, const arma::ucolvec& ccvec);
-RcppExport SEXP _Signac_FastGetSubSparseMat(SEXP matSEXP, SEXP rrvecSEXP, SEXP ccvecSEXP) {
+arma::sp_mat FastGetSubSparseMat(const arma::sp_mat& mat, const arma::urowvec& rrvec, const arma::ucolvec& ccvec, const bool& need_perform_row, const bool& need_perform_col);
+RcppExport SEXP _Signac_FastGetSubSparseMat(SEXP matSEXP, SEXP rrvecSEXP, SEXP ccvecSEXP, SEXP need_perform_rowSEXP, SEXP need_perform_colSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
     Rcpp::traits::input_parameter< const arma::urowvec& >::type rrvec(rrvecSEXP);
     Rcpp::traits::input_parameter< const arma::ucolvec& >::type ccvec(ccvecSEXP);
-    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMat(mat, rrvec, ccvec));
+    Rcpp::traits::input_parameter< const bool& >::type need_perform_row(need_perform_rowSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type need_perform_col(need_perform_colSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastGetSubSparseMat(mat, rrvec, ccvec, need_perform_row, need_perform_col));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -511,6 +501,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// FastConvertS4ToSparseMT
+arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4& mat);
+RcppExport SEXP _Signac_FastConvertS4ToSparseMT(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(FastConvertS4ToSparseMT(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+
+RcppExport SEXP _Signac_FastSparseMatMultDS(SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastComputeGCD", (DL_FUNC) &_Signac_FastComputeGCD, 2},
@@ -541,13 +544,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastSparseMatRepmat", (DL_FUNC) &_Signac_FastSparseMatRepmat, 3},
     {"_Signac_FastSparseMatSign", (DL_FUNC) &_Signac_FastSparseMatSign, 1},
     {"_Signac_FastSparseMatMultSD", (DL_FUNC) &_Signac_FastSparseMatMultSD, 2},
-    {"_Signac_FastSparseMatMultDS", (DL_FUNC) &_Signac_FastSparseMatMultDS, 2},
     {"_Signac_FastSparseMatMultDD", (DL_FUNC) &_Signac_FastSparseMatMultDD, 2},
     {"_Signac_FastGetRowOfSparseMat", (DL_FUNC) &_Signac_FastGetRowOfSparseMat, 2},
     {"_Signac_FastGetColOfSparseMat", (DL_FUNC) &_Signac_FastGetColOfSparseMat, 2},
     {"_Signac_FastGetRowsOfSparseMat", (DL_FUNC) &_Signac_FastGetRowsOfSparseMat, 3},
     {"_Signac_FastGetColsOfSparseMat", (DL_FUNC) &_Signac_FastGetColsOfSparseMat, 3},
-    {"_Signac_FastGetSubSparseMat", (DL_FUNC) &_Signac_FastGetSubSparseMat, 3},
+    {"_Signac_FastGetSubSparseMat", (DL_FUNC) &_Signac_FastGetSubSparseMat, 5},
     {"_Signac_FastGetSubSparseMatByRows", (DL_FUNC) &_Signac_FastGetSubSparseMatByRows, 2},
     {"_Signac_FastGetSubSparseMatByCols", (DL_FUNC) &_Signac_FastGetSubSparseMatByCols, 2},
     {"_Signac_FastGetSumSparseMatByRows", (DL_FUNC) &_Signac_FastGetSumSparseMatByRows, 2},
@@ -556,6 +558,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
+    {"_Signac_FastConvertS4ToSparseMT", (DL_FUNC) &_Signac_FastConvertS4ToSparseMT, 1},
+    {"_Signac_FastSparseMatMultDS",             (DL_FUNC) &_Signac_FastSparseMatMultDS,             2},
     {NULL, NULL, 0}
 };
 
