@@ -1,7 +1,13 @@
-#include "Hdf5Util.h"
+#define ARMA_USE_CXX11
+#define ARMA_NO_DEBUG
+#define ARMA_USE_HDF5
 
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(Rhdf5lib)]]
+// [[Rcpp::depends(BH)]]
+#include "Hdf5Util.h"
 
 //' FastMatMult
 //'

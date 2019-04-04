@@ -1,5 +1,12 @@
 #define ARMA_USE_CXX11
 #define ARMA_NO_DEBUG
+#define ARMA_USE_HDF5
+
+// [[Rcpp::plugins(cpp11)]]
+// [[Rcpp::depends(RcppParallel)]]
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(Rhdf5lib)]]
+// [[Rcpp::depends(BH)]]
 
 #include "CommonUtil.h"
 #include <boost/date_time/gregorian/gregorian_types.hpp>

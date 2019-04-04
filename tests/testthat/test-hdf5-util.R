@@ -1,20 +1,20 @@
 context("test-io")
 
 test_that("WriteSpMtAsSPMat", {
-    h5.path <- system.file("extdata", "v3inputb.h5", package = "Signac")
+    h5.path <- system.file("extdata", "v3input.h5", package = "Signac")
     group.name <- "matrix"
     auto.update <- FALSE
-    mat <- Signac::ReadSpMt( h5.path, group.name, auto.update)
+    mat <- Signac::ReadSpMtAsS4( h5.path, group.name, auto.update)
     status <- Signac::WriteSpMtAsSPMat(h5.path, "matrixv2", mat)
     expect_equal(status, TRUE)
 })
 
-test_that("WriteSpMtV1", {
+test_that("WriteSpMtAsS4", {
     h5.path <- system.file("extdata", "v3inputb.h5", package = "Signac")
     group.name <- "matrix"
     auto.update <- FALSE
     mat <- Signac::ReadSpMt( h5.path, group.name, auto.update)
-    status <- Signac::WriteSpMtV1(h5.path, "matrixv1", mat)
+    status <- Signac::WriteSpMtAsS4(h5.path, "matrixv1", mat)
     expect_equal(status, TRUE)
 })
 

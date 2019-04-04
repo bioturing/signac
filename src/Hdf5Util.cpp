@@ -1,9 +1,13 @@
-#include "Hdf5Util.h"
-using namespace HighFive;
+#define ARMA_USE_CXX11
+#define ARMA_NO_DEBUG
+#define ARMA_USE_HDF5
 
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
+// [[Rcpp::depends(BH)]]
+#include "Hdf5Util.h"
 
 //' WriteSpMtAsSpMat
 //'
@@ -71,7 +75,8 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     std::vector<double> sumVec;
 
-    oHdf5Util.ReadDatasetVector<double>(groupName, oHdf5Util.getRowsumDatasetName(), sumVec);
+    std::string datasetName = oHdf5Util.getRowsumDatasetName();
+    oHdf5Util.ReadDatasetVector<double>(groupName, datasetName, sumVec);
     if(sumVec.size() == 0) {
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
@@ -86,11 +91,11 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
                 sumVec[cij.row()] += (*cij);
             }
         }
-        oHdf5Util.WriteDatasetVector(groupName, oHdf5Util.getRowsumDatasetName(), sumVec);
+        oHdf5Util.WriteDatasetVector(groupName, datasetName, sumVec);
     }
 
-    Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
-    return result;
+    //Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
+    return Rcpp::wrap(sumVec);
 }
 
 //' ReadColSumSpMt
@@ -105,7 +110,8 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     std::vector<double> sumVec;
 
-    oHdf5Util.ReadDatasetVector(groupName, oHdf5Util.getColsumDatasetName(), sumVec);
+    std::string datasetName = oHdf5Util.getColsumDatasetName();
+    oHdf5Util.ReadDatasetVector(groupName, datasetName, sumVec);
     if(sumVec.size() == 0) {
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
@@ -116,11 +122,12 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
         sumVec.resize(mat.n_cols);
         com::bioturing::SumColumWorker<std::vector<double>> sumColWorker(&mat, sumVec);
         RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
-        oHdf5Util.WriteDatasetVector(groupName, oHdf5Util.getColsumDatasetName(), sumVec);
+        oHdf5Util.WriteDatasetVector(groupName, datasetName, sumVec);
     }
 
-    Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
-    return result;
+    //Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
+    //return result;
+    return Rcpp::wrap(sumVec);
 }
 
 //' GetListAttributes
@@ -179,5 +186,6 @@ Rcpp::StringVector GetListRootObjectNames(const std::string &filePath) {
 //' @export
 // [[Rcpp::export]]
 Rcpp::List Read10XH5Content(const std::string &filePath, const bool &use_names, const bool &unique_features) {
-    return Rcpp::List::create();
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    return oHdf5Util.Read10XH5(filePath, use_names, unique_features, false);
 }

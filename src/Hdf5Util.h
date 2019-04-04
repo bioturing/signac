@@ -1,6 +1,12 @@
 #ifndef HDF5_UTIL
 #define HDF5_UTIL
 
+#if defined(WIN32) || defined(_WIN32)
+#define PATH_SEPARATOR "\\"
+#else
+#define PATH_SEPARATOR "/"
+#endif
+
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
 #include <cmath>
@@ -8,7 +14,6 @@
 #include <fstream>
 #include <string>
 #include <boost/shared_ptr.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "CommonUtil.h"
 #include <highfive/H5File.hpp>
@@ -57,7 +62,7 @@ public:
     }
 
     template <typename T>
-    bool WriteDatasetVector(const std::string &groupName, const std::string &datasetName, const std::vector<T> &datasetVec) {
+    void WriteDatasetVector(const std::string &groupName, const std::string &datasetName, const std::vector<T> &datasetVec) {
         boost::shared_ptr<HighFive::File> file = Open(-1);
 
         if(file.get() == nullptr) {
@@ -387,9 +392,9 @@ public:
     }
 
     bool WriteSpMtFromArma(const arma::sp_mat &mat, const std::string &groupName) {
-        boost::filesystem::path groupPath;
-        GetH5FilePathOfGroupName(groupName, groupPath);
-        return mat.save(groupPath.c_str());
+        std::string filePath = GetH5FilePathOfGroupName(groupName);
+        ::Rf_error(filePath.c_str());
+        return mat.save(filePath);
     }
 
     void WriteSpMtFromS4(const Rcpp::S4 &mat, const std::string &groupName) {
@@ -447,13 +452,18 @@ public:
         }
     }
 
+    bool CheckFileExist(const std::string &file_path)
+    {
+        std::ifstream infile(file_path);
+        return infile.good();
+    }
+
     arma::sp_mat ReadSpMtAsArma(const std::string &groupName) {
         arma::sp_mat mat;
-        boost::filesystem::path groupPath;
-        GetH5FilePathOfGroupName(groupName, groupPath);
-        if(boost::filesystem::exists(groupPath.c_str()) == true)
+        std::string filePath = GetH5FilePathOfGroupName(groupName);
+        if(CheckFileExist(filePath) == true)
         {
-            mat.load(groupPath.c_str());
+            mat.load(filePath);
             return mat;
         }
         return mat;
@@ -468,6 +478,9 @@ public:
             ::Rf_error(ostr.str().c_str());
             throw;
         }
+
+        std::string klass = "dgCMatrix";
+        Rcpp::S4 s(klass);
 
         try {
             if(file->exist(groupName) == false) {
@@ -494,30 +507,29 @@ public:
 
             std::vector<int> arrDims;
             datasetShape.read(arrDims);
-            std::vector<int> arrD1;
-            datasetIndices.read(arrD1);
-            std::vector<int> arrD2;
-            datasetIndptr.read(arrD2);
-            std::vector<double> arrD3;
-            datasetData.read(arrD3);
+            std::vector<int> arrIndices;
+            datasetIndices.read(arrIndices);
+            std::vector<int> arrIndptr;
+            datasetIndptr.read(arrIndptr);
+            std::vector<double> arrData;
+            datasetData.read(arrData);
 
-            std::string klass = "dgCMatrix";
-            Rcpp::S4 s(klass);
-            s.slot("i") = std::move(arrD1);
-            s.slot("p") = std::move(arrD2);
-            s.slot("x") = std::move(arrD3);
+            s.slot("p") = std::move(arrIndptr);
+            s.slot("i") = std::move(arrIndices);
+            s.slot("x") = std::move(arrData);
             s.slot("Dim") = std::move(arrDims);
             return s;
-
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadSpMtAsS4 in HDF5 format, error=" << err.what();
             ::Rf_error(ostr.str().c_str());
             throw;
         }
+
+        return s;
     }
 
-    Rcpp::S4 Read10XH5(const std::string &filePath, const bool &use_names, const bool &unique_features, const bool &give_csparse) {
+    Rcpp::List Read10XH5(const std::string &filePath, const bool &use_names, const bool &unique_features, const bool &give_csparse) {
         boost::shared_ptr<HighFive::File> file = Open(1);
 
         if(file.get() == nullptr) {
@@ -527,6 +539,7 @@ public:
             throw;
         }
 
+        Rcpp::List arrList = Rcpp::List::create();
         try {
             std::vector<std::string> genomes;
             GetListRootObjectNames(genomes);
@@ -555,6 +568,7 @@ public:
                 }
 
                 std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot, "barcodes"};
+                std::cout << "arrDatasetName size=" << arrDatasetName.size() << std::endl;
                 for(const std::string &datasetName : arrDatasetName) {
                     if(file->exist(groupName + "/" + datasetName) == false) {
                         std::stringstream ostr;
@@ -564,6 +578,7 @@ public:
                     }
                 }
 
+                std::cout << "getDataSet shape" << std::endl;
                 HighFive::DataSet datasetShape = file->getDataSet(groupName + "/shape");
                 HighFive::DataSet datasetIndices = file->getDataSet(groupName + "/indices");
                 HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
@@ -573,25 +588,24 @@ public:
 
                 std::vector<int> arrDims;
                 datasetShape.read(arrDims);
-                std::vector<int> arrD1;
-                datasetIndices.read(arrD1);
-                std::vector<int> arrD2;
-                datasetIndptr.read(arrD2);
-                std::vector<double> arrD3;
-                datasetData.read(arrD3);
-                std::vector<std::string> arrFeature;
-                datasetFeature.read(arrFeature);
-                std::vector<std::string> arrBarcode;
-                datasetBarcode.read(arrBarcode);
+                std::vector<int> arrIndices;
+                datasetIndices.read(arrIndices);
+                std::vector<int> arrIndptr;
+                datasetIndptr.read(arrIndptr);
+                std::vector<double> arrData;
+                datasetData.read(arrData);
 
-                std::string klass = "dgCMatrix";
-                if(give_csparse == false) {
-                    klass = "dgTMatrix";
-                }
+                std::vector<std::string> arrFeature;
+                //datasetFeature.read(arrFeature);
+                std::vector<std::string> arrBarcode;
+                //datasetBarcode.read(arrBarcode);
+
+                std::cout << "arrIndptr size=" << arrIndptr.size() << std::endl;
+                std::string klass = "dgTMatrix";
                 Rcpp::S4 s(klass);
-                s.slot("i") = std::move(arrD1);
-                s.slot("p") = std::move(arrD2);
-                s.slot("x") = std::move(arrD3);
+                s.slot("p") = std::move(arrIndptr);
+                s.slot("i") = std::move(arrIndices);
+                s.slot("x") = std::move(arrData);
                 s.slot("Dim") = std::move(arrDims);
 
                 if (unique_features == true) {
@@ -605,7 +619,10 @@ public:
                     HighFive::DataSet datasetFeatureType = file->getDataSet(groupName + "/features/feature_type");
                     std::vector<std::string> arrFeatureType;
                     datasetFeatureType.read(arrBarcode);
+                    s.slot("factors") = Rcpp::List::create(arrFeatureType);
                 }
+
+                arrList[groupName] = s;
             }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
@@ -613,6 +630,8 @@ public:
             ::Rf_error(ostr.str().c_str());
             throw;
         }
+
+        return arrList;
     }
 
 private:
@@ -637,15 +656,21 @@ private:
         return file;
     }
 
-    void GetH5FilePathOfGroupName(const std::string &groupName, boost::filesystem::path &groupPath) {
-        boost::filesystem::path filePath(file_name);
-        boost::filesystem::path dirPath(filePath.parent_path());
-        std::string fileName = boost::replace_all_copy(groupName, "/", "_");
-        fileName = boost::replace_all_copy(fileName, "\\/", "_");
-        std::stringstream ss;
-        ss << filePath.stem().string() << "_" << fileName << ".h5";
-        boost::filesystem::path fileH5Name(ss.str());
-        groupPath = dirPath / fileH5Name;
+    std::string GetH5FilePathOfGroupName(const std::string &groupName) {
+        std::vector<std::string> arrPath;
+        boost::split(arrPath, file_name, boost::is_any_of(PATH_SEPARATOR));
+
+        if(arrPath.size() == 0) {
+            std::stringstream ostr;
+            ostr << "Invalid file path: " << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        std::string fileName = arrPath[(arrPath.size()-1)];
+        std::string fileGroupName = groupName + "_" + arrPath[(arrPath.size()-1)];
+        std::string fileGroupPath = boost::replace_all_copy(file_name, fileName, fileGroupName);
+        return fileGroupPath;
     }
 };
 
