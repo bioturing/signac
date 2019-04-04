@@ -782,22 +782,12 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// FastConvertS4ToSparseMT
-arma::sp_mat FastConvertS4ToSparseMT(Rcpp::S4& mat);
-RcppExport SEXP _Signac_FastConvertS4ToSparseMT(SEXP matSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::S4& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(FastConvertS4ToSparseMT(mat));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
+<<<<<<< cc474199d90a4d703ffb546bdced50ad3a96e9df
 <<<<<<< 65ec9059176b35ff936c1f9f6f371662db7a66e9
     {"_Signac_HarmonyMarkerH5", (DL_FUNC) &_Signac_HarmonyMarkerH5, 2},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
@@ -816,6 +806,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_ReadDoubleVector", (DL_FUNC) &_Signac_ReadDoubleVector, 3},
 =======
     {"_Signac_Harmony", (DL_FUNC) &_Signac_Harmony, 3},
+=======
+    {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 3},
+>>>>>>> Fix link static Sparse matrix method
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
     {"_Signac_ReadSpMtAsSPMat", (DL_FUNC) &_Signac_ReadSpMtAsSPMat, 2},
@@ -859,7 +852,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
-    {"_Signac_FastConvertS4ToSparseMT", (DL_FUNC) &_Signac_FastConvertS4ToSparseMT, 1},
     {NULL, NULL, 0}
 };
 

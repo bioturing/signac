@@ -293,7 +293,7 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
             Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(groupName);
-            mat = com::bioturing::Hdf5Util::FastConvertS4ToSparseMT(s);
+            mat = Rcpp::as<arma::sp_mat>(s);
         }
 
         sumVec.resize(mat.n_rows);
@@ -328,7 +328,7 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
             Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(groupName);
-            mat = com::bioturing::Hdf5Util::FastConvertS4ToSparseMT(s);
+            mat = Rcpp::as<arma::sp_mat>(s);
         }
 
         sumVec.resize(mat.n_cols);
