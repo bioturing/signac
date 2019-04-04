@@ -41,14 +41,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // HarmonyMarker
-DataFrame HarmonyMarker(const arma::sp_mat& mtx, const Rcpp::NumericVector& col_idx);
-RcppExport SEXP _Signac_HarmonyMarker(SEXP mtxSEXP, SEXP col_idxSEXP) {
+DataFrame HarmonyMarker(const arma::sp_mat& mtx, const Rcpp::NumericVector& in_idx, const Rcpp::Nullable<Rcpp::NumericVector>& out_idx);
+RcppExport SEXP _Signac_HarmonyMarker(SEXP mtxSEXP, SEXP in_idxSEXP, SEXP out_idxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mtx(mtxSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type col_idx(col_idxSEXP);
-    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(mtx, col_idx));
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type in_idx(in_idxSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::Nullable<Rcpp::NumericVector>& >::type out_idx(out_idxSEXP);
+    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(mtx, in_idx, out_idx));
     return rcpp_result_gen;
 END_RCPP
 }
