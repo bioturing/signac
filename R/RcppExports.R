@@ -514,6 +514,13 @@ FastGetColsOfSparseMat <- function(mat, start, end) {
     .Call(`_Signac_FastGetColsOfSparseMat`, mat, start, end)
 }
 
+<<<<<<< 4922ffbba95eddf43e43699da4d7e056e555d0ef
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8f57f8d... merge Sparsematrix utils from rcpp and edi Harmony function
+>>>>>>> merge Sparsematrix utils from rcpp and edi Harmony function
 #' FastGetSubSparseMat
 #'
 #' Subview sparse matrix
@@ -535,6 +542,18 @@ FastGetSubSparseMat <- function(mat, rrvec, ccvec, need_perform_row, need_perfor
 #' @param mat A sparse matrix
 #' @param rvec A row vector
 #' @export
+<<<<<<< 4922ffbba95eddf43e43699da4d7e056e555d0ef
+=======
+<<<<<<< HEAD
+=======
+FastGetSubSparseMat <- function(mat, rrvec, ccvec) {
+    .Call(`_Signac_FastGetSubSparseMat`, mat, rrvec, ccvec)
+}
+
+>>>>>>> 51d897d... finished cleaning
+=======
+>>>>>>> 8f57f8d... merge Sparsematrix utils from rcpp and edi Harmony function
+>>>>>>> merge Sparsematrix utils from rcpp and edi Harmony function
 FastGetSubSparseMatByRows <- function(mat, rvec) {
     .Call(`_Signac_FastGetSubSparseMatByRows`, mat, rvec)
 }
