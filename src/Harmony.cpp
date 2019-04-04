@@ -3,6 +3,8 @@
 
 #define HARMONY_RATIO 1e-5
 #define HARMONY_EPS 1e-50
+#define MINIMAL_SAMPLE 5
+#define GROUPING_RATE 0.6
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -16,122 +18,101 @@
 #include <cmath>
 #include <algorithm>
 #include <functional>
-#include <assert.h>
 
 #include "CommonUtil.h"
+#include "SparseMatrixUtil.h"
 #include "incbeta.h"
 
 using namespace Rcpp;
 using namespace arma;
 using namespace RcppParallel;
+using namespace std::placeholders;
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
 
-std::vector<double> init_pmf(double r, double p, int k) {
-    std::vector<double> prob;
-
-    prob.resize(k);
-
-    prob[0] = std::pow(1 - p,r);
-    for (int i = 1; i < k; ++i)
-        prob[i] = prob[i-1] * (i + r - 1) / i * p;
-    return prob;
-}
-
-double harmonic_mean(double a, double b) {
+double HarmonicMean(double a, double b)
+{
     if (fmin(a,b) < HARMONY_EPS)
         return 0;
 
     return 2 * a * b / (a + b);
 }
 
-bool compare(int i, int j, const std::vector<double> &res) {
+bool Compare(int i, int j, const std::vector<double> &res)
+{
     return res[i] < res[j];
 }
 
-void read_cluster(const Rcpp::NumericVector &col_idx,
-                  std::vector<int> &result)
+void SetCluster(std::vector<int> &cluster,
+                const Rcpp::NumericVector &col_idx,
+                int id)
 {
-    int i;
-    for (i = 0; i < col_idx.length(); ++i) {
-        assert(i < (result.size() - 1) && "Index must be smaller than number of columns");
-        result[col_idx[i] - 1] = 1; //Convert
+    for (int i = 0; i < col_idx.length(); ++i) {
+        if(col_idx[i] <= 0 || col_idx[i] > cluster.size())
+            throw std::runtime_error("Index must be smaller than "
+                                    "number of columns");
+
+        if (cluster[col_idx[i] - 1])
+            throw std::runtime_error("Each cell should only "
+                                    "be assigned to one cluster");
+
+        cluster[col_idx[i] - 1] = id;
     }
 }
 
-void read_gene(std::string file,
-               std::vector<std::string> &result)
-{
-    std::ifstream fin;
+void FillRest(std::vector<int> &cluster, int id) {
 
-    fin.open(file, std::ios::in);
-
-    while (fin) {
-        std::string line;
-        std::getline(fin, line);
-        result.push_back(line);
-    }
-
-    fin.close();
-}
-
-void HarmonyFit(const arma::sp_mat &mtx,
-                const std::vector<int> &cluster,
-                int cid,
-                std::vector<std::pair<double,double> > &res)
-{
-    res.resize(mtx.n_rows, std::make_pair(0.0,0.0));
-    arma::sp_mat::const_col_iterator c_it;
-
-    for (int i = 0; i < mtx.n_cols; ++i) {
-        for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
-            if (cluster[i] != cid)
-                continue;
-
-            res[c_it.row()].first += (*c_it);
-        }
-    }
-
-    int total = 0;
-    for (int i = 0 ; i < mtx.n_cols; ++i)
-        total += (cluster[i] == cid);
-
-    for (int i = 0; i < mtx.n_rows; ++i)
-        res[i].first /= total;
-
-    std::vector<int> zero;
-    zero.resize(mtx.n_rows, total);
-
-    for (int i = 0; i < mtx.n_cols; ++i) {
-        for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
-            if (cluster[i] != cid)
-                continue;
-            res[c_it.row()].second += std::pow((*c_it) - res[c_it.row()].first, 2);
-            --zero[c_it.row()];
-        }
-    }
-
-    for (int i = 0; i < mtx.n_rows; ++i) {
-        res[i].second += zero[i] * std::pow(res[i].first,2);
-        res[i].second /= total - 1;
-
-        if (res[i].second < res[i].first * (1 + HARMONY_RATIO))
-            res[i].second = res[i].first * (1 + HARMONY_RATIO);
+    for (int i = 0; i < cluster.size(); ++i) {
+        if (cluster[i] == 0)
+            cluster[i] = id;
     }
 }
 
-void HarmonyCheck(
+double LnPvalue(double score, int n1, int n2, int bin_cnt)
+{
+    if (bin_cnt <= 0)
+        throw std::domain_error("Bin count should be positive");
+
+    if (bin_cnt == 1)
+        return std::numeric_limits<double>::infinity();
+
+    double mean = 0.25 * (bin_cnt - 1) * (1.0 / n1 + 1.0 / n2);
+
+    if (mean > 1 || mean < 0) {
+        throw std::runtime_error("Mean estimation lies outside [0,1] range. "
+                                 "Cluster sizes may be too small.");
+    }
+
+    double var = 0.125 * (bin_cnt - 1) * pow(1.0 / n1 + 1.0 / n2,2);
+    double scale =  (mean * (1 - mean) / var - 1);
+    double shape1 = (1 - mean) * scale;
+    double shape2 = mean * scale;
+
+    return logincbeta(shape1, shape2, score);
+}
+
+std::string classify(double down, double mid, double up) {
+    if (down > 0 && up < 0)
+        return "Down";
+    else if (up > 0 && down < 0)
+        return "Up";
+    else if (up > 0 && down > 0)
+        return "Mid-down";
+    else if (up < 0 && down < 0)
+        return "Mid-up";
+
+    return "Other";
+}
+
+void HarmonyTest(
         const arma::sp_mat &mtx,
         const std::vector<int> &cluster,
-        int cid,
-        const std::vector<std::pair<double, double>> &dist,
-        std::vector<std::tuple<double, double, double, double> > &res)
+        std::vector<std::tuple<double, double, std::string> > &res)
 {
-    std::vector<std::vector<std::pair<int,int>>> count;
-    count.resize(mtx.n_rows, std::vector<std::pair<int,int>>());
-    res.resize(mtx.n_rows, std::make_tuple(0.0, 0.0, 0.0, 1.0));
+
+    res.resize(mtx.n_rows);
     arma::sp_mat::const_col_iterator c_it;
 
     for(int i = 0; i < mtx.n_cols; ++i) {
@@ -143,177 +124,156 @@ void HarmonyCheck(
             if (cnt >= r_cnt.size())
                 r_cnt.resize(cnt + 1);
 
-            if (cluster[i] == cid)
+            if (cluster[i] == 1)
                 ++r_cnt[cnt].first;
-            else
+            else if (cluster[i] == 2)
                 ++r_cnt[cnt].second;
         }
     }
 
     int total_in = 0;
+    int total_out = 0;
 
-    for (int i = 0; i < mtx.n_cols; ++i)
-        if (cluster[i] == cid)
-            ++total_in;
+    for (int i = 0; i < mtx.n_cols; ++i) {
+        total_in += cluster[i] == 1;
+        total_out += cluster[i] == 2;
+    }
 
-        int total_out = mtx.n_cols - total_in;
-        for (int i = 0; i < mtx.n_rows; ++i) {
-            int zero_in = total_in;
-            int zero_out = total_out;
+    int total = total_in + total_out;
 
-            for(int j = 1; j < count[i].size(); ++j) {
-                zero_in -= count[i][j].first;
-                zero_out -= count[i][j].second;
-            }
+    Rcout << total_in << " " << total_out << " " << total << std::endl;
 
-            if (count[i].size() < 1)
-                count[i].resize(1);
+    for (int i = 0; i < mtx.n_rows; ++i) {
+        int zero_in = total_in;
+        int zero_out = total_out;
 
-            count[i][0] = std::make_pair(zero_in, zero_out);
+        for(int j = 1; j < count[i].size(); ++j) {
+            zero_in -= count[i][j].first;
+            zero_out -= count[i][j].second;
         }
 
-        double thres_prob_in = std::max(std::min<double>(total_in,5.0),std::pow(total_in,0.6))/total_in;
-        double thres_prob_out = std::max(std::min<double>(total_out,5.0),std::pow(total_out,0.6))/total_out;
-        double thres_common = std::max(thres_prob_in, thres_prob_out);
+        if (count[i].size() < 1)
+            count[i].resize(1);
 
-        for (int i = 0; i < mtx.n_rows; ++i) {
-            double p = 1 - dist[i].first/dist[i].second;
-            double r = (1 / p - 1) * dist[i].first;
+        count[i][0] = std::make_pair(zero_in, zero_out);
+    }
 
-            if (std::isnan(p) || p <= 0 || p > 1 || r <= 0) {
-                p = 0;
-                r = 0;
+    int thres = std::max(std::min(total, MINIMAL_SAMPLE),
+                         (int) std::pow(total,GROUPING_RATE));
+
+    Rcout << thres << std::endl;
+
+    if(thres * 2 > total)
+        throw std::runtime_error("Not enough bins to compare. "
+                                "Please choose larger clusters to compare");
+
+    for (int i = 0; i < mtx.n_rows; ++i) {
+
+        int cnt_in = 0;
+        int cnt_out = 0;
+        int cnt_both = 0;
+
+        int l = 0;
+        int bin_cnt = 0;
+
+        double up_cnt = 0;
+        double down_cnt = 0;
+        double mid_cnt = 0;
+
+        double sim = 0;
+
+        double mean_cnt = (double) total_in * (total_in + 1) * total_out / 6;
+
+        for(int j = 0; j < count[i].size(); ++j) {
+            int a = count[i][j].first;
+            int b = count[i][j].second;
+
+            cnt_in += a;
+            cnt_out += b;
+            cnt_both += a + b;
+
+            int r = total_in - l - a;
+            double down  = 0.5 * (l + 1) * l + 0.5 * l * a + 1.0/6 * a * (a + 1);
+            double up = 0.5 * (r + 1) * r + 0.5 * r * a + 1.0/6 * a * (a + 1);
+            double mid = (total_in) * (total_in + 1) / 2 - up - down;
+            l += a;
+
+            down_cnt += down * b;
+            up_cnt += up * b;
+            mid_cnt += mid * b;
+
+            if (cnt_both >= thres) {
+                sim += HarmonicMean((double)cnt_in/total_in,
+                                    (double)cnt_out/total_out);
+                cnt_in = cnt_out = cnt_both = 0;
+                ++bin_cnt;
             }
-
-            std::vector<double> prob = init_pmf(r, p, count[i].size() + 1);
-
-            double dprob_in = 0;
-            double dprob_out = 0;
-            double dprob_both = 0;
-
-            double prob_in = 0;
-            double prob_out = 0;
-
-            double prob_in_in = 0;
-            double prob_out_in = 0;
-
-            int bin_cnt = 0; //bin_count-1 actually
-
-            for(int j = 0; j < count[i].size(); ++j) {
-                prob_in += (double)count[i][j].first/total_in;
-                prob_out += (double)count[i][j].second/total_out;
-
-                prob_in_in += (double)count[i][j].first/total_in;
-                prob_out_in += (double)count[i][j].second/total_out;
-
-                dprob_in += prob[j];
-                dprob_out += prob[j];
-                dprob_both += prob[j];
-
-                if (dprob_in >= thres_prob_in) {
-                    std::get<0>(res[i]) += harmonic_mean(prob_in, dprob_in);
-                    prob_in = dprob_in = 0;
-                }
-
-                if (dprob_out >= thres_prob_out) {
-                    std::get<1>(res[i]) +=  harmonic_mean(prob_out, dprob_out);
-                    prob_out = dprob_out = 0;
-                }
-
-                if (dprob_both > thres_common) {
-                    std::get<2>(res[i]) += harmonic_mean(prob_in_in, prob_out_in);
-                    prob_in_in = prob_out_in = dprob_both = 0;
-                    ++bin_cnt;
-                }
-
-                //res[i].first += count[i][j].first * (prob[j]);
-                //res[i].second += count[i][j].second * (prob[j]);
-            }
-            std::get<0>(res[i]) += harmonic_mean(prob_in, dprob_in);
-            std::get<1>(res[i]) += harmonic_mean(prob_out, dprob_out);
-            std::get<2>(res[i]) += harmonic_mean(prob_in_in, prob_out_in);
-
-            double mean = 0.25 * bin_cnt * (1.0/total_in + 1.0/total_out);
-            assert(mean >= 0);
-            double var = 0.125 * bin_cnt * pow(1.0/total_in + 1.0/total_out,2);
-            double scale =  (mean * (1 - mean) / var - 1);
-            double shape1 = (1 - mean) * scale;
-            double shape2 = mean * scale;
-
-            std::get<3>(res[i]) = incbeta(shape1, shape2, std::get<2>(res[i]));
-
-            //res[i].first += zero_in * prob[0];
-            //res[i].second += zero_out * prob[0];
         }
 
+        if (cnt_both >= MINIMAL_SAMPLE) {
+            sim += HarmonicMean((double)cnt_in/total_in,
+                                (double)cnt_out/total_out);
+            ++bin_cnt;
+        } else {
+            sim += ((double) cnt_in / total_in
+                  + (double) cnt_out / total_out) / 2.0;
+        }
+
+        res[i] = std::make_tuple(
+                    sim,
+                    LnPvalue(sim, total_in, total_out, bin_cnt),
+                    classify(down_cnt - mean_cnt,
+                            mid_cnt - mean_cnt,
+                            up_cnt - mean_cnt
+                    )
+                );
+    }
 }
 
 // [[Rcpp::export]]
-DataFrame Harmony(const arma::sp_mat &mtx,
-            const Rcpp::NumericVector &col_idx,
-            const int ordering)
+DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx,
+            const Rcpp::NumericVector &in_idx,
+            const Rcpp::Nullable<Rcpp::NumericVector> &out_idx = R_NilValue)
 {
+    const arma::sp_mat mtx = FastConvertS4ToSpMt(S4_mtx);
+    std::vector<std::vector<std::pair<int,int>>> count(mtx.n_rows);
 
-    std::vector<int> cluster(mtx.n_cols, 0);
-    read_cluster(col_idx, cluster);
-    Rcout << "Done read cluster" << std::endl;
+    std::vector<int> cluster(mtx.n_cols);
 
-    std::vector<std::pair<double, double>> f;
-    HarmonyFit(mtx, cluster, 1, f);
-    Rcout << "Done fit distribution" << std::endl;
+    SetCluster(cluster, in_idx, 1);
 
-    std::vector<std::tuple<double, double, double, double>> res;
-    HarmonyCheck(mtx, cluster, 1, f, res);
+    if (out_idx.isNull())
+        FillRest(cluster, 2);
+    else
+        SetCluster(cluster, out_idx.get(), 2);
+
+
+    std::vector<std::tuple<double, double, std::string>> res;
+    HarmonyTest(mtx, cluster, res);
     Rcout << "Done calculate" << std::endl;
 
-    std::vector<int> order, porder;
-    std::vector<double> rate;
-    std::vector<double> pvalue;
-
-    order.resize(mtx.n_rows);
-    porder.resize(mtx.n_rows);
-    rate.resize(mtx.n_rows);
-    pvalue.resize(mtx.n_rows);
+    std::vector<int> order(mtx.n_rows);
+    std::vector<double> pvalue(mtx.n_rows);
 
     for (int i = 0; i < mtx.n_rows; ++i) {
         order[i] = i;
-        porder[i] = i;
-        pvalue[i] = std::get<3>(res[i]);
-        switch(ordering) {
-        case 1:
-            rate[i] = -sqrt(1 - std::get<0>(res[i])) + sqrt(1-std::get<1>(res[i])); //metric measurement
-            if (rate[i] < 0)
-                rate[i] = 0;
-            rate[i]= 1 - rate[i] * rate[i]; //upper bound on score
-            break;
-        case 2:
-            rate[i] = 1 - std::get<0>(res[i]) + std::get<1>(res[i]); //nonmetric but bounded error
-            break;
-        case 3:
-            rate[i] = std::get<1>(res[i])/std::get<0>(res[i]); //unbounded but very  good estimation :)))) idk :)))
-            break;
-        case 4:
-            rate[i] = std::get<1>(res[i]); //unadjusted :))) good estimation maybe :))))
-            break;
-        case 5:
-            rate[i] = std::get<2>(res[i]); //non parametric and really really awesome xD
-            break;
-        case 6:
-            rate[i] = std::get<3>(res[i]);
-            break;
-        default:
-            Rcout << "unknown ordering method\n" << std::endl;
-        perror("unknown ordering method\n");
-        }
+        pvalue[i] = std::get<1>(res[i]);
     }
 
-    std::sort(order.begin(), order.end(), std::bind(compare, std::placeholders::_1, std::placeholders::_2, rate));
-    std::sort(porder.begin(), porder.end(), std::bind(compare, std::placeholders::_1, std::placeholders::_2, pvalue));
+    std::sort(order.begin(), order.end(),
+              std::bind(Compare, _1, _2, pvalue));
 
+    std::vector<double> p_value(mtx.n_rows), similatiry(mtx.n_rows);
+    std::vector<double> p_adjusted(mtx.n_rows);
+    std::vector<std::string> g_names(mtx.n_rows);
+    std::vector<std::string> diff_class(mtx.n_rows);
+
+
+    //Adjust p value
     double prev = 0;
     for(int i = 0; i < mtx.n_rows; ++i) {
-        int k = porder[i];
-        double p = pvalue[k] * mtx.n_rows / (i + 1);
+        int k = order[i];
+        double p = std::exp(pvalue[k]) * mtx.n_rows / (i + 1);
 
         if (p > 1)
             p = 1;
@@ -321,24 +281,24 @@ DataFrame Harmony(const arma::sp_mat &mtx,
         if (p >= prev)
             prev = p;
 
-        pvalue[k] = prev;
+        p_adjusted[i] = prev;
     }
 
-    std::vector<double> p_value(mtx.n_rows), similatiry(mtx.n_rows);
-    std::vector<double> p_adjusted(mtx.n_rows);
-    std::vector<int> g_index(mtx.n_rows);
-
+    Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("dimnames"));
+    Rcpp::CharacterVector rownames = dim_names[0];
     for(int i = 0; i < mtx.n_rows; ++i) {
         int k = order[i];
-        g_index[i] = i;
-        similatiry[i] = std::get<2>(res[k]);
-        p_value[i] = std::get<3>(res[k]);
-        p_adjusted[i] = pvalue[k];
-        //fout << genes[k] << " " << rate[k] << " " << f[k].first << " " << f[k].second << " " << std::get<0>(res[k]) << " " << std::get<1>(res[k]) << " " << std::get<2>(res[k]) << " " << std::get<3>(res[k]) << " " << pvalue[k] << std::endl;
+        g_names[i] = rownames[k];
+        similatiry[i] = std::get<0>(res[k]);
+        p_value[i] = std::get<1>(res[k]);
+        diff_class[i] = std::get<2>(res[k]);
     }
+
     Rcout << "Done all" << std::endl;
-    return DataFrame::create( Named("Gene Index") = wrap(g_index),
+    return DataFrame::create( Named("Gene Name") = wrap(g_names),
                               Named("Similarity") = wrap(similatiry),
-                              Named("P value") = wrap(p_value),
-                              Named("P-adjusted value") = wrap(p_adjusted));
+                              Named("Log P value") = wrap(p_value),
+                              Named("P-adjusted value") = wrap(p_adjusted),
+                              Named("Type") = wrap(diff_class)
+                            );
 }

@@ -31,8 +31,8 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
-Harmony <- function(mtx, col_idx, ordering) {
-    .Call(`_Signac_Harmony`, mtx, col_idx, ordering)
+HarmonyMarker <- function(S4_mtx, in_idx, out_idx = NULL) {
+    .Call(`_Signac_HarmonyMarker`, S4_mtx, in_idx, out_idx)
 }
 
 #' WriteSpMtV2
