@@ -94,14 +94,14 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
 }
 
 std::string classify(double down, double mid, double up) {
-    if (down > 0 && up < 0)
-        return "Down";
-    else if (up > 0 && down < 0)
+    if (down > 0 && up < 0 && mid < 0)
         return "Up";
-    else if (up > 0 && down > 0)
-        return "Mid-down";
-    else if (up < 0 && down < 0)
+    else if (up > 0 && down < 0 && mid < 0)
+        return "Down";
+    else if (up > 0 && down > 0 && mid < 0)
         return "Mid-up";
+    else if (up < 0 && down < 0 && mid > 0s)
+        return "Mid-down";
 
     return "Other";
 }
@@ -194,8 +194,8 @@ void HarmonyTest(
             cnt_both += a + b;
 
             int r = total_in - l - a;
-            double down  = 0.5 * (l + 1) * l + 0.5 * l * a + 1.0/6 * a * (a + 1);
-            double up = 0.5 * (r + 1) * r + 0.5 * r * a + 1.0/6 * a * (a + 1);
+            double down = 0.5 * (r + 1) * r + 0.5 * r * a + 1.0/6 * a * (a + 1);
+            double up  = 0.5 * (l + 1) * l + 0.5 * l * a + 1.0/6 * a * (a + 1);
             double mid = (total_in) * (total_in + 1) / 2 - up - down;
             l += a;
 
