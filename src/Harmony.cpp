@@ -182,7 +182,7 @@ void HarmonyTest(
 
         double sim = 0;
 
-        double mean_cnt = (double) total_in * total_in * total_out / 3;
+        double mean_cnt = (double) total_in * (total_in + 1) * total_out / 6;
 
         for(int j = 0; j < count[i].size(); ++j) {
             int a = count[i][j].first;
