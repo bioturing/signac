@@ -460,11 +460,11 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
 #' spMat
 #'
 ReadSpMt <- function(h5.path, group.name = "bioturing", auto.update = FALSE) {
-    mat <- Signac::ReadSpMtV2(h5.path, group.name)
+    mat <- Signac::ReadSpMtAsSPMat(h5.path, group.name)
     if (length(mat) == 0) {
-        mat <- Signac::ReadSpMtV1(h5.path, group.name)
+        mat <- Signac::ReadSpMtAsS4(h5.path, group.name)
         if(auto.update) {
-            Signac::WriteSpMtV2(h5.path, group.name, mat);
+            Signac::WriteSpMtAsSPMat(h5.path, group.name, mat);
         }
     }
     return(mat)

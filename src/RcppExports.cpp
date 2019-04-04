@@ -53,53 +53,52 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// WriteSpMtV2
-bool WriteSpMtV2(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
-RcppExport SEXP _Signac_WriteSpMtV2(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+// WriteSpMtAsSpMat
+bool WriteSpMtAsSpMat(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
+RcppExport SEXP _Signac_WriteSpMtAsSpMat(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(WriteSpMtV2(filePath, groupName, mat));
+    rcpp_result_gen = Rcpp::wrap(WriteSpMtAsSpMat(filePath, groupName, mat));
     return rcpp_result_gen;
 END_RCPP
 }
-// WriteSpMtV1
-bool WriteSpMtV1(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
-RcppExport SEXP _Signac_WriteSpMtV1(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+// WriteSpMtAsS4
+void WriteSpMtAsS4(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
+RcppExport SEXP _Signac_WriteSpMtAsS4(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
 BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(WriteSpMtV1(filePath, groupName, mat));
-    return rcpp_result_gen;
+    WriteSpMtAsS4(filePath, groupName, mat);
+    return R_NilValue;
 END_RCPP
 }
-// ReadSpMtV2
-arma::sp_mat ReadSpMtV2(const std::string& filePath, const std::string& groupName);
-RcppExport SEXP _Signac_ReadSpMtV2(SEXP filePathSEXP, SEXP groupNameSEXP) {
+// ReadSpMtAsSPMat
+arma::sp_mat ReadSpMtAsSPMat(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMtAsSPMat(SEXP filePathSEXP, SEXP groupNameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadSpMtV2(filePath, groupName));
+    rcpp_result_gen = Rcpp::wrap(ReadSpMtAsSPMat(filePath, groupName));
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadSpMtV1
-Rcpp::S4 ReadSpMtV1(const std::string& filePath, const std::string& groupName);
-RcppExport SEXP _Signac_ReadSpMtV1(SEXP filePathSEXP, SEXP groupNameSEXP) {
+// ReadSpMtAsS4
+Rcpp::S4 ReadSpMtAsS4(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_ReadSpMtAsS4(SEXP filePathSEXP, SEXP groupNameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadSpMtV1(filePath, groupName));
+    rcpp_result_gen = Rcpp::wrap(ReadSpMtAsS4(filePath, groupName));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -124,6 +123,55 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     rcpp_result_gen = Rcpp::wrap(ReadColSumSpMt(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GetListAttributes
+Rcpp::StringVector GetListAttributes(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
+RcppExport SEXP _Signac_GetListAttributes(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetListAttributes(filePath, groupName, datasetName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GetListObjectNames
+Rcpp::StringVector GetListObjectNames(const std::string& filePath, const std::string& groupName);
+RcppExport SEXP _Signac_GetListObjectNames(SEXP filePathSEXP, SEXP groupNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetListObjectNames(filePath, groupName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GetListRootObjectNames
+Rcpp::StringVector GetListRootObjectNames(const std::string& filePath);
+RcppExport SEXP _Signac_GetListRootObjectNames(SEXP filePathSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetListRootObjectNames(filePath));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Read10XH5Content
+Rcpp::List Read10XH5Content(const std::string& filePath, const bool& use_names, const bool& unique_features);
+RcppExport SEXP _Signac_Read10XH5Content(SEXP filePathSEXP, SEXP use_namesSEXP, SEXP unique_featuresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type use_names(use_namesSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type unique_features(unique_featuresSEXP);
+    rcpp_result_gen = Rcpp::wrap(Read10XH5Content(filePath, use_names, unique_features));
     return rcpp_result_gen;
 END_RCPP
 }
