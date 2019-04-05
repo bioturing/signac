@@ -4,7 +4,7 @@
 #define HARMONY_RATIO 1e-5
 #define HARMONY_EPS 1e-50
 #define MINIMAL_SAMPLE 10
-#define GROUPING_RATE 0.7
+#define GROUPING_RATE 0.6
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -126,20 +126,16 @@ std::tuple<double, double, std::string> ComputeSimilarity(
     std::sort(exp.begin(), exp.end());
 
     for(int i = 0, l = exp.size(); i < l; ++i) {
-        cnt_in += exp[i].second == 1;
-        cnt_out += exp[i].second == 2;
-        ++cnt_both;
-
-        if (i + 1 < l &&
-            std::fabs(exp[i].first - exp[i + 1].first) < HARMONY_EPS)
-            continue;
-
-        if (cnt_both >= thres) {
+        if ((!i ||  std::fabs(exp[i].first - exp[i - 1].first) > HARMONY_EPS) &&
+            cnt_both >= thres) {
             sim += HarmonicMean((double)cnt_in/total_in,
                                 (double)cnt_out/total_out);
             cnt_in = cnt_out = cnt_both = 0;
             ++bin_cnt;
         }
+        cnt_in += exp[i].second == 1;
+        cnt_out += exp[i].second == 2;
+        ++cnt_both;
     }
 
     if (cnt_both >= MINIMAL_SAMPLE) {
