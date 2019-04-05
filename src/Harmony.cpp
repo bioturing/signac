@@ -3,8 +3,8 @@
 
 #define HARMONY_RATIO 1e-5
 #define HARMONY_EPS 1e-50
-#define MINIMAL_SAMPLE 5
-#define GROUPING_RATE 0.6
+#define MINIMAL_SAMPLE 10
+#define GROUPING_RATE 0.7
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -131,7 +131,7 @@ std::tuple<double, double, std::string> ComputeSimilarity(
         ++cnt_both;
 
         if (i + 1 < l &&
-            std::fabs(exp[i].second - exp[i + 1].second) < HARMONY_EPS)
+            std::fabs(exp[i].first - exp[i + 1].first) < HARMONY_EPS)
             continue;
 
         if (cnt_both >= thres) {
