@@ -166,13 +166,17 @@ void HarmonyTest(
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
     int n_genes = mtx.n_rows;
+
+    if (cluster.size() != mtx.n_cols)
+        throw std::domain_error("Input cluster size is not equal to the number of rows in matrix");
+
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
     std::vector<int[2]> zero_cnt(n_genes);
 
     res.resize(n_genes);
     arma::sp_mat::const_col_iterator c_it;
 
-    for(int i = 0; i < mtx.n_cols; ++i) {
+    for (int i = 0; i < mtx.n_cols; ++i) {
         if (!(int)cluster[i])
             continue;
 
@@ -201,7 +205,10 @@ void HarmonyTest(
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
     Rcpp::NumericVector shape = ReadH5Vector(hdf5Path, GROUP_NAME, "shape");
     int n_genes = shape[0];
-    Rcout << shape[0] << " " << shape[1] << std::endl;
+
+    if (cluster.size() != shape[1])
+        throw std::domain_error("Input cluster size is not equal to the number of rows in matrix");
+
     res.resize(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
@@ -225,7 +232,7 @@ void HarmonyTest(
 }
 
 DataFrame PostProcess(
-        std::vector<std::tuple<double, double, std::string> > &res,
+        std::vector<std::tuple<double, double, std::string>> &res,
         Rcpp::List &dim_names)
 {
     int n_gene = res.size();
@@ -240,7 +247,7 @@ DataFrame PostProcess(
     std::sort(order.begin(), order.end(),
               std::bind(Compare, _1, _2, pvalue));
 
-    std::vector<double> p_value(n_gene), similatiry(n_gene);
+    std::vector<double> p_value(n_gene), similarity(n_gene);
     std::vector<double> p_adjusted(n_gene);
     std::vector<std::string> g_names(n_gene);
     std::vector<std::string> diff_class(n_gene);
@@ -265,14 +272,14 @@ DataFrame PostProcess(
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i];
         g_names[i] = rownames[k];
-        similatiry[i] = std::get<0>(res[k]);
+        similarity[i] = std::get<0>(res[k]);
         p_value[i] = std::get<1>(res[k]);
         diff_class[i] = std::get<2>(res[k]);
     }
 
     Rcout << "Done all" << std::endl;
     return DataFrame::create( Named("Gene Name") = wrap(g_names),
-                              Named("Similarity") = wrap(similatiry),
+                              Named("Similarity") = wrap(similarity),
                               Named("Log P value") = wrap(p_value),
                               Named("P-adjusted value") = wrap(p_adjusted),
                               Named("Type") = wrap(diff_class)
@@ -291,7 +298,7 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
     HarmonyTest(mtx, cluster, res, total_cnt);
     Rcout << "Done calculate" << std::endl;
 
-    Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("dimnames"));
+    Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
     return PostProcess(res, dim_names);
 }
 
