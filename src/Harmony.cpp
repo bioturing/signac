@@ -100,7 +100,7 @@ std::string classify(double down, double mid, double up) {
         return "Down";
     else if (up > 0 && down > 0 && mid < 0)
         return "Mid-up";
-    else if (up < 0 && down < 0 && mid > 0s)
+    else if (up < 0 && down < 0 && mid > 0)
         return "Mid-down";
 
     return "Other";
