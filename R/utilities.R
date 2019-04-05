@@ -110,3 +110,57 @@ Colourise <- function(text, fg = "black", bg = NULL) {
 rcmd_running <- function() {
   nchar(Sys.getenv('R_TESTS')) != 0
 }
+
+#' Flexible check file exists in an 10X folder
+#' @param dir to the a 10X folder
+#' @return a list of three file names: barcode, genes, and matrix
+#'
+ReturnTripleFiles <- function(dir) {
+  barcodes <- list("barcodes.tsv", "barcodes.tsv.gz")
+  genes <- list("genes.tsv", "features.tsv.gz")
+  matrix <- list("matrix.mtx", "matrix.mtx.gz")
+
+  bx.exists <- sapply(file.path(dir, barcodes), file.exists)
+  genes.exists <- sapply(file.path(dir, genes), file.exists)
+  matrix.exists <- sapply(file.path(dir, matrix), file.exists)
+
+  if (!any(bx.exists)) {
+    stop(paste("Both", barcodes[[1]], "and", barcodes[[2]], "do not exists in",
+               dir, sep = " "))
+  }
+
+  if (!any(genes.exists)) {
+    stop(paste("Both", genes[[1]], "and", genes[[2]], "do not exists in",
+               dir, sep = " "))
+  }
+
+  if (!any(matrix.exists)) {
+    stop(paste("Both", matrix[[1]], "and", matrix[[2]], "do not exists in",
+               dir, sep = " "))
+  }
+
+  return(list(genes    = genes[genes.exists][[1]],
+              barcodes = barcodes[bx.exists][[1]],
+              matrix   = matrix[matrix.exists][[1]]))
+}
+
+
+#' Ask for a choice. Use to select one genome from multi-species data
+#'
+#' @param choices : multi genomes selection
+#'
+#' @return selected genome
+#'
+AskForChoices <- function(choices) {
+  n <- length(choices)
+  choices.txt <- paste(seq(1, n), choices, sep = ": ")
+  choices.txt <- Colourise(paste(c(choices.txt, ""), collapse = "\n"), "green")
+
+  opts <- as.character(seq(1, n))
+  select <- NA
+  while (! select %in% opts) {
+    message("We only support single-specie analysis. Please select from ", 1, " to ", n)
+    select <- readline(choices.txt)
+  }
+  return(choices[as.numeric(select)])
+}

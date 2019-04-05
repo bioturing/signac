@@ -2,7 +2,8 @@
 % Please edit documentation in R/io.R
 \name{Read10XH5}
 \alias{Read10XH5}
-\title{This function was imported from Seurat R package
+\title{This function was initialized by the idea
+from Seurat R package
 citation: Butler et al., Nature Biotechnology 2018}
 \usage{
 Read10XH5(filename, use.names = TRUE, unique.features = TRUE)
