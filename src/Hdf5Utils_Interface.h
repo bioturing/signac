@@ -7,6 +7,8 @@
 #define PATH_SEPARATOR "/"
 #endif
 
+#define GROUP_NAME "bioturing"
+
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
