@@ -91,21 +91,7 @@ int GetThreshold(int total)
     return thres;
 }
 
-std::string classify(double down, double mid, double up)
-{
-    if (down > 0 && up < 0 && mid < 0)
-        return "Up";
-    else if (up > 0 && down < 0 && mid < 0)
-        return "Down";
-    else if (up > 0 && down > 0 && mid < 0)
-        return "Mid-up";
-    else if (up < 0 && down < 0 && mid > 0)
-        return "Mid-down";
-
-    return "Other";
-}
-
-std::tuple<double, double, std::string> ComputeSimilarity(
+std::tuple<double, double, double> ComputeSimilarity(
         const Rcpp::NumericVector &cluster,
         std::vector<std::pair<double, int>> &exp,
         int total_cnt[2],
@@ -123,18 +109,36 @@ std::tuple<double, double, std::string> ComputeSimilarity(
     int bin_cnt = 0;
     double sim = 0;
 
+    int cnt_up = 0;
+    int cnt_down = 0;
+    int in = 0;
+    int out = 0;
+
     std::sort(exp.begin(), exp.end());
 
     for(int i = 0, l = exp.size(); i < l; ++i) {
-        if ((!i ||  std::fabs(exp[i].first - exp[i - 1].first) > HARMONY_EPS) &&
-            cnt_both >= thres) {
-            sim += HarmonicMean((double)cnt_in/total_in,
-                                (double)cnt_out/total_out);
-            cnt_in = cnt_out = cnt_both = 0;
-            ++bin_cnt;
+        if ((!i ||  std::fabs(exp[i].first - exp[i - 1].first) > HARMONY_EPS)) {
+            if (cnt_both >= thres) {
+                sim += HarmonicMean((double)cnt_in/total_in,
+                                    (double)cnt_out/total_out);
+
+                cnt_in = cnt_out = cnt_both = 0;
+                ++bin_cnt;
+            }
+
+            double rate_in = (double) in / total_in;
+            double rate_out = (double) out / total_out;
+
+            if (rate_in > rate_out)
+                ++cnt_up;
+            else if (rate_out > rate_in)
+                ++cnt_down;
         }
+
         cnt_in += exp[i].second == 1;
         cnt_out += exp[i].second == 2;
+        in += exp[i].second == 1;
+        out += exp[i].second == 2;
         ++cnt_both;
     }
 
@@ -150,14 +154,14 @@ std::tuple<double, double, std::string> ComputeSimilarity(
     return std::make_tuple(
         sim,
         LnPvalue(sim, total_in, total_out, bin_cnt),
-        "Hy dk"
+        1.0 * (cnt_up - cnt_down) / (cnt_up + cnt_down)
     );
 }
 
 void HarmonyTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
-        std::vector<std::tuple<double, double, std::string> > &res,
+        std::vector<std::tuple<double, double, double> > &res,
         int total_cnt[2])
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
@@ -191,11 +195,11 @@ void HarmonyTest(
         res[i] = ComputeSimilarity(cluster, exp[i], total_cnt, zero_cnt[i], thres);
     }
 }
-
+/*
 void HarmonyTest(
         const std::string &hdf5Path,
         const Rcpp::NumericVector &cluster,
-        std::vector<std::tuple<double, double, std::string> > &res,
+        std::vector<std::tuple<double, double, double> > &res,
         int total_cnt[2])
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
@@ -226,9 +230,9 @@ void HarmonyTest(
         res[i] = ComputeSimilarity(cluster, exp, total_cnt, zero_cnt, thres);
     }
 }
-
+*/
 DataFrame PostProcess(
-        std::vector<std::tuple<double, double, std::string>> &res,
+        std::vector<std::tuple<double, double, double>> &res,
         Rcpp::List &dim_names)
 {
     int n_gene = res.size();
@@ -246,7 +250,7 @@ DataFrame PostProcess(
     std::vector<double> p_value(n_gene), similarity(n_gene);
     std::vector<double> p_adjusted(n_gene);
     std::vector<std::string> g_names(n_gene);
-    std::vector<std::string> diff_class(n_gene);
+    std::vector<double> diff_class(n_gene);
 
 
     //Adjust p value
@@ -289,7 +293,7 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
     GetTotalCount(cluster, total_cnt);
 
     const arma::sp_mat mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
-    std::vector<std::tuple<double, double, std::string>> res;
+    std::vector<std::tuple<double, double, double>> res;
 
     HarmonyTest(mtx, cluster, res, total_cnt);
     Rcout << "Done calculate" << std::endl;
@@ -297,17 +301,17 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
     return PostProcess(res, dim_names);
 }
-
+/*
 DataFrame HarmonyMarker(const std::string &hdf5Path, const Rcpp::NumericVector &cluster)
 {
     int total_cnt[2];
     GetTotalCount(cluster, total_cnt);
 
-    std::vector<std::tuple<double, double, std::string>> res;
+    std::vector<std::tuple<double, double, double>> res;
 
     HarmonyTest(hdf5Path, cluster, res, total_cnt);
     Rcout << "Done calculate" << std::endl;
 
     //Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("dimnames"));
     return PostProcess(res, dim_names);
-}
+}*/
