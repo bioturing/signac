@@ -224,18 +224,18 @@ void HarmonyTest(
         res[i] = ComputeSimilarity(cluster, exp[i], total_cnt, zero_cnt[i], thres);
     }
 }
-/*
+
 void HarmonyTest(
         const std::string &hdf5Path,
         const Rcpp::NumericVector &cluster,
         std::vector<std::tuple<double, double, double> > &res,
-        int total_cnt[2])
+        std::array<int, 2> total_cnt)
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
-    Rcpp::NumericVector shape = ReadH5Vector(hdf5Path, GROUP_NAME, "shape");
-    int n_genes = shape[0];
+    std::vector<int> shape = ReadH5Vector(hdf5Path, GROUP_NAME, "shape");
+    int n_genes = shape[1];
 
-    if (cluster.size() != shape[1])
+    if (cluster.size() != shape[0])
         throw std::domain_error("Input cluster size is not equal to the number of rows in matrix");
 
     res.resize(n_genes);
@@ -246,7 +246,7 @@ void HarmonyTest(
         ReadGeneExpH5(hdf5Path, GROUP_NAME, i, col_idx, g_exp);
 
         std::vector<std::pair<double, int>> exp;
-        int zero_cnt[2] = {total_cnt[0], total_cnt[1]};
+        std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
 
         for (int k = 0; k < col_idx.size(); ++k) {
             int idx = (int)cluster[col_idx[k]];
@@ -259,10 +259,10 @@ void HarmonyTest(
         res[i] = ComputeSimilarity(cluster, exp, total_cnt, zero_cnt, thres);
     }
 }
-*/
+
 DataFrame PostProcess(
         std::vector<std::tuple<double, double, double>> &res,
-        Rcpp::List &dim_names)
+        std::vector<std::string> &rownames)
 {
     int n_gene = res.size();
     std::vector<int> order(n_gene);
@@ -297,7 +297,6 @@ DataFrame PostProcess(
         p_adjusted[i] = prev;
     }
 
-    Rcpp::CharacterVector rownames = dim_names[0];
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i];
         g_names[i] = rownames[k];
@@ -328,19 +327,26 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
     Rcout << "Done calculate" << std::endl;
 
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
-    return PostProcess(res, dim_names);
+    std::vector<std::string> rownames = dim_names[0];
+    return PostProcess(res, rownames);
 }
-/*
-DataFrame HarmonyMarker(const std::string &hdf5Path, const Rcpp::NumericVector &cluster)
+
+// [[Rcpp::export]]
+DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector &cluster)
 {
-    int total_cnt[2];
+    std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
+    Rcout << "Group1 " << total_cnt[0] << "Group2 " << total_cnt[1] << std::endl;
+    std::vector<int> shape = ReadH5Vector(hdf5Path, GROUP_NAME, "shape");
     std::vector<std::tuple<double, double, double>> res;
 
     HarmonyTest(hdf5Path, cluster, res, total_cnt);
     Rcout << "Done calculate" << std::endl;
 
-    //Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("dimnames"));
-    return PostProcess(res, dim_names);
-}*/
+    std::vector<std::string> rownames(shape[1]);
+    for (int i = 0; i < shape[1]; ++i) {
+        rownames[i] = std::to_string(i);
+    }
+    return PostProcess(res, rownames);
+}

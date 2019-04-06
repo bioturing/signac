@@ -440,7 +440,7 @@ public:
 
             //Write x data
             std::vector<double> arrX(x.begin(), x.end());
-            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrP));
+            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrX));
             datasetX.write(arrX);
 
             file->flush();

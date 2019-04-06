@@ -52,6 +52,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// HarmonyMarkerH5
+DataFrame HarmonyMarkerH5(const std::string& hdf5Path, const Rcpp::NumericVector& cluster);
+RcppExport SEXP _Signac_HarmonyMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type hdf5Path(hdf5PathSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
+    rcpp_result_gen = Rcpp::wrap(HarmonyMarkerH5(hdf5Path, cluster));
+    return rcpp_result_gen;
+END_RCPP
+}
 // WriteSpMtAsSpMat
 bool WriteSpMtAsSpMat(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
 RcppExport SEXP _Signac_WriteSpMtAsSpMat(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
@@ -632,6 +644,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
     {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 2},
+    {"_Signac_HarmonyMarkerH5", (DL_FUNC) &_Signac_HarmonyMarkerH5, 2},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
     {"_Signac_ReadSpMtAsSPMat", (DL_FUNC) &_Signac_ReadSpMtAsSPMat, 2},

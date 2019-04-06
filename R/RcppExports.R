@@ -35,8 +35,20 @@ HarmonyMarker <- function(S4_mtx, cluster) {
     .Call(`_Signac_HarmonyMarker`, S4_mtx, cluster)
 }
 
-WriteSpMtFromArma <- function(filePath, groupName, mat) {
-    .Call(`_Signac_WriteSpMtFromArma`, filePath, groupName, mat)
+HarmonyMarkerH5 <- function(hdf5Path, cluster) {
+    .Call(`_Signac_HarmonyMarkerH5`, hdf5Path, cluster)
+}
+
+#' WriteSpMtAsSpMat
+#'
+#' This function is used to write a sparse ARMA matrix
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @param mat A sparse matrix
+#' @export
+WriteSpMtAsSpMat <- function(filePath, groupName, mat) {
+    .Call(`_Signac_WriteSpMtAsSpMat`, filePath, groupName, mat)
 }
 
 WriteSpMtFromS4 <- function(filePath, groupName, mat) {
