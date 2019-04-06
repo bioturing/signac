@@ -109,10 +109,7 @@ std::tuple<double, double, double> ComputeSimilarity(
     int bin_cnt = 0;
     double sim = 0;
 
-    int cnt_up = 0;
-    int cnt_down = 0;
-    int in = 0;
-    int out = 0;
+
 
     std::sort(exp.begin(), exp.end());
 
@@ -125,20 +122,10 @@ std::tuple<double, double, double> ComputeSimilarity(
                 cnt_in = cnt_out = cnt_both = 0;
                 ++bin_cnt;
             }
-
-            double rate_in = (double) in / total_in;
-            double rate_out = (double) out / total_out;
-
-            if (rate_in > rate_out)
-                ++cnt_up;
-            else if (rate_out > rate_in)
-                ++cnt_down;
         }
 
         cnt_in += exp[i].second == 1;
         cnt_out += exp[i].second == 2;
-        in += exp[i].second == 1;
-        out += exp[i].second == 2;
         ++cnt_both;
     }
 
@@ -149,6 +136,45 @@ std::tuple<double, double, double> ComputeSimilarity(
     } else {
         sim += ((double) cnt_in / total_in
                 + (double) cnt_out / total_out) / 2.0;
+    }
+
+    int cnt_up = 0;
+    int cnt_down = 0;
+
+    int x = -1;
+    int y = -1;
+    int z = -1;
+    int cnt_x = -1;
+    int cnt_y = -1;
+    int cnt_z = -1;
+
+    for (int i = 0; i < total_in; ++i) {
+        double j = i / total_in * total_out;
+        int j_down =  std::floor(j);
+        int j_up = std::ceil(j);
+
+
+        while (cnt_x < i) {
+            ++x;
+            cnt_x += exp[x].second == 1;
+        }
+
+
+        while (cnt_y < j_down) {
+            ++y;
+            cnt_y += exp[y].second == 2;
+        }
+
+        while (cnt_z < j_up) {
+            ++z;
+            cnt_z += exp[z].second == 2;
+        }
+
+        double i_exp = exp[x].first;
+        double j_exp = (j_up == j_down?exp[y].first: (exp[y].first *(j - j_down) + exp[z].first * (j_up - j)));
+
+        cnt_up += i_exp > j_exp;
+        cnt_down += i_exp < j_exp;
     }
 
     return std::make_tuple(

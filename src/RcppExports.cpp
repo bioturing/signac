@@ -41,7 +41,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // HarmonyMarker
-DataFrame HarmonyMarker(Rcpp::S4& S4_mtx, const Rcpp::NumericVector &cluster);
+DataFrame HarmonyMarker(Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster);
 RcppExport SEXP _Signac_HarmonyMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -605,9 +605,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
     {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 2},
-    {"_Signac_WriteSpMtFromArma", (DL_FUNC) &_Signac_WriteSpMtFromArma, 3},
-    {"_Signac_WriteSpMtFromS4", (DL_FUNC) &_Signac_WriteSpMtFromS4, 3},
-    {"_Signac_ReadSpMt", (DL_FUNC) &_Signac_ReadSpMt, 2},
+    {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
+    {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
+    {"_Signac_ReadSpMtAsSPMat", (DL_FUNC) &_Signac_ReadSpMtAsSPMat, 2},
     {"_Signac_ReadSpMtAsS4", (DL_FUNC) &_Signac_ReadSpMtAsS4, 2},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
