@@ -149,7 +149,7 @@ std::tuple<double, double, double> ComputeSimilarity(
     int cnt_z = -1;
 
     for (int i = 0; i < total_in; ++i) {
-        double j = i / total_in * total_out;
+        double j = i / (total_in - 1) * (total_out - 1);
         int j_down =  std::floor(j);
         int j_up = std::ceil(j);
 
