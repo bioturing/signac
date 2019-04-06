@@ -174,6 +174,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ReadH5Vector
+std::vector<int> ReadH5Vector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
+RcppExport SEXP _Signac_ReadH5Vector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadH5Vector(filePath, groupName, datasetName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ReadGeneExpH5
+void ReadGeneExpH5(const std::string& filePath, const std::string& groupName, const int g_idx, std::vector<int>& col_idx, std::vector<double>& g_exp);
+RcppExport SEXP _Signac_ReadGeneExpH5(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP g_idxSEXP, SEXP col_idxSEXP, SEXP g_expSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const int >::type g_idx(g_idxSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type col_idx(col_idxSEXP);
+    Rcpp::traits::input_parameter< std::vector<double>& >::type g_exp(g_expSEXP);
+    ReadGeneExpH5(filePath, groupName, g_idx, col_idx, g_exp);
+    return R_NilValue;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -609,6 +636,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
     {"_Signac_ReadSpMtAsSPMat", (DL_FUNC) &_Signac_ReadSpMtAsSPMat, 2},
     {"_Signac_ReadSpMtAsS4", (DL_FUNC) &_Signac_ReadSpMtAsS4, 2},
+    {"_Signac_ReadRowSumSpMt", (DL_FUNC) &_Signac_ReadRowSumSpMt, 2},
+    {"_Signac_ReadColSumSpMt", (DL_FUNC) &_Signac_ReadColSumSpMt, 2},
+    {"_Signac_GetListAttributes", (DL_FUNC) &_Signac_GetListAttributes, 3},
+    {"_Signac_GetListObjectNames", (DL_FUNC) &_Signac_GetListObjectNames, 2},
+    {"_Signac_GetListRootObjectNames", (DL_FUNC) &_Signac_GetListRootObjectNames, 1},
+    {"_Signac_Read10XH5Content", (DL_FUNC) &_Signac_Read10XH5Content, 3},
+    {"_Signac_ReadH5Vector", (DL_FUNC) &_Signac_ReadH5Vector, 3},
+    {"_Signac_ReadGeneExpH5", (DL_FUNC) &_Signac_ReadGeneExpH5, 5},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
     {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},

@@ -51,6 +51,100 @@ ReadSpMtAsS4 <- function(filePath, groupName) {
     .Call(`_Signac_ReadSpMtAsS4`, filePath, groupName)
 }
 
+#' ReadRowSumSpMt
+#'
+#' Read rows sums
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadRowSumSpMt <- function(filePath, groupName) {
+    .Call(`_Signac_ReadRowSumSpMt`, filePath, groupName)
+}
+
+#' ReadColSumSpMt
+#'
+#' Read cols sums
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadColSumSpMt <- function(filePath, groupName) {
+    .Call(`_Signac_ReadColSumSpMt`, filePath, groupName)
+}
+
+#' GetListAttributes
+#'
+#' Get list attribute of a dataset
+#'
+#' @param filePath A HDF5 path
+#' @param groupName A string (HDF5 dataset)
+#' @param datasetName A dataset name
+#' @export
+GetListAttributes <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_GetListAttributes`, filePath, groupName, datasetName)
+}
+
+#' GetListObjectNames
+#'
+#' Get list object of a group
+#'
+#' @param filePath A HDF5 path
+#' @param groupName A string (HDF5 dataset)
+#' @export
+GetListObjectNames <- function(filePath, groupName) {
+    .Call(`_Signac_GetListObjectNames`, filePath, groupName)
+}
+
+#' GetListRootObjectNames
+#'
+#' Get list groups
+#'
+#' @param filePath An HDF5 path
+#' @export
+GetListRootObjectNames <- function(filePath) {
+    .Call(`_Signac_GetListRootObjectNames`, filePath)
+}
+
+#' Read10XH5
+#'
+#' Get list triplet of SEXP
+#'
+#' @param s A SEXP type
+#' @export
+Read10XH5Content <- function(filePath, use_names, unique_features) {
+    .Call(`_Signac_Read10XH5Content`, filePath, use_names, unique_features)
+}
+
+#' ReadH5Vector
+#'
+#' This function is used to read a vector from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadH5Vector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadH5Vector`, filePath, groupName, datasetName)
+}
+
+#' ReadH5VectorRange
+#'
+#' This function is used to read a vector[i:j] from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadGeneExpH5 <- function(filePath, groupName, g_idx, col_idx, g_exp) {
+    invisible(.Call(`_Signac_ReadGeneExpH5`, filePath, groupName, g_idx, col_idx, g_exp))
+}
+
+#' FastMatMult
+#'
+#' This function is used to add two matrix
+#'
+#' @param mat1 A matrix
+#' @param mat2 A matrix
+#' @export
 FastMatMult <- function(mat1, mat2) {
     .Call(`_Signac_FastMatMult`, mat1, mat2)
 }
