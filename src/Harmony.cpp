@@ -141,9 +141,9 @@ std::tuple<double, double, double> ComputeSimilarity(
     int cnt_up = 0;
     int cnt_down = 0;
 
-    int x = -zero_in;
-    int y = -zero_out;
-    int z = -zero_out;
+    int x = -zero_in - 1;
+    int y = -zero_out - 1;
+    int z = -zero_out - 1;
     int cnt_x = -1;
     int cnt_y = -1;
     int cnt_z = -1;
@@ -155,19 +155,19 @@ std::tuple<double, double, double> ComputeSimilarity(
 
 
         while (cnt_x < i) {
-            cnt_x += x < 0 || exp[x].second == 1;
             ++x;
+            cnt_x += x < 0 || exp[x].second == 1;
         }
 
 
         while (cnt_y < j_down) {
-            cnt_y += y < 0 || exp[y].second == 2;
             ++y;
+            cnt_y += y < 0 || exp[y].second == 2;
         }
 
         while (cnt_z < j_up) {
-            cnt_z += z < 0 || exp[z].second == 2;
             ++z;
+            cnt_z += z < 0 || exp[z].second == 2;
         }
 
         double i_exp = (x < 0? 0 : exp[x].first);
