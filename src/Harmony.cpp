@@ -141,37 +141,40 @@ std::tuple<double, double, double> ComputeSimilarity(
     int cnt_up = 0;
     int cnt_down = 0;
 
-    int x = -1;
-    int y = -1;
-    int z = -1;
+    int x = -zero_in;
+    int y = -zero_out;
+    int z = -zero_out;
     int cnt_x = -1;
     int cnt_y = -1;
     int cnt_z = -1;
 
     for (int i = 0; i < total_in; ++i) {
-        double j = i / (total_in - 1) * (total_out - 1);
+        double j = (double) i / (total_in - 1) * (total_out - 1);
         int j_down =  std::floor(j);
         int j_up = std::ceil(j);
 
 
         while (cnt_x < i) {
+            cnt_x += x < 0 || exp[x].second == 1;
             ++x;
-            cnt_x += exp[x].second == 1;
         }
 
 
         while (cnt_y < j_down) {
+            cnt_y += y < 0 || exp[y].second == 2;
             ++y;
-            cnt_y += exp[y].second == 2;
         }
 
         while (cnt_z < j_up) {
+            cnt_z += z < 0 || exp[z].second == 2;
             ++z;
-            cnt_z += exp[z].second == 2;
         }
 
-        double i_exp = exp[x].first;
-        double j_exp = (j_up == j_down?exp[y].first: (exp[y].first *(j - j_down) + exp[z].first * (j_up - j)));
+        double i_exp = (x < 0? 0 : exp[x].first);
+        double j_down_exp = (y < 0? 0 : exp[y].first);
+        double j_up_exp = (z < 0? 0 : exp[z].first);
+
+        double j_exp = (j_up == j_down?j_down_exp: (j_up_exp *(j - j_down) + j_down_exp * (j_up - j)));
 
         cnt_up += i_exp > j_exp;
         cnt_down += i_exp < j_exp;
