@@ -69,7 +69,7 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
     return logincbeta(shape1, shape2, score);
 }
 
-void GetTotalCount(const Rcpp::NumericVector &cluster, std::array<int, 2> total_cnt)
+void GetTotalCount(const Rcpp::NumericVector &cluster, std::array<int, 2> &total_cnt)
 {
     total_cnt[0] = total_cnt[1] = 0;
 
