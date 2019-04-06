@@ -69,7 +69,7 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
     return logincbeta(shape1, shape2, score);
 }
 
-void GetTotalCount(const Rcpp::NumericVector &cluster, int total_cnt[2])
+void GetTotalCount(const Rcpp::NumericVector &cluster, std::array<int, 2> total_cnt)
 {
     total_cnt[0] = total_cnt[1] = 0;
 
@@ -94,8 +94,8 @@ int GetThreshold(int total)
 std::tuple<double, double, double> ComputeSimilarity(
         const Rcpp::NumericVector &cluster,
         std::vector<std::pair<double, int>> &exp,
-        int total_cnt[2],
-        int zero_cnt[2],
+        std::array<int, 2> total_cnt,
+        std::array<int, 2> zero_cnt,
         int thres)
 {
     int total_in = total_cnt[0];
@@ -191,7 +191,7 @@ void HarmonyTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
         std::vector<std::tuple<double, double, double> > &res,
-        int total_cnt[2])
+        std::array<int, 2> total_cnt)
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
     int n_genes = mtx.n_rows;
@@ -200,7 +200,7 @@ void HarmonyTest(
         throw std::domain_error("Input cluster size is not equal to the number of rows in matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
-    std::vector<int[2]> zero_cnt(n_genes);
+    std::vector<std::array<int, 2>> zero_cnt(n_genes);
 
     res.resize(n_genes);
     arma::sp_mat::const_col_iterator c_it;
@@ -318,7 +318,7 @@ DataFrame PostProcess(
 // [[Rcpp::export]]
 DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
 {
-    int total_cnt[2];
+    std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
     const arma::sp_mat mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
