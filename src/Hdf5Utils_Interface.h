@@ -15,6 +15,10 @@
 // [[Rcpp::depends(Rhdf5lib)]]
 // [[Rcpp::depends(BH)]]
 #include "Hdf5Util.h"
+#include <highfive/H5File.hpp>
+#include <highfive/H5Group.hpp>
+
+using namespace HighFive;
 
 /*
  * @abstract: Simple function to read a numeric vector from HDF5
@@ -24,7 +28,7 @@
  * @example:
  * std::vector<int> shape = ReadH5Vector("inst/v3input.h5", "matrix", "shape");
  */
-Rcpp::NumericVector ReadH5Vector(const std::string &filePath,
+std::vector<int> ReadH5Vector(const std::string &filePath,
                                  const std::string &groupName,
                                  const std::string &datasetName);
 
@@ -43,12 +47,18 @@ Rcpp::NumericVector ReadH5Vector(const std::string &filePath,
  * ReadH5VectorRange("inst/v3input.h5", "matrix", 0, 100, gene_exp);
  */
 template<typename T>
-void ReadH5VectorRange(const std::string &filePath,
-                                 const std::string &groupName,
-                                 const std::string &datasetName,
-                                 const int start,
-                                 const int end,
-                                 std::vector<T> &vec);
+void inline ReadH5VectorRange(const std::string &filePath,
+                       const std::string &groupName,
+                       const std::string &datasetName,
+                       unsigned int start,
+                       unsigned int end,
+                       std::vector<T> &vec) {
+    File file(filePath, File::ReadOnly);
+
+    DataSet data = file.getDataSet(groupName + "/" + datasetName);
+
+    data.select({start}, {end - start}).read(vec);
+}
 
 /*
  * @abstract: Read the expression vector of one gene
