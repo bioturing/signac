@@ -401,10 +401,10 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
     types <- GetFeatureType(infile, base.slot)
     barcodes <- infile[[paste0(base.slot, '/barcodes')]]
     sparse.mat <- sparseMatrix(
-      i = genome$indices[] + 1,
-      p = genome$indptr[],
-      x = as.numeric(x = genome$data[]),
-      dims = genome$shape[],
+      i = genomes[[matrix_name]]$indices[] + 1,
+      p = genomes[[matrix_name]]$indptr[],
+      x = as.numeric(x = genomes[[matrix_name]]$data[]),
+      dims = genomes[[matrix_name]]$shape[],
       giveCsparse = FALSE
     )
     rownames(x = sparse.mat) <- features

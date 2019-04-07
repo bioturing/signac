@@ -380,20 +380,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadGeneExpH5
-void ReadGeneExpH5(const std::string& filePath, const std::string& groupName, const int g_idx, std::vector<int>& col_idx, std::vector<double>& g_exp);
-RcppExport SEXP _Signac_ReadGeneExpH5(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP g_idxSEXP, SEXP col_idxSEXP, SEXP g_expSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
-    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    Rcpp::traits::input_parameter< const int >::type g_idx(g_idxSEXP);
-    Rcpp::traits::input_parameter< std::vector<int>& >::type col_idx(col_idxSEXP);
-    Rcpp::traits::input_parameter< std::vector<double>& >::type g_exp(g_expSEXP);
-    ReadGeneExpH5(filePath, groupName, g_idx, col_idx, g_exp);
-    return R_NilValue;
-END_RCPP
-}
 // ReadIntegerVector
 Rcpp::NumericVector ReadIntegerVector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
 RcppExport SEXP _Signac_ReadIntegerVector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
@@ -890,6 +876,7 @@ static const R_CallMethodDef CallEntries[] = {
 =======
     {"_Signac_WriteRootDataset", (DL_FUNC) &_Signac_WriteRootDataset, 3},
     {"_Signac_ReadRootDataset", (DL_FUNC) &_Signac_ReadRootDataset, 2},
+<<<<<<< 76b2b64b58fb18e777ed2f825e0429e20509e1b0
 <<<<<<< 12516e0bde4aa096932420c0ddd8c6c401ba4fea
 >>>>>>> Fix hdf5 read string field
 =======
@@ -901,6 +888,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_ReadH5Vector", (DL_FUNC) &_Signac_ReadH5Vector, 3},
 >>>>>>> Update function
 =======
+=======
+>>>>>>> Update read 10x by cpp
     {"_Signac_ReadIntegerVector", (DL_FUNC) &_Signac_ReadIntegerVector, 3},
     {"_Signac_ReadDoubleVector", (DL_FUNC) &_Signac_ReadDoubleVector, 3},
 >>>>>>> Update read vector HDF5
