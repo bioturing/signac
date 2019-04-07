@@ -401,15 +401,16 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
     types <- GetFeatureType(infile, base.slot)
     barcodes <- infile[[paste0(base.slot, '/barcodes')]]
     sparse.mat <- sparseMatrix(
-      i = indices[] + 1,
-      p = indptr[],
-      x = as.numeric(x = counts[]),
-      dims = shp[],
+      i = genome$indices[] + 1,
+      p = genome$indptr[],
+      x = as.numeric(x = genome$data[]),
+      dims = genome$shape[],
       giveCsparse = FALSE
     )
     rownames(x = sparse.mat) <- features
-    colnames(x = sparse.mat) <- barcodes[]
+    colnames(x = sparse.mat) <- genome$barcodes[]
     sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
+
     # Split v3 multimodal
     types.unique <- unique(types)
     output <- lapply(names(genomes), function(genome) {
