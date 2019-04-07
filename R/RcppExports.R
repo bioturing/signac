@@ -63,6 +63,7 @@ HarmonyMarkerH5 <- function(hdf5Path, cluster) {
 #' @export
 WriteSpMtAsSpMat <- function(filePath, groupName, mat) {
     invisible(.Call(`_Signac_WriteSpMtAsSpMat`, filePath, groupName, mat))
+<<<<<<< 3c786b69c7ca9e49548cdcadbda93cd74c829252
 }
 
 WriteSpMtFromS4 <- function(filePath, groupName, mat) {
@@ -71,6 +72,8 @@ WriteSpMtFromS4 <- function(filePath, groupName, mat) {
 
 ReadSpMt <- function(filePath, groupName) {
     .Call(`_Signac_ReadSpMt`, filePath, groupName)
+=======
+>>>>>>> Fix hdf5 read string field
 }
 
 ReadSpMtAsS4 <- function(filePath, groupName) {
@@ -226,10 +229,35 @@ GetListRootObjectNames <- function(filePath) {
 #'
 #' Get list triplet of SEXP
 #'
-#' @param s A SEXP type
+#' @param filePath A fiel path
+#' @param use_names Use names flag
+#' @param unique_features Unique features flag
 #' @export
 Read10XH5Content <- function(filePath, use_names, unique_features) {
     .Call(`_Signac_Read10XH5Content`, filePath, use_names, unique_features)
+}
+
+#' WriteRootDataset
+#'
+#' Write a string vector to root group
+#'
+#' @param filePath A fiel path
+#' @param datasetName A dataset name
+#' @param datasetVal A string vector
+#' @export
+WriteRootDataset <- function(filePath, datasetName, datasetVal) {
+    invisible(.Call(`_Signac_WriteRootDataset`, filePath, datasetName, datasetVal))
+}
+
+#' ReadRootDataset
+#'
+#' Read a string vector from root group
+#'
+#' @param filePath A fiel path
+#' @param datasetName A dataset name
+#' @export
+ReadRootDataset <- function(filePath, datasetName) {
+    .Call(`_Signac_ReadRootDataset`, filePath, datasetName)
 }
 
 #' FastMatMult

@@ -132,8 +132,6 @@ struct data_converter {
                        std::is_same<std::string, Scalar>::value),
                       "supported datatype should be an arithmetic value, a "
                       "std::string or a container/array");
-        (void)datamem;
-        (void)space; // do nothing
     }
 
     inline Scalar* transform_read(Scalar& datamem) { return &datamem; }

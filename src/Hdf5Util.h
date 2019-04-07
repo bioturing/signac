@@ -802,13 +802,14 @@ public:
 
         try {
             std::vector<std::string> genomes;
-            GetListRootObjectNames(genomes);
+            GetListRootObjectNames(file, genomes);
 
             for(std::string &groupName : genomes) {
                 if(file->exist(groupName) == false) {
                     std::stringstream ostr;
                     ostr << "Can not exist group :" << groupName;
                     ::Rf_error(ostr.str().c_str());
+                    Close(file);
                     throw;
                 }
 
@@ -833,6 +834,7 @@ public:
                         std::stringstream ostr;
                         ostr << "Can not exist dataset : " << datasetName << " in " << groupName;
                         ::Rf_error(ostr.str().c_str());
+                        Close(file);
                         throw;
                     }
                 }
@@ -872,8 +874,8 @@ public:
                     it = std::unique (arrFeature.begin(), arrFeature.end());
                     arrFeature.resize(std::distance(arrFeature.begin(),it));
                 }
-                s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
 
+                std::vector<std::string> arrFeatureType;
                 if(file->exist(groupName + "/features/feature_type") == false) {
                     HighFive::DataSet datasetFeatureType = file->getDataSet(groupName + "/features/feature_type");
                     std::vector<std::string> arrFeatureType;

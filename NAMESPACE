@@ -54,8 +54,11 @@ export(Read10X)
 export(Read10XH5)
 export(Read10XH5Content)
 export(ReadColSumSpMt)
+<<<<<<< 3c786b69c7ca9e49548cdcadbda93cd74c829252
 export(ReadDoubleVector)
 export(ReadIntegerVector)
+=======
+>>>>>>> Fix hdf5 read string field
 export(ReadRootDataset)
 export(ReadRowSumSpMt)
 export(ReadSpMt)
