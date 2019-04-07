@@ -54,6 +54,7 @@ export(Read10X)
 export(Read10XH5)
 export(Read10XH5Content)
 export(ReadColSumSpMt)
+<<<<<<< 909c01a69b2b93f905200442091abfd44ac3484f
 <<<<<<< 12516e0bde4aa096932420c0ddd8c6c401ba4fea
 <<<<<<< 3c786b69c7ca9e49548cdcadbda93cd74c829252
 export(ReadDoubleVector)
@@ -63,6 +64,11 @@ export(ReadIntegerVector)
 =======
 export(ReadGeneExpH5)
 >>>>>>> Update HDF5 function
+=======
+export(ReadDoubleVector)
+export(ReadGeneExpH5)
+export(ReadIntegerVector)
+>>>>>>> Update code RCPP hdf5
 export(ReadRootDataset)
 export(ReadRowSumSpMt)
 export(ReadSpMt)

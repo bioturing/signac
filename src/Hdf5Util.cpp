@@ -441,7 +441,7 @@ Rcpp::NumericVector ReadIntegerVector(const std::string &filePath,
     std::vector<int> dataVec;
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     HighFive::File *file = oHdf5Util.Open(1);
-    oHdf5Util.ReadDatasetVector(file, groupName, datasetName, dataVec);
+    oHdf5Util.ReadDatasetVector<int>(file, groupName, datasetName, dataVec);
     oHdf5Util.Close(file);
     return Rcpp::wrap(dataVec);
 }
