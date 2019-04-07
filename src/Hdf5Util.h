@@ -306,8 +306,11 @@ public:
             ostr << "Read dataset (STRING) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
             ::Rf_warning(ostr.str().c_str());
 #endif
-
-            datasetVec.read(vvec, str_size, str_pad, str_cset, dims[0]);
+            if((str_pad == H5T_STR_NULLTERM) && (str_cset == H5T_CSET_UTF8)) {
+                datasetVec.read(vvec);
+            } else {
+                datasetVec.read(vvec, str_size, str_pad, str_cset, dims[0]);
+            }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadDatatypeVector (STRING) HDF5 format, error=" << err.what() ;
