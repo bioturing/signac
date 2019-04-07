@@ -260,6 +260,17 @@ ReadRootDataset <- function(filePath, datasetName) {
     .Call(`_Signac_ReadRootDataset`, filePath, datasetName)
 }
 
+#' ReadH5VectorRange
+#'
+#' This function is used to read a vector[i:j] from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadGeneExpH5 <- function(filePath, groupName, g_idx, col_idx, g_exp) {
+    invisible(.Call(`_Signac_ReadGeneExpH5`, filePath, groupName, g_idx, col_idx, g_exp))
+}
+
 #' FastMatMult
 #'
 #' This function is used to add two matrix

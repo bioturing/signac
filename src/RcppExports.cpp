@@ -380,6 +380,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ReadGeneExpH5
+void ReadGeneExpH5(const std::string& filePath, const std::string& groupName, const int g_idx, std::vector<int>& col_idx, std::vector<double>& g_exp);
+RcppExport SEXP _Signac_ReadGeneExpH5(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP g_idxSEXP, SEXP col_idxSEXP, SEXP g_expSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const int >::type g_idx(g_idxSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type col_idx(col_idxSEXP);
+    Rcpp::traits::input_parameter< std::vector<double>& >::type g_exp(g_expSEXP);
+    ReadGeneExpH5(filePath, groupName, g_idx, col_idx, g_exp);
+    return R_NilValue;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -850,7 +864,11 @@ static const R_CallMethodDef CallEntries[] = {
 =======
     {"_Signac_WriteRootDataset", (DL_FUNC) &_Signac_WriteRootDataset, 3},
     {"_Signac_ReadRootDataset", (DL_FUNC) &_Signac_ReadRootDataset, 2},
+<<<<<<< 12516e0bde4aa096932420c0ddd8c6c401ba4fea
 >>>>>>> Fix hdf5 read string field
+=======
+    {"_Signac_ReadGeneExpH5", (DL_FUNC) &_Signac_ReadGeneExpH5, 5},
+>>>>>>> Update HDF5 function
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastConvertToTripletMat", (DL_FUNC) &_Signac_FastConvertToTripletMat, 1},
     {"_Signac_FastSparseMatSqrt", (DL_FUNC) &_Signac_FastSparseMatSqrt, 1},

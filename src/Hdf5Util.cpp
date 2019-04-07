@@ -237,14 +237,21 @@ Rcpp::StringVector ReadRootDataset(const std::string &filePath, const std::strin
     return Rcpp::wrap(dataVec);
 }
 
+<<<<<<< 12516e0bde4aa096932420c0ddd8c6c401ba4fea
 //' ReadIntegerVector
 //'
 //' This function is used to read a integer vector from hdf5 file
+=======
+//' ReadH5VectorRange
+//'
+//' This function is used to read a vector[i:j] from hdf5 file
+>>>>>>> Update HDF5 function
 //'
 //' @param filePath A string (HDF5 path)
 //' @param groupName A string (HDF5 dataset)
 //' @export
 // [[Rcpp::export]]
+<<<<<<< 12516e0bde4aa096932420c0ddd8c6c401ba4fea
 Rcpp::NumericVector ReadIntegerVector(const std::string &filePath,
                                       const std::string &groupName,
                                       const std::string &datasetName) {
@@ -402,4 +409,20 @@ Rcpp::StringVector GetListRootObjectNames(const std::string &filePath) {
 // [[Rcpp::export]]
 Rcpp::List Read10XH5Content(const std::string &filePath, const bool &use_names, const bool &unique_features) {
     return Rcpp::List::create();
+=======
+void ReadGeneExpH5(const std::string &filePath,
+                   const std::string &groupName,
+                   const int g_idx,
+                   std::vector<int> &col_idx,
+                   std::vector<double> &g_exp) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
+    std::vector<int> vec;
+    oHdf5Util.ReadDatasetVector<int>(file, groupName, "indptr", vec);
+    oHdf5Util.ReadDatasetRangeVector<int>(file, groupName, "indices", (unsigned int)vec[g_idx],
+                      (unsigned int)vec[g_idx + 1], col_idx);
+    oHdf5Util.ReadDatasetRangeVector<double>(file, groupName, "data", (unsigned int)vec[g_idx],
+                      (unsigned int)vec[g_idx + 1], g_exp);
+    oHdf5Util.Close(file);
+>>>>>>> Update HDF5 function
 }
