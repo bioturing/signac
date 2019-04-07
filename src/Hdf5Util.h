@@ -468,7 +468,11 @@ public:
             ::Rf_warning(ostr.str().c_str());
 #endif
 
-            datasetVec.read(datasetVal, str_size, str_pad, str_cset, dims[0]);
+            if((str_pad == H5T_STR_NULLTERM) && (str_cset == H5T_CSET_UTF8)) {
+                datasetVec.read(datasetVal);
+            } else {
+                datasetVec.read(datasetVal, str_size, str_pad, str_cset, dims[0]);
+            }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadRootDataset HDF5 format, error=" << err.what() ;
