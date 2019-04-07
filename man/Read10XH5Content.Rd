@@ -7,7 +7,11 @@
 Read10XH5Content(filePath, use_names, unique_features)
 }
 \arguments{
-\item{s}{A SEXP type}
+\item{filePath}{A fiel path}
+
+\item{use_names}{Use names flag}
+
+\item{unique_features}{Unique features flag}
 }
 \description{
 Get list triplet of SEXP

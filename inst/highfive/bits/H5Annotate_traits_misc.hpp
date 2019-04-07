@@ -49,6 +49,18 @@ AnnotateTraits<Derivate>::createAttribute(const std::string& attribute_name,
 }
 
 template <typename Derivate>
+template <typename T>
+inline Attribute
+AnnotateTraits<Derivate>::createAttribute(const std::string& attribute_name,
+                                          const T& data) {
+    Attribute att = createAttribute(
+        attribute_name, DataSpace::From(data),
+        AtomicType<typename details::type_of_array<T>::type>());
+    att.write(data);
+    return att;
+}
+
+template <typename Derivate>
 inline Attribute AnnotateTraits<Derivate>::getAttribute(
     const std::string& attribute_name) const {
     Attribute attribute;
@@ -68,7 +80,7 @@ inline size_t AnnotateTraits<Derivate>::getNumberAttributes() const {
         HDF5ErrMapper::ToException<AttributeException>(std::string(
             "Unable to count attributes in existing group or file"));
     }
-    return res;
+    return static_cast<size_t>(res);
 }
 
 template <typename Derivate>

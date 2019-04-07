@@ -65,16 +65,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // WriteSpMtAsSpMat
-bool WriteSpMtAsSpMat(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
+void WriteSpMtAsSpMat(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
 RcppExport SEXP _Signac_WriteSpMtAsSpMat(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
 BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(WriteSpMtAsSpMat(filePath, groupName, mat));
-    return rcpp_result_gen;
+    WriteSpMtAsSpMat(filePath, groupName, mat);
+    return R_NilValue;
 END_RCPP
 }
 // WriteSpMtAsS4
@@ -186,31 +185,54 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadH5Vector
-std::vector<int> ReadH5Vector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
-RcppExport SEXP _Signac_ReadH5Vector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
+// WriteRootDataset
+void WriteRootDataset(const std::string& filePath, const std::string& datasetName, const std::vector<std::string>& datasetVal);
+RcppExport SEXP _Signac_WriteRootDataset(SEXP filePathSEXP, SEXP datasetNameSEXP, SEXP datasetValSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::string>& >::type datasetVal(datasetValSEXP);
+    WriteRootDataset(filePath, datasetName, datasetVal);
+    return R_NilValue;
+END_RCPP
+}
+// ReadRootDataset
+Rcpp::StringVector ReadRootDataset(const std::string& filePath, const std::string& datasetName);
+RcppExport SEXP _Signac_ReadRootDataset(SEXP filePathSEXP, SEXP datasetNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadRootDataset(filePath, datasetName));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ReadIntegerVector
+Rcpp::NumericVector ReadIntegerVector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
+RcppExport SEXP _Signac_ReadIntegerVector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadH5Vector(filePath, groupName, datasetName));
+    rcpp_result_gen = Rcpp::wrap(ReadIntegerVector(filePath, groupName, datasetName));
     return rcpp_result_gen;
 END_RCPP
 }
-// ReadGeneExpH5
-void ReadGeneExpH5(const std::string& filePath, const std::string& groupName, const int g_idx, std::vector<int>& col_idx, std::vector<double>& g_exp);
-RcppExport SEXP _Signac_ReadGeneExpH5(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP g_idxSEXP, SEXP col_idxSEXP, SEXP g_expSEXP) {
+// ReadDoubleVector
+Rcpp::NumericVector ReadDoubleVector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
+RcppExport SEXP _Signac_ReadDoubleVector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
     Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    Rcpp::traits::input_parameter< const int >::type g_idx(g_idxSEXP);
-    Rcpp::traits::input_parameter< std::vector<int>& >::type col_idx(col_idxSEXP);
-    Rcpp::traits::input_parameter< std::vector<double>& >::type g_exp(g_expSEXP);
-    ReadGeneExpH5(filePath, groupName, g_idx, col_idx, g_exp);
-    return R_NilValue;
+    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadDoubleVector(filePath, groupName, datasetName));
+    return rcpp_result_gen;
 END_RCPP
 }
 // FastMatMult
@@ -655,8 +677,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_GetListObjectNames", (DL_FUNC) &_Signac_GetListObjectNames, 2},
     {"_Signac_GetListRootObjectNames", (DL_FUNC) &_Signac_GetListRootObjectNames, 1},
     {"_Signac_Read10XH5Content", (DL_FUNC) &_Signac_Read10XH5Content, 3},
-    {"_Signac_ReadH5Vector", (DL_FUNC) &_Signac_ReadH5Vector, 3},
-    {"_Signac_ReadGeneExpH5", (DL_FUNC) &_Signac_ReadGeneExpH5, 5},
+    {"_Signac_WriteRootDataset", (DL_FUNC) &_Signac_WriteRootDataset, 3},
+    {"_Signac_ReadRootDataset", (DL_FUNC) &_Signac_ReadRootDataset, 2},
+    {"_Signac_ReadIntegerVector", (DL_FUNC) &_Signac_ReadIntegerVector, 3},
+    {"_Signac_ReadDoubleVector", (DL_FUNC) &_Signac_ReadDoubleVector, 3},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastGetRowsOfMat", (DL_FUNC) &_Signac_FastGetRowsOfMat, 2},
     {"_Signac_FastGetColsOfMat", (DL_FUNC) &_Signac_FastGetColsOfMat, 2},

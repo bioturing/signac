@@ -12,10 +12,11 @@
 #include <string>
 #include <complex>
 
+#include <H5Tpublic.h>
+
 #include "../H5DataType.hpp"
 #include "../H5Exception.hpp"
 
-#include <H5Tpublic.h>
 
 namespace HighFive {
 
@@ -110,28 +111,28 @@ inline AtomicType<bool>::AtomicType() {
 template <>
 inline AtomicType<std::string>::AtomicType() {
     _hid = H5Tcopy(H5T_C_S1);
+
     if (H5Tset_size(_hid, H5T_VARIABLE) < 0) {
         HDF5ErrMapper::ToException<DataTypeException>(
             "Unable to define datatype size to variable");
     }
+
     // define encoding to UTF-8 by default
     H5Tset_cset(_hid, H5T_CSET_UTF8);
 }
 
-
-
-template <> 
+template <>
 inline AtomicType<std::complex<double> >::AtomicType()
 {
 		static hid_t cplx_hid;
 		static size_t real_offset;//
 		static size_t imag_offset;//
-        
+
         cplx_hid =   H5Tcreate( H5T_COMPOUND, sizeof(std::complex<double>) );
 
         real_offset=  0.;
         imag_offset=  sizeof(double);
-        
+
 
         // h5py/numpy compatible datatype
         H5Tinsert(cplx_hid , "r" , real_offset , H5T_NATIVE_DOUBLE);

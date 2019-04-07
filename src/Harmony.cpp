@@ -5,6 +5,7 @@
 #define HARMONY_EPS 1e-50
 #define MINIMAL_SAMPLE 10
 #define GROUPING_RATE 0.6
+#define GROUP_NAME "bioturing"
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -22,7 +23,7 @@
 #include "CommonUtil.h"
 #include "SparseMatrixUtil.h"
 #include "incbeta.h"
-#include "Hdf5Utils_Interface.h"
+#include "Hdf5Util.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -218,7 +219,7 @@ void HarmonyTest(
         }
     }
 
-    for (int i; i < n_genes; ++i) {
+    for (int i = 0; i < n_genes; ++i) {
         zero_cnt[i][0] = total_cnt[0] - zero_cnt[i][0];
         zero_cnt[i][1] = total_cnt[1] - zero_cnt[i][1];
         res[i] = ComputeSimilarity(cluster, exp[i], total_cnt, zero_cnt[i], thres);
@@ -226,13 +227,16 @@ void HarmonyTest(
 }
 
 void HarmonyTest(
-        const std::string &hdf5Path,
+        com::bioturing::Hdf5Util &oHdf5Util,
+        HighFive::File *file,
         const Rcpp::NumericVector &cluster,
         std::vector<std::tuple<double, double, double> > &res,
         std::array<int, 2> total_cnt)
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
-    std::vector<int> shape = ReadH5Vector(hdf5Path, GROUP_NAME, "shape");
+    std::vector<int> shape;
+    oHdf5Util.ReadDatasetVector<int>(file, GROUP_NAME, "shape", shape);
+
     int n_genes = shape[1];
 
     if (cluster.size() != shape[0])
@@ -243,7 +247,7 @@ void HarmonyTest(
     for (int i = 0; i < n_genes; ++i) {
         std::vector<int> col_idx;
         std::vector<double> g_exp;
-        ReadGeneExpH5(hdf5Path, GROUP_NAME, i, col_idx, g_exp);
+        oHdf5Util.ReadGeneExpH5(file, GROUP_NAME, i, col_idx,  g_exp);
 
         std::vector<std::pair<double, int>> exp;
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
@@ -334,19 +338,22 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
 // [[Rcpp::export]]
 DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector &cluster)
 {
+    com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
+    HighFive::File *file = oHdf5Util.Open(1);
+
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
     Rcout << "Group1 " << total_cnt[0] << "Group2 " << total_cnt[1] << std::endl;
-    std::vector<int> shape = ReadH5Vector(hdf5Path, GROUP_NAME, "shape");
+
     std::vector<std::tuple<double, double, double>> res;
 
-    HarmonyTest(hdf5Path, cluster, res, total_cnt);
+    HarmonyTest(oHdf5Util, file, cluster, res, total_cnt);
     Rcout << "Done calculate" << std::endl;
+    std::vector<std::string> rownames;
+    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME, "features/name", rownames);
 
-    std::vector<std::string> rownames(shape[1]);
-    for (int i = 0; i < shape[1]; ++i) {
-        rownames[i] = std::to_string(i);
-    }
+    oHdf5Util.Close(file);
+
     return PostProcess(res, rownames);
 }

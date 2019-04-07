@@ -19,6 +19,9 @@
 #include <string>
 
 #ifdef H5_USE_BOOST
+// In some versions of Boost (starting with 1.64), you have to include the serialization header before ublas
+#include <boost/serialization/vector.hpp>
+
 #include <boost/multi_array.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #endif
@@ -119,14 +122,15 @@ SliceTraits<Derivate>::select(const std::vector<size_t>& columns) const {
 template <typename Derivate>
 inline Selection
 SliceTraits<Derivate>::select(const ElementSet& elements) const {
-    hsize_t* data = NULL;
+    const hsize_t* data = NULL;
     const std::size_t length = elements._ids.size();
     std::vector<hsize_t> raw_elements;
 
     // optimised at compile time
     // switch for data conversion on 32bits platforms
     if (std::is_same<std::size_t, hsize_t>::value) {
-        data = (hsize_t*)(&(elements._ids[0]));
+        // `if constexpr` can't be used, thus a reinterpret_cast is needed.
+        data = reinterpret_cast<const hsize_t*>(&(elements._ids[0]));
     } else {
         raw_elements.resize(length);
         std::copy(elements._ids.begin(), elements._ids.end(),
@@ -167,7 +171,7 @@ inline void SliceTraits<Derivate>::read(T& array) const {
     const AtomicType<typename details::type_of_array<type_no_const>::type>
         array_datatype;
 
-    // Apply pre read convertions
+    // Apply pre-read conversions
     details::data_converter<type_no_const> converter(nocv_array, mem_space);
 
     if (H5Dread(
@@ -177,11 +181,52 @@ inline void SliceTraits<Derivate>::read(T& array) const {
             space.getId(), H5P_DEFAULT,
             static_cast<void*>(converter.transform_read(nocv_array))) < 0) {
         HDF5ErrMapper::ToException<DataSetException>(
-            "Error during HDF5 Read: ");
+            "Dataset Error during HDF5 Read (1): ");
     }
 
     // re-arrange results
     converter.process_result(array);
+}
+
+template <typename Derivate>
+template <typename T>
+inline void SliceTraits<Derivate>::read(T& array, size_t str_size, H5T_str_t str_pad, H5T_cset_t str_cset, unsigned int total_size) const {
+    typedef typename std::remove_const<T>::type type_no_const;
+
+    type_no_const& nocv_array = const_cast<type_no_const&>(array);
+
+    const size_t dim_array = details::array_dims<type_no_const>::value;
+    DataSpace space = static_cast<const Derivate*>(this)->getSpace();
+    DataSpace mem_space = static_cast<const Derivate*>(this)->getMemSpace();
+
+    if (!details::checkDimensions(mem_space, dim_array)) {
+        std::ostringstream ss;
+        ss << "Impossible to read DataSet of dimensions "
+           << mem_space.getNumberDimensions() << " into arrays of dimensions "
+           << dim_array;
+        throw DataSpaceException(ss.str());
+    }
+
+    // Create mem datatype
+    const AtomicType<typename details::type_of_array<type_no_const>::type>
+        array_datatype(str_size, str_pad, str_cset);
+
+    // Apply pre-read conversions
+    details::data_converter<type_no_const> converter(nocv_array, mem_space);
+
+    char *rdata = (char *)calloc(total_size, str_size);
+    if (H5Dread(
+            details::get_dataset(static_cast<const Derivate*>(this)).getId(),
+            array_datatype.getId(),
+            details::get_memspace_id((static_cast<const Derivate*>(this))),
+            space.getId(), H5P_DEFAULT,
+            rdata) < 0) {
+        HDF5ErrMapper::ToException<DataSetException>(
+            "Dataset Error during HDF5 Read (2): ");
+    }
+
+    // re-arrange results
+    converter.process_result(array, rdata, total_size, str_size);
 }
 
 template <typename Derivate>
@@ -201,7 +246,7 @@ inline void SliceTraits<Derivate>::read(T* array) const {
             space.getId(), H5P_DEFAULT,
             static_cast<void*>(array)) < 0) {
         HDF5ErrMapper::ToException<DataSetException>(
-            "Error during HDF5 Read: ");
+            "Dataset Error during HDF5 Read (3): ");
     }
 }
 
@@ -226,7 +271,7 @@ inline void SliceTraits<Derivate>::write(const T& buffer) {
     const AtomicType<typename details::type_of_array<type_no_const>::type>
         array_datatype;
 
-    // Apply pre write convertions
+    // Apply pre write conversions
     details::data_converter<type_no_const> converter(nocv_buffer, mem_space);
 
     if (H5Dwrite(details::get_dataset(static_cast<Derivate*>(this)).getId(),
@@ -236,7 +281,7 @@ inline void SliceTraits<Derivate>::write(const T& buffer) {
                  static_cast<const void*>(
                      converter.transform_write(nocv_buffer))) < 0) {
         HDF5ErrMapper::ToException<DataSetException>(
-            "Error during HDF5 Write: ");
+            "Dataset Error during HDF5 Write: ");
     }
 }
 
@@ -255,7 +300,7 @@ inline void SliceTraits<Derivate>::write(const T* buffer) {
                  space.getId(), H5P_DEFAULT,
                  static_cast<const void*>(buffer)) < 0) {
         HDF5ErrMapper::ToException<DataSetException>(
-            "Error during HDF5 Write: ");
+            "Dataset Error during HDF5 Write: ");
     }
 }
 }

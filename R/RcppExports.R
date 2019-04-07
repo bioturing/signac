@@ -48,7 +48,7 @@ HarmonyMarkerH5 <- function(hdf5Path, cluster) {
 #' @param mat A sparse matrix
 #' @export
 WriteSpMtAsSpMat <- function(filePath, groupName, mat) {
-    .Call(`_Signac_WriteSpMtAsSpMat`, filePath, groupName, mat)
+    invisible(.Call(`_Signac_WriteSpMtAsSpMat`, filePath, groupName, mat))
 }
 
 WriteSpMtFromS4 <- function(filePath, groupName, mat) {
@@ -122,32 +122,57 @@ GetListRootObjectNames <- function(filePath) {
 #'
 #' Get list triplet of SEXP
 #'
-#' @param s A SEXP type
+#' @param filePath A fiel path
+#' @param use_names Use names flag
+#' @param unique_features Unique features flag
 #' @export
 Read10XH5Content <- function(filePath, use_names, unique_features) {
     .Call(`_Signac_Read10XH5Content`, filePath, use_names, unique_features)
 }
 
-#' ReadH5Vector
+#' WriteRootDataset
 #'
-#' This function is used to read a vector from hdf5 file
+#' Write a string vector to root group
 #'
-#' @param filePath A string (HDF5 path)
-#' @param groupName A string (HDF5 dataset)
+#' @param filePath A fiel path
+#' @param datasetName A dataset name
+#' @param datasetVal A string vector
 #' @export
-ReadH5Vector <- function(filePath, groupName, datasetName) {
-    .Call(`_Signac_ReadH5Vector`, filePath, groupName, datasetName)
+WriteRootDataset <- function(filePath, datasetName, datasetVal) {
+    invisible(.Call(`_Signac_WriteRootDataset`, filePath, datasetName, datasetVal))
 }
 
-#' ReadH5VectorRange
+#' ReadRootDataset
 #'
-#' This function is used to read a vector[i:j] from hdf5 file
+#' Read a string vector from root group
+#'
+#' @param filePath A fiel path
+#' @param datasetName A dataset name
+#' @export
+ReadRootDataset <- function(filePath, datasetName) {
+    .Call(`_Signac_ReadRootDataset`, filePath, datasetName)
+}
+
+#' ReadIntegerVector
+#'
+#' This function is used to read a integer vector from hdf5 file
 #'
 #' @param filePath A string (HDF5 path)
 #' @param groupName A string (HDF5 dataset)
 #' @export
-ReadGeneExpH5 <- function(filePath, groupName, g_idx, col_idx, g_exp) {
-    invisible(.Call(`_Signac_ReadGeneExpH5`, filePath, groupName, g_idx, col_idx, g_exp))
+ReadIntegerVector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadIntegerVector`, filePath, groupName, datasetName)
+}
+
+#' ReadDoubleVector
+#'
+#' This function is used to read a double vector from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadDoubleVector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadDoubleVector`, filePath, groupName, datasetName)
 }
 
 #' FastMatMult

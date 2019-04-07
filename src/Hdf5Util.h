@@ -197,6 +197,30 @@ public:
         }
     }
 
+    void ReadGeneExpH5(HighFive::File *file, const std::string &groupName, const int g_idx, std::vector<int> &col_idx,  std::vector<double> &g_exp) {
+        if(file == nullptr) {
+            std::stringstream ostr;
+            ostr << "Can not read dataset, please open file :" << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        try {
+            std::vector<int> vec;
+            ReadDatasetVector<int>(file, groupName, "indptr", vec);
+            ReadDatasetRangeVector<int>(file, groupName, "indices", (unsigned int)vec[g_idx],
+                                        (unsigned int)vec[g_idx + 1], col_idx);
+            ReadDatasetRangeVector<double>(file, groupName, "data", (unsigned int)vec[g_idx],
+                                           (unsigned int)vec[g_idx + 1], g_exp);
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "ReadGeneExpH5 HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            Close(file);
+            throw;
+        }
+    }
+
     template <typename T>
     void ReadDatasetVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, std::vector<T> &vvec) {
         if(file == nullptr) {
