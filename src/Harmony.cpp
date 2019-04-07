@@ -365,7 +365,8 @@ DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector
     HarmonyTest(oHdf5Util, file, cluster, res, total_cnt);
     Rcout << "Done calculate" << std::endl;
     std::vector<std::string> rownames;
-    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME, "features", rownames);
+    // Read the barcode slot since this is the transposed matrix
+    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME, "barcodes", rownames);
 
     oHdf5Util.Close(file);
 
