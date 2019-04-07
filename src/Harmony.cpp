@@ -318,6 +318,13 @@ DataFrame PostProcess(
                             );
 }
 
+//' HarmonyMarker
+//'
+//' Find gene marker for a cluster in sparse matrix
+//'
+//' @param S4_mtx A sparse matrix
+//' @param cluster A numeric vector
+//' @export
 // [[Rcpp::export]]
 DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
 {
@@ -335,6 +342,13 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
     return PostProcess(res, rownames);
 }
 
+//' HarmonyMarkerH5
+//'
+//' Find gene marker for a cluster in H5 file
+//'
+//' @param hdf5Path A string path
+//' @param cluster A numeric vector
+//' @export
 // [[Rcpp::export]]
 DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector &cluster)
 {
