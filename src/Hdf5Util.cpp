@@ -427,21 +427,40 @@ void ReadGeneExpH5(const std::string &filePath,
 >>>>>>> Update HDF5 function
 }
 
-//' ReadH5Vector
+//' ReadIntegerVector
 //'
-//' This function is used to read a vector from hdf5 file
+//' This function is used to read a integer vector from hdf5 file
 //'
 //' @param filePath A string (HDF5 path)
 //' @param groupName A string (HDF5 dataset)
 //' @export
 // [[Rcpp::export]]
-Rcpp::NumericVector ReadH5Vector(const std::string &filePath,
+Rcpp::NumericVector ReadIntegerVector(const std::string &filePath,
                               const std::string &groupName,
                               const std::string &datasetName) {
     std::vector<int> dataVec;
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     HighFive::File *file = oHdf5Util.Open(1);
     oHdf5Util.ReadDatasetVector(file, groupName, datasetName, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
+}
+
+//' ReadDoubleVector
+//'
+//' This function is used to read a double vector from hdf5 file
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+Rcpp::NumericVector ReadDoubleVector(const std::string &filePath,
+                                      const std::string &groupName,
+                                      const std::string &datasetName) {
+    std::vector<double> dataVec;
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
+    oHdf5Util.ReadDatasetVector<double>(file, groupName, datasetName, dataVec);
     oHdf5Util.Close(file);
     return Rcpp::wrap(dataVec);
 }

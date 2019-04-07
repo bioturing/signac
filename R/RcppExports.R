@@ -271,15 +271,26 @@ ReadGeneExpH5 <- function(filePath, groupName, g_idx, col_idx, g_exp) {
     invisible(.Call(`_Signac_ReadGeneExpH5`, filePath, groupName, g_idx, col_idx, g_exp))
 }
 
-#' ReadH5Vector
+#' ReadIntegerVector
 #'
-#' This function is used to read a vector from hdf5 file
+#' This function is used to read a integer vector from hdf5 file
 #'
 #' @param filePath A string (HDF5 path)
 #' @param groupName A string (HDF5 dataset)
 #' @export
-ReadH5Vector <- function(filePath, groupName, datasetName) {
-    .Call(`_Signac_ReadH5Vector`, filePath, groupName, datasetName)
+ReadIntegerVector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadIntegerVector`, filePath, groupName, datasetName)
+}
+
+#' ReadDoubleVector
+#'
+#' This function is used to read a double vector from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadDoubleVector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadDoubleVector`, filePath, groupName, datasetName)
 }
 
 #' FastMatMult
