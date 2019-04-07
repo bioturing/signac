@@ -394,6 +394,19 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// ReadH5Vector
+Rcpp::NumericVector ReadH5Vector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
+RcppExport SEXP _Signac_ReadH5Vector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
+    rcpp_result_gen = Rcpp::wrap(ReadH5Vector(filePath, groupName, datasetName));
+    return rcpp_result_gen;
+END_RCPP
+}
 // FastMatMult
 arma::mat FastMatMult(const arma::mat& mat1, const arma::mat& mat2);
 RcppExport SEXP _Signac_FastMatMult(SEXP mat1SEXP, SEXP mat2SEXP) {
@@ -868,7 +881,11 @@ static const R_CallMethodDef CallEntries[] = {
 >>>>>>> Fix hdf5 read string field
 =======
     {"_Signac_ReadGeneExpH5", (DL_FUNC) &_Signac_ReadGeneExpH5, 5},
+<<<<<<< c9fa779eb49d7ac12d86b00a512d1a1dd9405909
 >>>>>>> Update HDF5 function
+=======
+    {"_Signac_ReadH5Vector", (DL_FUNC) &_Signac_ReadH5Vector, 3},
+>>>>>>> Update function
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
     {"_Signac_FastConvertToTripletMat", (DL_FUNC) &_Signac_FastConvertToTripletMat, 1},
     {"_Signac_FastSparseMatSqrt", (DL_FUNC) &_Signac_FastSparseMatSqrt, 1},
