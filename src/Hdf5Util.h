@@ -306,6 +306,7 @@ public:
             ostr << "Read dataset (STRING) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
             ::Rf_warning(ostr.str().c_str());
 #endif
+
             if((str_pad == H5T_STR_NULLTERM) && (str_cset == H5T_CSET_UTF8)) {
                 datasetVec.read(vvec);
             } else {
@@ -641,6 +642,7 @@ public:
             arma::urowvec i = Rcpp::as<arma::urowvec>(mat.slot("i"));
             arma::urowvec p = Rcpp::as<arma::urowvec>(mat.slot("p"));
             arma::vec x = Rcpp::as<arma::vec>(mat.slot("x"));
+            Rcpp::List dim_names = mat.slot("Dimnames");
 
             // Write group name data
             file->createGroup(groupName);
@@ -662,8 +664,20 @@ public:
 
             //Write x data
             std::vector<double> arrX(x.begin(), x.end());
-            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrP));
+            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrX));
             datasetX.write(arrX);
+
+            //Write rownames data
+            Rcpp::CharacterVector rownames = dim_names[0];
+            std::vector<std::string> arrRowNames(rownames.begin(), rownames.end());
+            HighFive::DataSet datasetRowNames = file->createDataSet<std::string>(groupName + "/features", HighFive::DataSpace::From(arrRowNames));
+            datasetRowNames.write(arrRowNames);
+
+            //Write colnames data
+            Rcpp::CharacterVector colnames = dim_names[1];
+            std::vector<std::string> arrColNames(colnames.begin(), colnames.end());
+            HighFive::DataSet datasetColNames = file->createDataSet<std::string>(groupName + "/barcodes", HighFive::DataSpace::From(arrColNames));
+            datasetColNames.write(arrColNames);
 
             file->flush();
         } catch (HighFive::Exception& err) {
@@ -731,11 +745,16 @@ public:
             ReadDatasetVector<int>(file, groupName, "indptr", arrIndptr);
             std::vector<double> arrData;
             ReadDatasetVector<double>(file, groupName, "data", arrData);
+            std::vector<std::string> arrFeature;
+            ReadDatasetVector(file, groupName, "features", arrFeature);
+            std::vector<std::string> arrBarcode;
+            ReadDatasetVector(file, groupName, "barcodes", arrBarcode);
 
             s.slot("p") = std::move(arrIndptr);
             s.slot("i") = std::move(arrIndices);
             s.slot("x") = std::move(arrData);
             s.slot("Dim") = std::move(arrDims);
+            s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
             return s;
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
@@ -823,6 +842,7 @@ public:
                     arrFeatureType.resize(std::distance(arrFeatureType.begin(),it));
                 }
 
+                std::transform(std::begin(arrIndices),std::end(arrIndices),std::begin(arrIndices),[](int x){return x+1;});
                 arrList[groupName] = Rcpp::List::create(Named("indptr") = arrIndptr, Named("indices") = arrIndices, Named("data") = arrData, Named("shape") = arrDims, Named("features") = arrFeature, Named("feature_type") = arrFeatureType, Named("barcodes") = arrBarcode);
             }
         } catch (HighFive::Exception& err) {
