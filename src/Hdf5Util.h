@@ -18,7 +18,9 @@
 #include "CommonUtil.h"
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
+#include <H5Cpp.h>
 
+using namespace H5;
 using namespace Rcpp;
 using namespace arma;
 using namespace RcppParallel;
@@ -62,12 +64,10 @@ public:
     }
 
     template <typename T>
-    void WriteDatasetVector(const std::string &groupName, const std::string &datasetName, const std::vector<T> &datasetVec) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
+    void WriteDatasetVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, const std::vector<T> &datasetVec) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not write dataset, open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -77,6 +77,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Existing group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -84,6 +85,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Existing dataset :" << datasetName << "in " << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -94,17 +96,16 @@ public:
             std::stringstream ostr;
             ostr << "WriteVector HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
     template <typename T>
-    void ReadDatasetVector(const std::string &groupName, const std::string &datasetName, std::vector<T> &vvec) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
+    void ReadDatasetRangeVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, const unsigned int &start, const unsigned int &end, std::vector<T> &vvec) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read range dataset, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -114,6 +115,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -125,59 +127,31 @@ public:
             }
 
             HighFive::DataSet datasetVec = file->getDataSet(groupName + "/" + datasetName);
-            datasetVec.read(vvec);
+
+#ifdef DEBUG
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            std::stringstream ostr;
+            ostr << "Read range dataset (T) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", dims[0]=" << dims[0];
+            ::Rf_warning(ostr.str().c_str());
+#endif
+
+            datasetVec.select({start}, {end - start}).read(vvec);
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
-            ostr << "ReadDatasetVector HDF5 format, error=" << err.what() ;
+            ostr << "ReadDatasetRangeVector (T) HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
-    template <typename T>
-    void WriteDatasetSingle(const std::string &groupName, const std::string &datasetName, const T &datasetVal) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
+    void ReadDatasetRangeVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, const unsigned int &start, const unsigned int &end, std::vector<std::string> &vvec) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
-            ::Rf_error(ostr.str().c_str());
-            throw;
-        }
-
-        try {
-            if(file->exist(groupName) == true) {
-                std::stringstream ostr;
-                ostr << "Existing group :" << groupName;
-                ::Rf_error(ostr.str().c_str());
-                throw;
-            }
-
-            if(file->exist(groupName + "/" + datasetName) == true) {
-                std::stringstream ostr;
-                ostr << "Exist dataset :" << datasetName << "in " << groupName;
-                ::Rf_error(ostr.str().c_str());
-                throw;
-            }
-
-            HighFive::DataSet datasetGroup = file->createDataSet<T>(groupName, HighFive::DataSpace::From(datasetVal));
-            datasetGroup.write(datasetVal);
-            file->flush();
-        } catch (HighFive::Exception& err) {
-            std::stringstream ostr;
-            ostr << "WriteDatasetSingle HDF5 format, error=" << err.what() ;
-            ::Rf_error(ostr.str().c_str());
-            throw;
-        }
-    }
-
-    template <typename T>
-    void ReadDatasetSingle(const std::string &groupName, const std::string &datasetName, T &datasetVal) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
-            std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read range dataset, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -187,6 +161,57 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            if(file->exist(groupName + "/" + datasetName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist dataset :" << datasetName << "in " << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            HighFive::DataSet datasetVec = file->getDataSet(groupName + "/" + datasetName);
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
+            H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
+
+#ifdef DEBUG
+            std::stringstream ostr;
+            ostr << "Read range dataset (STRING) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
+            ::Rf_warning(ostr.str().c_str());
+#endif
+
+            datasetVec.select({start}, {end - start}).read(vvec, str_size, str_pad, str_cset, dims[0]);
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "ReadDatasetRangeVector (STRING) HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            Close(file);
+            throw;
+        }
+    }
+
+    template <typename T>
+    void ReadDatasetVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, std::vector<T> &vvec) {
+        if(file == nullptr) {
+            std::stringstream ostr;
+            ostr << "Can not read dataset, please open file :" << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        try {
+            if(file->exist(groupName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist group :" << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -197,23 +222,132 @@ public:
                 throw;
             }
 
-            HighFive::DataSet datasetData = file->getDataSet(groupName + "/" + datasetName);
-            datasetData.read(datasetVal);
+            HighFive::DataSet datasetVec = file->getDataSet(groupName + "/" + datasetName);
+
+#ifdef DEBUG
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            std::stringstream ostr;
+            ostr << "Read dataset (T) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", dims[0]=" << dims[0];
+            ::Rf_warning(ostr.str().c_str());
+#endif
+
+            datasetVec.read(vvec);
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
-            ostr << "ReadDatasetSingle HDF5 format, error=" << err.what() ;
+            ostr << "ReadDatatypeVector (T) HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
+            throw;
+        }
+    }
+
+    void ReadDatasetVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, std::vector<std::string> &vvec) {
+        if(file == nullptr) {
+            std::stringstream ostr;
+            ostr << "Can not read dataset, please open file :" << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        try {
+            if(file->exist(groupName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist group :" << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            if(file->exist(groupName + "/" + datasetName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist dataset :" << datasetName << "in " << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            HighFive::DataSet datasetVec = file->getDataSet(groupName + "/" + datasetName);
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
+            H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
+
+#ifdef DEBUG
+            std::stringstream ostr;
+            ostr << "Read dataset (STRING) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
+            ::Rf_warning(ostr.str().c_str());
+#endif
+
+            datasetVec.read(vvec, str_size, str_pad, str_cset, dims[0]);
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "ReadDatatypeVector (STRING) HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            Close(file);
+            throw;
+        }
+    }
+
+    void ReadDatasetInfo(HighFive::File *file, const std::string &groupName, const std::string &datasetName, std::vector<unsigned int> &vvec) {
+        if(file == nullptr) {
+            std::stringstream ostr;
+            ostr << "Can not read info, please open file :" << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        try {
+            if(file->exist(groupName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist group :" << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            if(file->exist(groupName + "/" + datasetName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist dataset :" << datasetName << "in " << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            HighFive::DataSet datasetVec = file->getDataSet(groupName + "/" + datasetName);
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto ndim = dataSpace.getNumberDimensions();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
+            H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
+
+            vvec.push_back(datasetVec.getStorageSize());
+            vvec.push_back(ndim);
+            vvec.push_back(dims[0]);
+            vvec.push_back(dims[1]);
+            vvec.push_back(str_size);
+            vvec.push_back(str_pad);
+            vvec.push_back(str_cset);
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "ReadDatatypeInfo HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
     template <typename T>
-    void WriteRootDataset(const std::string &datasetName, const T &datasetVal) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
+    void WriteRootDataset(HighFive::File *file, const std::string &datasetName, const std::vector<T> &datasetVal) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not write dataset, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -223,6 +357,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Existing group :" << datasetName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -233,17 +368,16 @@ public:
             std::stringstream ostr;
             ostr << "WriteRootDataset HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
     template <typename T>
-    void ReadRootDataset(const std::string &datasetName, T &datasetVal) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
+    void ReadRootDataset(HighFive::File *file, const std::string &datasetName, std::vector<T> &datasetVal) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read dataset, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -253,25 +387,77 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist dataset :" << datasetName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
-            HighFive::DataSet datasetData = file->getDataSet(datasetName);
-            datasetData.read(datasetVal);
+            HighFive::DataSet datasetVec = file->getDataSet(datasetName);
+
+#ifdef DEBUG
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            std::stringstream ostr;
+            ostr << "Read dataset (T) : [" << datasetName << "] with str_size=" << str_size << ", dims[0]=" << dims[0];
+            ::Rf_warning(ostr.str().c_str());
+#endif
+
+            datasetVec.read(datasetVal);
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadRootDataset HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
-    void GetListAttributes(const std::string &groupName, const std::string &datasetName, std::vector<std::string> &arrList) {
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    void ReadRootDataset(HighFive::File *file, const std::string &datasetName, std::vector<std::string> &datasetVal) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read dataset, please open file :" << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        try {
+            if(file->exist(datasetName) == false) {
+                std::stringstream ostr;
+                ostr << "Can not exist dataset :" << datasetName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            HighFive::DataSet datasetVec = file->getDataSet(datasetName);
+            HighFive::DataSpace dataSpace = datasetVec.getSpace();
+            auto dims = dataSpace.getDimensions();
+            HighFive::DataType dataType = datasetVec.getDataType();
+            size_t str_size = H5Tget_size(dataType.getId());
+            H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
+            H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
+
+#ifdef DEBUG
+            std::stringstream ostr;
+            ostr << "Read dataset (STRING) : [" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
+            ::Rf_warning(ostr.str().c_str());
+#endif
+
+            datasetVec.read(datasetVal, str_size, str_pad, str_cset, dims[0]);
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "ReadRootDataset HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            Close(file);
+            throw;
+        }
+    }
+
+    void GetListAttributes(HighFive::File *file, const std::string &groupName, const std::string &datasetName, std::vector<std::string> &arrList) {
+        if(file == nullptr) {
+            std::stringstream ostr;
+            ostr << "Can not read attributes, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -281,6 +467,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -288,6 +475,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist dataset :" << datasetName << "in " << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -297,16 +485,15 @@ public:
             std::stringstream ostr;
             ostr << "GetListAttributes HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
-    void GetListRootObjectNames(std::vector<std::string> &arrList) {
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    void GetListRootObjectNames(HighFive::File *file, std::vector<std::string> &arrList) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read object names, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -317,16 +504,15 @@ public:
             std::stringstream ostr;
             ostr << "GetListObjectNames HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
-    bool CheckRootAttribute(const std::string &attName) {
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    bool CheckRootAttribute(HighFive::File *file, const std::string &attName) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not check attribute, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -338,17 +524,16 @@ public:
             std::stringstream ostr;
             ostr << "CheckRootAttribute HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
         return isExist;
     }
 
-    void GetListRootAttributes(std::vector<std::string> &arrList) {
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    void GetListRootAttributes(HighFive::File *file, std::vector<std::string> &arrList) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read root attributes, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -359,16 +544,15 @@ public:
             std::stringstream ostr;
             ostr << "GetListRootAttributes HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
-    void GetListObjectNames(const std::string &groupName, std::vector<std::string> &arrList) {
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    void GetListObjectNames(HighFive::File *file, const std::string &groupName, std::vector<std::string> &arrList) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read objects, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -378,6 +562,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -387,20 +572,25 @@ public:
             std::stringstream ostr;
             ostr << "GetListObjectNames HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
 
-    bool WriteSpMtFromArma(const arma::sp_mat &mat, const std::string &groupName) {
+    void WriteSpMtFromArma(const arma::sp_mat &mat, const std::string &groupName) {
         std::string filePath = GetH5FilePathOfGroupName(groupName);
-        ::Rf_error(filePath.c_str());
-        return mat.save(filePath);
+        try {
+            mat.save(filePath);
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "WriteSpMtFromArma HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
     }
 
-    void WriteSpMtFromS4(const Rcpp::S4 &mat, const std::string &groupName) {
-        boost::shared_ptr<HighFive::File> file = Open(-1);
-
-        if(file.get() == nullptr) {
+    void WriteSpMtFromS4(HighFive::File *file, const Rcpp::S4 &mat, const std::string &groupName) {
+        if(file == nullptr) {
             std::stringstream ostr;
             ostr << "Can not open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
@@ -412,6 +602,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Existing group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -440,7 +631,7 @@ public:
 
             //Write x data
             std::vector<double> arrX(x.begin(), x.end());
-            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrX));
+            HighFive::DataSet datasetX = file->createDataSet<double>(groupName + "/data", HighFive::DataSpace::From(arrP));
             datasetX.write(arrX);
 
             file->flush();
@@ -448,6 +639,7 @@ public:
             std::stringstream ostr;
             ostr << "WriteSpMtFromS4 HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
     }
@@ -469,12 +661,10 @@ public:
         return mat;
     }
 
-    Rcpp::S4 ReadSpMtAsS4(const std::string &groupName){
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    Rcpp::S4 ReadSpMtAsS4(HighFive::File *file, const std::string &groupName) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read sparse matrix, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -487,6 +677,7 @@ public:
                 std::stringstream ostr;
                 ostr << "Can not exist group :" << groupName;
                 ::Rf_error(ostr.str().c_str());
+                Close(file);
                 throw;
             }
 
@@ -496,23 +687,19 @@ public:
                     std::stringstream ostr;
                     ostr << "Can not exist dataset : " << datasetName << " in " << groupName;
                     ::Rf_error(ostr.str().c_str());
+                    Close(file);
                     throw;
                 }
             }
 
-            HighFive::DataSet datasetShape = file->getDataSet(groupName + "/shape");
-            HighFive::DataSet datasetIndices = file->getDataSet(groupName + "/indices");
-            HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
-            HighFive::DataSet datasetData = file->getDataSet(groupName + "/data");
-
             std::vector<int> arrDims;
-            datasetShape.read(arrDims);
+            ReadDatasetVector<int>(file, groupName, "shape", arrDims);
             std::vector<int> arrIndices;
-            datasetIndices.read(arrIndices);
+            ReadDatasetVector<int>(file, groupName, "indices", arrIndices);
             std::vector<int> arrIndptr;
-            datasetIndptr.read(arrIndptr);
+            ReadDatasetVector<int>(file, groupName, "indptr", arrIndptr);
             std::vector<double> arrData;
-            datasetData.read(arrData);
+            ReadDatasetVector<double>(file, groupName, "data", arrData);
 
             s.slot("p") = std::move(arrIndptr);
             s.slot("i") = std::move(arrIndices);
@@ -523,18 +710,17 @@ public:
             std::stringstream ostr;
             ostr << "ReadSpMtAsS4 in HDF5 format, error=" << err.what();
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
 
         return s;
     }
 
-    Rcpp::List Read10XH5(const std::string &filePath, const bool &use_names, const bool &unique_features, const bool &give_csparse) {
-        boost::shared_ptr<HighFive::File> file = Open(1);
-
-        if(file.get() == nullptr) {
+    Rcpp::List Read10XH5(HighFive::File *file, const std::string &filePath, const bool &use_names, const bool &unique_features) {
+        if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not read dataset, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -542,13 +728,14 @@ public:
         Rcpp::List arrList = Rcpp::List::create();
         try {
             std::vector<std::string> genomes;
-            GetListRootObjectNames(genomes);
+            GetListRootObjectNames(file, genomes);
 
             for(std::string &groupName : genomes) {
                 if(file->exist(groupName) == false) {
                     std::stringstream ostr;
                     ostr << "Can not exist group :" << groupName;
                     ::Rf_error(ostr.str().c_str());
+                    Close(file);
                     throw;
                 }
 
@@ -568,93 +755,83 @@ public:
                 }
 
                 std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot, "barcodes"};
-                std::cout << "arrDatasetName size=" << arrDatasetName.size() << std::endl;
                 for(const std::string &datasetName : arrDatasetName) {
                     if(file->exist(groupName + "/" + datasetName) == false) {
                         std::stringstream ostr;
                         ostr << "Can not exist dataset : " << datasetName << " in " << groupName;
                         ::Rf_error(ostr.str().c_str());
+                        Close(file);
                         throw;
                     }
                 }
 
-                std::cout << "getDataSet shape" << std::endl;
-                HighFive::DataSet datasetShape = file->getDataSet(groupName + "/shape");
-                HighFive::DataSet datasetIndices = file->getDataSet(groupName + "/indices");
-                HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
-                HighFive::DataSet datasetData = file->getDataSet(groupName + "/data");
-                HighFive::DataSet datasetFeature = file->getDataSet(groupName + "/" + feature_slot);
-                HighFive::DataSet datasetBarcode = file->getDataSet(groupName + "/barcodes");
-
                 std::vector<int> arrDims;
-                datasetShape.read(arrDims);
+                ReadDatasetVector<int>(file, groupName, "shape", arrDims);
                 std::vector<int> arrIndices;
-                datasetIndices.read(arrIndices);
+                ReadDatasetVector<int>(file, groupName, "indices", arrIndices);
                 std::vector<int> arrIndptr;
-                datasetIndptr.read(arrIndptr);
+                ReadDatasetVector<int>(file, groupName, "indptr", arrIndptr);
                 std::vector<double> arrData;
-                datasetData.read(arrData);
-
+                ReadDatasetVector<double>(file, groupName, "data", arrData);
                 std::vector<std::string> arrFeature;
-                //datasetFeature.read(arrFeature);
+                ReadDatasetVector(file, groupName, feature_slot, arrFeature);
                 std::vector<std::string> arrBarcode;
-                //datasetBarcode.read(arrBarcode);
-
-                std::cout << "arrIndptr size=" << arrIndptr.size() << std::endl;
-                std::string klass = "dgTMatrix";
-                Rcpp::S4 s(klass);
-                s.slot("p") = std::move(arrIndptr);
-                s.slot("i") = std::move(arrIndices);
-                s.slot("x") = std::move(arrData);
-                s.slot("Dim") = std::move(arrDims);
+                ReadDatasetVector(file, groupName, "barcodes", arrBarcode);
 
                 if (unique_features == true) {
                     std::vector<std::string>::iterator it;
                     it = std::unique (arrFeature.begin(), arrFeature.end());
                     arrFeature.resize(std::distance(arrFeature.begin(),it));
                 }
-                s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
 
+                std::vector<std::string> arrFeatureType;
                 if(file->exist(groupName + "/features/feature_type") == false) {
-                    HighFive::DataSet datasetFeatureType = file->getDataSet(groupName + "/features/feature_type");
-                    std::vector<std::string> arrFeatureType;
-                    datasetFeatureType.read(arrBarcode);
-                    s.slot("factors") = Rcpp::List::create(arrFeatureType);
+                    ReadDatasetVector(file, groupName, "features/feature_type", arrFeatureType);
+                    std::vector<std::string>::iterator it;
+                    it = std::unique (arrFeatureType.begin(), arrFeatureType.end());
+                    arrFeatureType.resize(std::distance(arrFeatureType.begin(),it));
                 }
 
-                arrList[groupName] = s;
+                arrList[groupName] = Rcpp::List::create(Named("indptr") = arrIndptr, Named("indices") = arrIndices, Named("data") = arrData, Named("shape") = arrDims, Named("features") = arrFeature, Named("feature_type") = arrFeatureType, Named("barcodes") = arrBarcode);
             }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "Read10XH5 HDF5 format, error=" << err.what() ;
             ::Rf_error(ostr.str().c_str());
+            Close(file);
             throw;
         }
 
         return arrList;
     }
 
-private:
-    std::string file_name;
-
-    boost::shared_ptr<HighFive::File> Open(const int &mode) {
-        boost::shared_ptr<HighFive::File> file;
+    HighFive::File *Open(const int &mode) {
+        HighFive::File *file = nullptr;
         try {
             int new_mode = HighFive::File::OpenOrCreate;
             switch(mode) {
-                case -1:
-                    new_mode = HighFive::File::OpenOrCreate;
-                    break;
-                default:
-                    new_mode = HighFive::File::ReadOnly;
-                    break;
+            case -1:
+                new_mode = HighFive::File::OpenOrCreate;
+                break;
+            default:
+                new_mode = HighFive::File::ReadOnly;
+            break;
             }
-            file.reset(new HighFive::File(file_name, new_mode));
+            file = new HighFive::File(file_name, new_mode);
         } catch (HighFive::Exception& err) {
             std::cerr << "Can not open HDF5 file, error=" << err.what() << std::endl;
         }
         return file;
     }
+
+    void Close(HighFive::File *file) {
+        if(file != nullptr) {
+            delete file;
+        }
+    }
+
+private:
+    std::string file_name;
 
     std::string GetH5FilePathOfGroupName(const std::string &groupName) {
         std::vector<std::string> arrPath;

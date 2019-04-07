@@ -18,9 +18,9 @@
 //' @param mat A sparse matrix
 //' @export
 // [[Rcpp::export]]
-bool WriteSpMtAsSpMat(const std::string &filePath, const std::string &groupName, const arma::sp_mat &mat) {
+void WriteSpMtAsSpMat(const std::string &filePath, const std::string &groupName, const arma::sp_mat &mat) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
-    return oHdf5Util.WriteSpMtFromArma(mat, groupName);
+    oHdf5Util.WriteSpMtFromArma(mat, groupName);
 }
 
 //' WriteSpMtAsS4
@@ -34,7 +34,9 @@ bool WriteSpMtAsSpMat(const std::string &filePath, const std::string &groupName,
 // [[Rcpp::export]]
 void WriteSpMtAsS4(const std::string &filePath, const std::string &groupName, const Rcpp::S4 &mat) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
-    oHdf5Util.WriteSpMtFromS4(mat, groupName);
+    HighFive::File *file = oHdf5Util.Open(-1);
+    oHdf5Util.WriteSpMtFromS4(file, mat, groupName);
+    oHdf5Util.Close(file);
 }
 
 //' ReadSpMtAsSPMat
@@ -60,7 +62,10 @@ arma::sp_mat ReadSpMtAsSPMat(const std::string &filePath, const std::string &gro
 // [[Rcpp::export]]
 Rcpp::S4 ReadSpMtAsS4(const std::string &filePath, const std::string &groupName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
-    return oHdf5Util.ReadSpMtAsS4(groupName);
+    HighFive::File *file = oHdf5Util.Open(1);
+    Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(file, groupName);
+    oHdf5Util.Close(file);
+    return s;
 }
 
 //' ReadRowSumSpMt
@@ -73,14 +78,15 @@ Rcpp::S4 ReadSpMtAsS4(const std::string &filePath, const std::string &groupName)
 // [[Rcpp::export]]
 Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::string &groupName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
     std::vector<double> sumVec;
 
     std::string datasetName = oHdf5Util.getRowsumDatasetName();
-    oHdf5Util.ReadDatasetVector<double>(groupName, datasetName, sumVec);
+    oHdf5Util.ReadDatasetVector<double>(file, groupName, datasetName, sumVec);
     if(sumVec.size() == 0) {
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
-            Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(groupName);
+            Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(file, groupName);
             mat = Rcpp::as<arma::sp_mat>(s);
         }
 
@@ -91,10 +97,10 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
                 sumVec[cij.row()] += (*cij);
             }
         }
-        oHdf5Util.WriteDatasetVector(groupName, datasetName, sumVec);
+        oHdf5Util.WriteDatasetVector(file, groupName, datasetName, sumVec);
     }
 
-    //Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
+    oHdf5Util.Close(file);
     return Rcpp::wrap(sumVec);
 }
 
@@ -108,25 +114,25 @@ Rcpp::NumericVector ReadRowSumSpMt(const std::string &filePath, const std::strin
 // [[Rcpp::export]]
 Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::string &groupName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
     std::vector<double> sumVec;
 
     std::string datasetName = oHdf5Util.getColsumDatasetName();
-    oHdf5Util.ReadDatasetVector(groupName, datasetName, sumVec);
+    oHdf5Util.ReadDatasetVector(file, groupName, datasetName, sumVec);
     if(sumVec.size() == 0) {
         arma::sp_mat mat = oHdf5Util.ReadSpMtAsArma(groupName);
         if(mat.size() == 0) {
-            Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(groupName);
+            Rcpp::S4 s = oHdf5Util.ReadSpMtAsS4(file, groupName);
             mat = Rcpp::as<arma::sp_mat>(s);
         }
 
         sumVec.resize(mat.n_cols);
         com::bioturing::SumColumWorker<std::vector<double>> sumColWorker(&mat, sumVec);
         RcppParallel::parallelFor(0, mat.n_cols, sumColWorker);
-        oHdf5Util.WriteDatasetVector(groupName, datasetName, sumVec);
+        oHdf5Util.WriteDatasetVector(file, groupName, datasetName, sumVec);
     }
 
-    //Rcpp::NumericVector result(sumVec.begin(), sumVec.end());
-    //return result;
+    oHdf5Util.Close(file);
     return Rcpp::wrap(sumVec);
 }
 
@@ -141,10 +147,11 @@ Rcpp::NumericVector ReadColSumSpMt(const std::string &filePath, const std::strin
 // [[Rcpp::export]]
 Rcpp::StringVector GetListAttributes(const std::string &filePath, const std::string &groupName, const std::string &datasetName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
     std::vector<std::string> dataVec;
-    oHdf5Util.GetListAttributes(groupName, datasetName, dataVec);
-    Rcpp::StringVector result(dataVec.begin(), dataVec.end());
-    return result;
+    oHdf5Util.GetListAttributes(file, groupName, datasetName, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
 }
 
 //' GetListObjectNames
@@ -157,10 +164,11 @@ Rcpp::StringVector GetListAttributes(const std::string &filePath, const std::str
 // [[Rcpp::export]]
 Rcpp::StringVector GetListObjectNames(const std::string &filePath, const std::string &groupName) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
     std::vector<std::string> dataVec;
-    oHdf5Util.GetListObjectNames(groupName, dataVec);
-    Rcpp::StringVector result(dataVec.begin(), dataVec.end());
-    return result;
+    oHdf5Util.GetListObjectNames(file, groupName, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
 }
 
 //' GetListRootObjectNames
@@ -172,20 +180,121 @@ Rcpp::StringVector GetListObjectNames(const std::string &filePath, const std::st
 // [[Rcpp::export]]
 Rcpp::StringVector GetListRootObjectNames(const std::string &filePath) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
     std::vector<std::string> dataVec;
-    oHdf5Util.GetListRootObjectNames(dataVec);
-    Rcpp::StringVector result(dataVec.begin(), dataVec.end());
-    return result;
+    oHdf5Util.GetListRootObjectNames(file, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
 }
 
 //' Read10XH5
 //'
 //' Get list triplet of SEXP
 //'
-//' @param s A SEXP type
+//' @param filePath A fiel path
+//' @param use_names Use names flag
+//' @param unique_features Unique features flag
 //' @export
 // [[Rcpp::export]]
 Rcpp::List Read10XH5Content(const std::string &filePath, const bool &use_names, const bool &unique_features) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
-    return oHdf5Util.Read10XH5(filePath, use_names, unique_features, false);
+    HighFive::File *file = oHdf5Util.Open(1);
+    Rcpp::List arrData = oHdf5Util.Read10XH5(file, filePath, use_names, unique_features);
+    oHdf5Util.Close(file);
+    return arrData;
+}
+
+//' WriteRootDataset
+//'
+//' Write a string vector to root group
+//'
+//' @param filePath A fiel path
+//' @param datasetName A dataset name
+//' @param datasetVal A string vector
+//' @export
+// [[Rcpp::export]]
+void WriteRootDataset(const std::string &filePath, const std::string &datasetName, const std::vector<std::string> &datasetVal) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(-1);
+    oHdf5Util.WriteRootDataset(file, datasetName, datasetVal);
+    oHdf5Util.Close(file);
+}
+
+//' ReadRootDataset
+//'
+//' Read a string vector from root group
+//'
+//' @param filePath A fiel path
+//' @param datasetName A dataset name
+//' @export
+// [[Rcpp::export]]
+Rcpp::StringVector ReadRootDataset(const std::string &filePath, const std::string &datasetName) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
+    std::vector<std::string> dataVec;
+    oHdf5Util.ReadRootDataset(file, datasetName, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
+}
+
+//' ReadH5VectorRange
+//'
+//' This function is used to read a vector[i:j] from hdf5 file
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+void ReadGeneExpH5(const std::string &filePath,
+                   const std::string &groupName,
+                   const int g_idx,
+                   std::vector<int> &col_idx,
+                   std::vector<double> &g_exp) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
+    std::vector<int> vec;
+    oHdf5Util.ReadDatasetVector<int>(file, groupName, "indptr", vec);
+    oHdf5Util.ReadDatasetRangeVector<int>(file, groupName, "indices", (unsigned int)vec[g_idx],
+                                          (unsigned int)vec[g_idx + 1], col_idx);
+    oHdf5Util.ReadDatasetRangeVector<double>(file, groupName, "data", (unsigned int)vec[g_idx],
+                                             (unsigned int)vec[g_idx + 1], g_exp);
+    oHdf5Util.Close(file);
+}
+
+//' ReadIntegerVector
+//'
+//' This function is used to read a integer vector from hdf5 file
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+Rcpp::NumericVector ReadIntegerVector(const std::string &filePath,
+                                      const std::string &groupName,
+                                      const std::string &datasetName) {
+    std::vector<int> dataVec;
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
+    oHdf5Util.ReadDatasetVector<int>(file, groupName, datasetName, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
+}
+
+//' ReadDoubleVector
+//'
+//' This function is used to read a double vector from hdf5 file
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @export
+// [[Rcpp::export]]
+Rcpp::NumericVector ReadDoubleVector(const std::string &filePath,
+                                     const std::string &groupName,
+                                     const std::string &datasetName) {
+    std::vector<double> dataVec;
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(1);
+    oHdf5Util.ReadDatasetVector<double>(file, groupName, datasetName, dataVec);
+    oHdf5Util.Close(file);
+    return Rcpp::wrap(dataVec);
 }
