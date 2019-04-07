@@ -178,8 +178,6 @@ public:
             auto dims = dataSpace.getDimensions();
             HighFive::DataType dataType = datasetVec.getDataType();
             size_t str_size = H5Tget_size(dataType.getId());
-            H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
-            H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
 
 #ifdef DEBUG
             std::stringstream ostr;
