@@ -958,8 +958,20 @@ public:
                 }
 
                 std::transform(std::begin(arrIndices),std::end(arrIndices),std::begin(arrIndices),[](int x){return x+1;});
-                S4 mat = fMatrix(Named("i", arrIndices), Named("p", arrIndptr), Named("x", arrData), Named("dims", arrDims), Named("giveCsparse", false), Named("dimnames", Rcpp::List::create(arrFeature, arrBarcode)));
-                arrList[groupName] = Rcpp::List::create(Named("mat") = mat, Named("feature_type") = arrFeatureType, Named("feature_genome") = arrFeatureGenomeList);
+                S4 mat = fMatrix(
+                  Named("i", arrIndices),
+                  Named("p", arrIndptr),
+                  Named("x", arrData),
+                  Named("dims", arrDims),
+                  Named("giveCsparse", false),
+                  Named("dimnames",
+                  Rcpp::List::create(arrFeature, arrBarcode))
+                );
+
+                arrList[groupName] = Rcpp::List::create(
+                  Named("mat") = mat,
+                  Named("feature_type") = arrFeatureType,
+                  Named("feature_genome") = arrFeatureGenomeList);
             }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
