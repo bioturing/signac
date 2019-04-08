@@ -401,15 +401,16 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
     types <- GetFeatureType(infile, base.slot)
     barcodes <- infile[[paste0(base.slot, '/barcodes')]]
     sparse.mat <- sparseMatrix(
-      i = indices[] + 1,
-      p = indptr[],
-      x = as.numeric(x = counts[]),
-      dims = shp[],
+      i = genomes[[matrix_name]]$indices[],
+      p = genomes[[matrix_name]]$indptr[],
+      x = as.numeric(x = genomes[[matrix_name]]$data[]),
+      dims = genomes[[matrix_name]]$shape[],
       giveCsparse = FALSE
     )
     rownames(x = sparse.mat) <- features
-    colnames(x = sparse.mat) <- barcodes[]
+    colnames(x = sparse.mat) <- genome$barcodes[]
     sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
+
     # Split v3 multimodal
     types.unique <- unique(types)
     output <- lapply(names(genomes), function(genome) {
@@ -442,6 +443,32 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
   }
 
   return(output)
+}
+
+#' Read sparse matrix from HDF5 file
+#' @param h5.path Path to HDF5 file
+#' @param group.name Group name in dataset. Default is "bioturing"
+#' @param auto.update Auto sync if missing V2 data. Default is FALSE
+#'
+#' @useDynLib Signac, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @importFrom RcppParallel RcppParallelLibs
+#'
+#' @export
+#'
+#' @examples
+#' spMat <- ReadSpMt(h5.path = path2hdf5, group.name = "bioturing")
+#' spMat
+#'
+ReadSpMt <- function(h5.path, group.name = "bioturing", auto.update = FALSE) {
+    mat <- Signac::ReadSpMtAsSPMat(h5.path, group.name)
+    if (length(mat) == 0) {
+        mat <- Signac::ReadSpMtAsS4(h5.path, group.name)
+        if(auto.update) {
+            Signac::WriteSpMtAsSPMat(h5.path, group.name, mat);
+        }
+    }
+    return(mat)
 }
 
 #' Read sparse matrix from HDF5 file

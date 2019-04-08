@@ -4,7 +4,7 @@ test_that("WriteSpMtAsSPMat", {
     h5.path <- system.file("extdata", "v3input.h5", package = "Signac")
     group.name <- "matrix"
     auto.update <- FALSE
-    mat <- Signac::ReadSpMtAsS4( h5.path, group.name, auto.update)
+    mat <- Signac::ReadSpMt( h5.path, group.name, auto.update)
     status <- Signac::WriteSpMtAsSPMat(h5.path, "matrixv2", mat)
     expect_equal(status, TRUE)
 })

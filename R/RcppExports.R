@@ -63,14 +63,18 @@ HarmonyMarkerH5 <- function(hdf5Path, cluster) {
 #' @export
 WriteSpMtAsSpMat <- function(filePath, groupName, mat) {
     invisible(.Call(`_Signac_WriteSpMtAsSpMat`, filePath, groupName, mat))
+<<<<<<< 3c786b69c7ca9e49548cdcadbda93cd74c829252
 }
 
+<<<<<<< 551e19225c55140a0bff8bd43fb064d630fe1730
 WriteSpMtFromS4 <- function(filePath, groupName, mat) {
     .Call(`_Signac_WriteSpMtFromS4`, filePath, groupName, mat)
 }
 
 ReadSpMt <- function(filePath, groupName) {
     .Call(`_Signac_ReadSpMt`, filePath, groupName)
+=======
+>>>>>>> Fix hdf5 read string field
 }
 
 ReadSpMtAsS4 <- function(filePath, groupName) {
@@ -78,6 +82,21 @@ ReadSpMtAsS4 <- function(filePath, groupName) {
 }
 
 #' ReadRowSumSpMt
+=======
+#' WriteSpMtAsSpMatFromS4
+#'
+#' This function is used to write a sparse ARMA matrix from S4
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @param mat A sparse matrix
+#' @export
+WriteSpMtAsSpMatFromS4 <- function(filePath, groupName, mat) {
+    invisible(.Call(`_Signac_WriteSpMtAsSpMatFromS4`, filePath, groupName, mat))
+}
+
+#' WriteSpMtAsS4
+>>>>>>> Add methdo write ARMA matrix as S4
 #'
 #' Read rows sums
 #'
@@ -97,6 +116,96 @@ ReadRowSumSpMt <- function(filePath, groupName) {
 #' @export
 ReadColSumSpMt <- function(filePath, groupName) {
     .Call(`_Signac_ReadColSumSpMt`, filePath, groupName)
+}
+
+#' GetListAttributes
+#'
+#' Get list attribute of a dataset
+#'
+#' @param filePath A HDF5 path
+#' @param groupName A string (HDF5 dataset)
+#' @param datasetName A dataset name
+#' @export
+GetListAttributes <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_GetListAttributes`, filePath, groupName, datasetName)
+}
+
+#' GetListObjectNames
+#'
+#' Get list object of a group
+#'
+#' @param filePath A HDF5 path
+#' @param groupName A string (HDF5 dataset)
+#' @export
+GetListObjectNames <- function(filePath, groupName) {
+    .Call(`_Signac_GetListObjectNames`, filePath, groupName)
+}
+
+#' GetListRootObjectNames
+#'
+#' Get list groups
+#'
+#' @param filePath An HDF5 path
+#' @export
+GetListRootObjectNames <- function(filePath) {
+    .Call(`_Signac_GetListRootObjectNames`, filePath)
+}
+
+#' Read10XH5
+#'
+#' Get list triplet of SEXP
+#'
+#' @param filePath A fiel path
+#' @param use_names Use names flag
+#' @param unique_features Unique features flag
+#' @export
+Read10XH5Content <- function(filePath, use_names, unique_features) {
+    .Call(`_Signac_Read10XH5Content`, filePath, use_names, unique_features)
+}
+
+#' WriteRootDataset
+#'
+#' Write a string vector to root group
+#'
+#' @param filePath A fiel path
+#' @param datasetName A dataset name
+#' @param datasetVal A string vector
+#' @export
+WriteRootDataset <- function(filePath, datasetName, datasetVal) {
+    invisible(.Call(`_Signac_WriteRootDataset`, filePath, datasetName, datasetVal))
+}
+
+#' ReadRootDataset
+#'
+#' Read a string vector from root group
+#'
+#' @param filePath A fiel path
+#' @param datasetName A dataset name
+#' @export
+ReadRootDataset <- function(filePath, datasetName) {
+    .Call(`_Signac_ReadRootDataset`, filePath, datasetName)
+}
+
+#' ReadIntegerVector
+#'
+#' This function is used to read a integer vector from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadIntegerVector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadIntegerVector`, filePath, groupName, datasetName)
+}
+
+#' ReadDoubleVector
+#'
+#' This function is used to read a double vector from hdf5 file
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @export
+ReadDoubleVector <- function(filePath, groupName, datasetName) {
+    .Call(`_Signac_ReadDoubleVector`, filePath, groupName, datasetName)
 }
 
 #' GetListAttributes
@@ -471,6 +580,13 @@ FastGetColsOfSparseMat <- function(mat, start, end) {
     .Call(`_Signac_FastGetColsOfSparseMat`, mat, start, end)
 }
 
+<<<<<<< 4922ffbba95eddf43e43699da4d7e056e555d0ef
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8f57f8d... merge Sparsematrix utils from rcpp and edi Harmony function
+>>>>>>> merge Sparsematrix utils from rcpp and edi Harmony function
 #' FastGetSubSparseMat
 #'
 #' Subview sparse matrix
@@ -492,6 +608,18 @@ FastGetSubSparseMat <- function(mat, rrvec, ccvec, need_perform_row, need_perfor
 #' @param mat A sparse matrix
 #' @param rvec A row vector
 #' @export
+<<<<<<< 4922ffbba95eddf43e43699da4d7e056e555d0ef
+=======
+<<<<<<< HEAD
+=======
+FastGetSubSparseMat <- function(mat, rrvec, ccvec) {
+    .Call(`_Signac_FastGetSubSparseMat`, mat, rrvec, ccvec)
+}
+
+>>>>>>> 51d897d... finished cleaning
+=======
+>>>>>>> 8f57f8d... merge Sparsematrix utils from rcpp and edi Harmony function
+>>>>>>> merge Sparsematrix utils from rcpp and edi Harmony function
 FastGetSubSparseMatByRows <- function(mat, rvec) {
     .Call(`_Signac_FastGetSubSparseMatByRows`, mat, rvec)
 }

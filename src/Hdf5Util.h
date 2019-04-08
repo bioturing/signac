@@ -6,6 +6,7 @@
 #else
 #define PATH_SEPARATOR "/"
 #endif
+#define GENOME_SEPARATOR "_"
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -13,7 +14,6 @@
 #include <unordered_map>
 #include <fstream>
 #include <string>
-#include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include "CommonUtil.h"
 #include <highfive/H5File.hpp>
@@ -178,8 +178,6 @@ public:
             auto dims = dataSpace.getDimensions();
             HighFive::DataType dataType = datasetVec.getDataType();
             size_t str_size = H5Tget_size(dataType.getId());
-            H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
-            H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
 
 #ifdef DEBUG
             std::stringstream ostr;
@@ -609,6 +607,74 @@ public:
         }
     }
 
+    void WriteSpMtFromArma(HighFive::File *file, const Rcpp::S4 &s, const std::string &groupName) {
+        if(file == nullptr) {
+            std::stringstream ostr;
+            ostr << "Can not write dataset, please open file :" << file_name;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+
+        std::string filePath = GetH5FilePathOfGroupName(groupName);
+        try {
+            if(file->exist(groupName) == true) {
+                std::stringstream ostr;
+                ostr << "Existing group :" << groupName;
+                ::Rf_error(ostr.str().c_str());
+                Close(file);
+                throw;
+            }
+
+            arma::sp_mat mat = Rcpp::as<arma::sp_mat>(s);
+            if(mat.save(filePath) == true) {
+                if((file->exist(groupName + "/features") == true) && (file->exist(groupName + "/barcodes") == true)) {
+                    return;
+                }
+
+                std::string feature_slot;
+                if(file->exist(groupName + "/features") == true) {
+                    ::Rf_warning("FORMAT_VERSION >= 3");
+                    feature_slot = "features/id";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "features/name";
+                    }
+                } else {
+                    ::Rf_warning("FORMAT_VERSION < 3");
+                    feature_slot = "genes";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "gene_names";
+                    }
+                }
+
+                if((file->exist(groupName + "/" + feature_slot) == true) && (file->exist(groupName + "/barcodes") == true)) {
+                    return;
+                }
+
+                //Get Dimnames data
+                Rcpp::List dim_names = s.slot("Dimnames");
+
+                //Write rownames data
+                Rcpp::CharacterVector rownames = dim_names[0];
+                std::vector<std::string> arrRowNames(rownames.begin(), rownames.end());
+                HighFive::DataSet datasetRowNames = file->createDataSet<std::string>(groupName + "/features", HighFive::DataSpace::From(arrRowNames));
+                datasetRowNames.write(arrRowNames);
+
+                //Write colnames data
+                Rcpp::CharacterVector colnames = dim_names[1];
+                std::vector<std::string> arrColNames(colnames.begin(), colnames.end());
+                HighFive::DataSet datasetColNames = file->createDataSet<std::string>(groupName + "/barcodes", HighFive::DataSpace::From(arrColNames));
+                datasetColNames.write(arrColNames);
+
+                file->flush();
+            }
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "WriteSpMtFromArma (S4) HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
+    }
+
     void WriteSpMtFromArma(const arma::sp_mat &mat, const std::string &groupName) {
         std::string filePath = GetH5FilePathOfGroupName(groupName);
         try {
@@ -624,7 +690,7 @@ public:
     void WriteSpMtFromS4(HighFive::File *file, const Rcpp::S4 &mat, const std::string &groupName) {
         if(file == nullptr) {
             std::stringstream ostr;
-            ostr << "Can not open file :" << file_name;
+            ostr << "Can not write dataset, please open file :" << file_name;
             ::Rf_error(ostr.str().c_str());
             throw;
         }
@@ -695,6 +761,41 @@ public:
         return infile.good();
     }
 
+    bool WriteVector(const std::vector<double> &vvec, const std::string &groupName) {
+        boost::shared_ptr<HighFive::File> file = Open(-1);
+
+        if(file.get() == nullptr) {
+            return false;
+        }
+
+        try {
+            HighFive::DataSet datasetVec = file->createDataSet<double>(groupName, HighFive::DataSpace::From(vvec));
+            datasetVec.write(vvec);
+            file->flush();
+            return true;
+        } catch (HighFive::Exception& err) {
+            std::cerr << "WriteVector in HDF5 format, error=" << err.what() << std::endl;
+        }
+        return false;
+    }
+
+    bool ReadVector(std::vector<double> &vvec, const std::string &groupName) {
+        boost::shared_ptr<HighFive::File> file = Open(-1);
+
+        if(file.get() == nullptr) {
+            return false;
+        }
+
+        try {
+            HighFive::DataSet datasetVec = file->getDataSet(groupName);
+            datasetVec.read(vvec);
+            return true;
+        } catch (HighFive::Exception& err) {
+            std::cerr << "ReadVector in HDF5 format, error=" << err.what() << std::endl;
+        }
+        return false;
+    }
+
     arma::sp_mat ReadSpMtAsArma(const std::string &groupName) {
         arma::sp_mat mat;
         std::string filePath = GetH5FilePathOfGroupName(groupName);
@@ -726,7 +827,24 @@ public:
                 throw;
             }
 
-            std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape"};
+            std::string feature_slot;
+            if(file->exist(groupName + "/features") == true) {
+                if((file->exist(groupName + "/features/id") == true) || (file->exist(groupName + "/features/name") == true)) {
+                    feature_slot = "features/id";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "features/name";
+                    }
+                } else {
+                    feature_slot = "features";
+                }
+            } else {
+                feature_slot = "genes";
+                if(file->exist(groupName + "/" + feature_slot) == false) {
+                    feature_slot = "gene_names";
+                }
+            }
+
+            std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot, "barcodes"};
             for(const std::string &datasetName : arrDatasetName) {
                 if(file->exist(groupName + "/" + datasetName) == false) {
                     std::stringstream ostr;
@@ -746,7 +864,7 @@ public:
             std::vector<double> arrData;
             ReadDatasetVector<double>(file, groupName, "data", arrData);
             std::vector<std::string> arrFeature;
-            ReadDatasetVector(file, groupName, "features", arrFeature);
+            ReadDatasetVector(file, groupName, feature_slot, arrFeature);
             std::vector<std::string> arrBarcode;
             ReadDatasetVector(file, groupName, "barcodes", arrBarcode);
 
@@ -756,6 +874,7 @@ public:
             s.slot("Dim") = std::move(arrDims);
             s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
             return s;
+
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadSpMtAsS4 in HDF5 format, error=" << err.what();
@@ -764,7 +883,94 @@ public:
             throw;
         }
 
-        return s;
+        try {
+            std::vector<std::string> genomes;
+            GetListRootObjectNames(file, genomes);
+
+            for(std::string &groupName : genomes) {
+                if(file->exist(groupName) == false) {
+                    std::stringstream ostr;
+                    ostr << "Can not exist group :" << groupName;
+                    ::Rf_error(ostr.str().c_str());
+                    Close(file);
+                    throw;
+                }
+
+                std::string feature_slot;
+                if(file->exist(groupName + "/features") == true) {
+                    ::Rf_warning("FORMAT_VERSION >= 3");
+                    feature_slot = "features/id";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "features/name";
+                    }
+                } else {
+                    ::Rf_warning("FORMAT_VERSION < 3");
+                    feature_slot = "genes";
+                    if(file->exist(groupName + "/" + feature_slot) == false) {
+                        feature_slot = "gene_names";
+                    }
+                }
+
+                std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot, "barcodes"};
+                for(const std::string &datasetName : arrDatasetName) {
+                    if(file->exist(groupName + "/" + datasetName) == false) {
+                        std::stringstream ostr;
+                        ostr << "Can not exist dataset : " << datasetName << " in " << groupName;
+                        ::Rf_error(ostr.str().c_str());
+                        Close(file);
+                        throw;
+                    }
+                }
+
+                HighFive::DataSet datasetShape = file->getDataSet(groupName + "/shape");
+                HighFive::DataSet datasetIndices = file->getDataSet(groupName + "/indices");
+                HighFive::DataSet datasetIndptr = file->getDataSet(groupName + "/indptr");
+                HighFive::DataSet datasetData = file->getDataSet(groupName + "/data");
+                HighFive::DataSet datasetFeature = file->getDataSet(groupName + "/" + feature_slot);
+                HighFive::DataSet datasetBarcode = file->getDataSet(groupName + "/barcodes");
+
+                std::vector<int> arrDims;
+                datasetShape.read(arrDims);
+                std::vector<int> arrD1;
+                datasetIndices.read(arrD1);
+                std::vector<int> arrD2;
+                datasetIndptr.read(arrD2);
+                std::vector<double> arrD3;
+                datasetData.read(arrD3);
+                std::vector<std::string> arrFeature;
+                datasetFeature.read(arrFeature);
+                std::vector<std::string> arrBarcode;
+                datasetBarcode.read(arrBarcode);
+
+                std::string klass = "dgCMatrix";
+                if(give_csparse == false) {
+                    klass = "dgTMatrix";
+                }
+                Rcpp::S4 s(klass);
+                s.slot("i") = std::move(arrD1);
+                s.slot("p") = std::move(arrD2);
+                s.slot("x") = std::move(arrD3);
+                s.slot("Dim") = std::move(arrDims);
+
+                if (unique_features == true) {
+                    std::vector<std::string>::iterator it;
+                    it = std::unique (arrFeature.begin(), arrFeature.end());
+                    arrFeature.resize(std::distance(arrFeature.begin(),it));
+                }
+
+                std::vector<std::string> arrFeatureType;
+                if(file->exist(groupName + "/features/feature_type") == false) {
+                    HighFive::DataSet datasetFeatureType = file->getDataSet(groupName + "/features/feature_type");
+                    std::vector<std::string> arrFeatureType;
+                    datasetFeatureType.read(arrBarcode);
+                }
+            }
+        } catch (HighFive::Exception& err) {
+            std::stringstream ostr;
+            ostr << "Read10XH5 HDF5 format, error=" << err.what() ;
+            ::Rf_error(ostr.str().c_str());
+            throw;
+        }
     }
 
     Rcpp::List Read10XH5(HighFive::File *file, const std::string &filePath, const bool &use_names, const bool &unique_features) {
@@ -774,6 +980,9 @@ public:
             ::Rf_error(ostr.str().c_str());
             throw;
         }
+
+        Environment pkg = Environment::namespace_env("Matrix");
+        Function fMatrix = pkg["sparseMatrix"];
 
         Rcpp::List arrList = Rcpp::List::create();
         try {
@@ -835,15 +1044,43 @@ public:
                 }
 
                 std::vector<std::string> arrFeatureType;
-                if(file->exist(groupName + "/features/feature_type") == false) {
+                if(file->exist(groupName + "/features/feature_type") == true) {
                     ReadDatasetVector(file, groupName, "features/feature_type", arrFeatureType);
+                }
+
+                std::vector<std::string> arrFeatureGenome;
+                if(file->exist(groupName + "/features/genome") == true) {
+                    ReadDatasetVector(file, groupName, "features/genome", arrFeatureGenome);
+                }
+
+                Rcpp::List arrFeatureGenomeList = Rcpp::List::create();
+                if(arrFeatureGenome.size() > 0) {
                     std::vector<std::string>::iterator it;
-                    it = std::unique (arrFeatureType.begin(), arrFeatureType.end());
-                    arrFeatureType.resize(std::distance(arrFeatureType.begin(),it));
+                    it = std::unique (arrFeatureGenome.begin(), arrFeatureGenome.end());
+                    arrFeatureGenome.resize(std::distance(arrFeatureGenome.begin(),it));
+
+                    std::map<std::string, std::vector<unsigned int>> arrFeatureGenomeMap;
+                    for(int i = 0; i < arrFeatureGenome.size(); i++) {
+                        std::vector<unsigned int> vecFeature;
+                        arrFeatureGenomeMap[arrFeatureGenome[i]] = vecFeature;
+                    }
+
+                    unsigned int jLoop = 0;
+                    for (const std::string & featureName : arrFeature)
+                    {
+                        std::vector<std::string> arrItem;
+                        boost::split(arrItem, featureName, boost::is_any_of(GENOME_SEPARATOR));
+                        arrFeatureGenomeMap[arrItem[0]].push_back(jLoop++);
+                    }
+
+                    for(int i = 0; i < arrFeatureGenome.size(); i++) {
+                        arrFeatureGenomeList[arrFeatureGenome[i]] = std::move(arrFeatureGenomeMap[arrFeatureGenome[i]]);
+                    }
                 }
 
                 std::transform(std::begin(arrIndices),std::end(arrIndices),std::begin(arrIndices),[](int x){return x+1;});
-                arrList[groupName] = Rcpp::List::create(Named("indptr") = arrIndptr, Named("indices") = arrIndices, Named("data") = arrData, Named("shape") = arrDims, Named("features") = arrFeature, Named("feature_type") = arrFeatureType, Named("barcodes") = arrBarcode);
+                S4 mat = fMatrix(Named("i", arrIndices), Named("p", arrIndptr), Named("x", arrData), Named("dims", arrDims), Named("giveCsparse", false), Named("dimnames", Rcpp::List::create(arrFeature, arrBarcode)));
+                arrList[groupName] = Rcpp::List::create(Named("mat") = mat, Named("feature_type") = arrFeatureType, Named("feature_genome") = arrFeatureGenomeList);
             }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
