@@ -66,6 +66,7 @@ WriteSpMtAsSpMat <- function(filePath, groupName, mat) {
 <<<<<<< 3c786b69c7ca9e49548cdcadbda93cd74c829252
 }
 
+<<<<<<< 551e19225c55140a0bff8bd43fb064d630fe1730
 WriteSpMtFromS4 <- function(filePath, groupName, mat) {
     .Call(`_Signac_WriteSpMtFromS4`, filePath, groupName, mat)
 }
@@ -81,6 +82,21 @@ ReadSpMtAsS4 <- function(filePath, groupName) {
 }
 
 #' ReadRowSumSpMt
+=======
+#' WriteSpMtAsSpMatFromS4
+#'
+#' This function is used to write a sparse ARMA matrix from S4
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @param mat A sparse matrix
+#' @export
+WriteSpMtAsSpMatFromS4 <- function(filePath, groupName, mat) {
+    invisible(.Call(`_Signac_WriteSpMtAsSpMatFromS4`, filePath, groupName, mat))
+}
+
+#' WriteSpMtAsS4
+>>>>>>> Add methdo write ARMA matrix as S4
 #'
 #' Read rows sums
 #'

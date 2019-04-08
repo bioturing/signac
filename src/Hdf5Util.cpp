@@ -23,6 +23,22 @@ void WriteSpMtAsSpMat(const std::string &filePath, const std::string &groupName,
     oHdf5Util.WriteSpMtFromArma(mat, groupName);
 }
 
+//' WriteSpMtAsSpMatFromS4
+//'
+//' This function is used to write a sparse ARMA matrix from S4
+//'
+//' @param filePath A string (HDF5 path)
+//' @param groupName A string (HDF5 dataset)
+//' @param mat A sparse matrix
+//' @export
+// [[Rcpp::export]]
+void WriteSpMtAsSpMatFromS4(const std::string &filePath, const std::string &groupName, const Rcpp::S4 &mat) {
+    com::bioturing::Hdf5Util oHdf5Util(filePath);
+    HighFive::File *file = oHdf5Util.Open(-1);
+    oHdf5Util.WriteSpMtFromArma(file, mat, groupName);
+    oHdf5Util.Close(file);
+}
+
 //' WriteSpMtAsS4
 //'
 //' This function is used to write a sparse S4 matrix

@@ -247,6 +247,18 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// WriteSpMtAsSpMatFromS4
+void WriteSpMtAsSpMatFromS4(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
+RcppExport SEXP _Signac_WriteSpMtAsSpMatFromS4(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type mat(matSEXP);
+    WriteSpMtAsSpMatFromS4(filePath, groupName, mat);
+    return R_NilValue;
+END_RCPP
+}
 // WriteSpMtAsS4
 void WriteSpMtAsS4(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
 RcppExport SEXP _Signac_WriteSpMtAsS4(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
@@ -859,6 +871,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 3},
 >>>>>>> Fix link static Sparse matrix method
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
+    {"_Signac_WriteSpMtAsSpMatFromS4", (DL_FUNC) &_Signac_WriteSpMtAsSpMatFromS4, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
     {"_Signac_ReadSpMtAsSPMat", (DL_FUNC) &_Signac_ReadSpMtAsSPMat, 2},
     {"_Signac_ReadSpMtAsS4", (DL_FUNC) &_Signac_ReadSpMtAsS4, 2},
