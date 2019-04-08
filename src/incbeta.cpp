@@ -29,18 +29,28 @@
 
 #define STOP 1.0e-8
 #define TINY 1.0e-30
+#define LOG2 0.693147180559945309417232121458176568075500134360255254120
 
-double incbeta(double a, double b, double x) {
+double log1mexp(double a) {
+    if (a <= LOG2) 
+        return log(-expm1(a));
+    else
+        return log1p(-exp(a));
+    
+}
+
+double logincbeta(double a, double b, double x) {
     if (x < 0.0 || x > 1.0) return 1.0/0.0;
 
     /*The continued fraction converges nicely for x < (a+1)/(a+b+2)*/
     if (x > (a+1.0)/(a+b+2.0)) {
-        return (1.0-incbeta(b,a,1.0-x)); /*Use the fact that beta is symmetrical.*/
+        
+        return (log1mexp(logincbeta(b,a,1.0-x))); /*Use the fact that beta is symmetrical.*/
     }
 
     /*Find the first part before the continued fraction.*/
     const double lbeta_ab = lgamma(a)+lgamma(b)-lgamma(a+b);
-    const double front = exp(log(x)*a+log(1.0-x)*b-lbeta_ab) / a;
+    const double front = log(x)*a+log(1.0-x)*b-lbeta_ab - log(a);
 
     /*Use Lentz's algorithm to evaluate the continued fraction.*/
     double f = 1.0, c = 1.0, d = 0.0;
@@ -71,7 +81,7 @@ double incbeta(double a, double b, double x) {
 
         /*Check for stop.*/
         if (fabs(1.0-cd) < STOP) {
-            return front * (f-1.0);
+            return front + log(f-1.0);
         }
     }
 
