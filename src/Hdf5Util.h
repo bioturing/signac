@@ -6,6 +6,7 @@
 #else
 #define PATH_SEPARATOR "/"
 #endif
+#define GENOME_SEPARATOR "_"
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
@@ -1043,16 +1044,43 @@ public:
                 }
 
                 std::vector<std::string> arrFeatureType;
-                if(file->exist(groupName + "/features/feature_type") == false) {
+                if(file->exist(groupName + "/features/feature_type") == true) {
                     ReadDatasetVector(file, groupName, "features/feature_type", arrFeatureType);
+                }
+
+                std::vector<std::string> arrFeatureGenome;
+                if(file->exist(groupName + "/features/genome") == true) {
+                    ReadDatasetVector(file, groupName, "features/genome", arrFeatureGenome);
+                }
+
+                Rcpp::List arrFeatureGenomeList = Rcpp::List::create();
+                if(arrFeatureGenome.size() > 0) {
                     std::vector<std::string>::iterator it;
-                    it = std::unique (arrFeatureType.begin(), arrFeatureType.end());
-                    arrFeatureType.resize(std::distance(arrFeatureType.begin(),it));
+                    it = std::unique (arrFeatureGenome.begin(), arrFeatureGenome.end());
+                    arrFeatureGenome.resize(std::distance(arrFeatureGenome.begin(),it));
+
+                    std::map<std::string, std::vector<unsigned int>> arrFeatureGenomeMap;
+                    for(int i = 0; i < arrFeatureGenome.size(); i++) {
+                        std::vector<unsigned int> vecFeature;
+                        arrFeatureGenomeMap[arrFeatureGenome[i]] = vecFeature;
+                    }
+
+                    unsigned int jLoop = 0;
+                    for (const std::string & featureName : arrFeature)
+                    {
+                        std::vector<std::string> arrItem;
+                        boost::split(arrItem, featureName, boost::is_any_of(GENOME_SEPARATOR));
+                        arrFeatureGenomeMap[arrItem[0]].push_back(jLoop++);
+                    }
+
+                    for(int i = 0; i < arrFeatureGenome.size(); i++) {
+                        arrFeatureGenomeList[arrFeatureGenome[i]] = std::move(arrFeatureGenomeMap[arrFeatureGenome[i]]);
+                    }
                 }
 
                 std::transform(std::begin(arrIndices),std::end(arrIndices),std::begin(arrIndices),[](int x){return x+1;});
                 S4 mat = fMatrix(Named("i", arrIndices), Named("p", arrIndptr), Named("x", arrData), Named("dims", arrDims), Named("giveCsparse", false), Named("dimnames", Rcpp::List::create(arrFeature, arrBarcode)));
-                arrList[groupName] = Rcpp::List::create(Named("mat") = mat, Named("feature_type") = arrFeatureType);
+                arrList[groupName] = Rcpp::List::create(Named("mat") = mat, Named("feature_type") = arrFeatureType, Named("feature_genome") = arrFeatureGenomeList);
             }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
