@@ -316,159 +316,50 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
 #' @importFrom Matrix sparseMatrix
 #'
 Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
-
-  # Get version of HDF5 file
-  GetVersion <- function(infile) {
-    return(if (!infile$attr_exists("PYTABLES_FORMAT_VERSION")) 3 else 2)
+  if (!file.exists(filename)) {
+    stop("File not found")
   }
 
-  # Get row names (for genes)
-  GetFeatureSlot <- function(version, use.names) {
-    slot <- if (version == 3) {
-      if (use.names) "features/name" else "features/id"
-    } else {
-      if (use.names) "gene_names" else "genes"
-    }
-  }
+  output <- list()
+  genomes <- Signac::Read10XH5Content(filename, use.names, unique.features)
+  genomes_name <- names(genomes)
 
-  # Get features
-  GetFeatures <- function(infile, base.slot, feature.slot, unique.features) {
-    features <- infile[[paste0(base.slot, '/', feature.slot)]][]
-    if (unique.features) {
-      features <- make.unique(names = features)
-    }
-    return(features)
-  }
-
-  # Get data from v2 H5 file
-  GetOutputV2 <- function(infile, feature.slot, unique.features) {
-    output <- list()
-    genomes <- names(x = infile)
-    for (genome in genomes) {
-      counts <- infile[[paste0(genome, '/data')]]
-      indices <- infile[[paste0(genome, '/indices')]]
-      indptr <- infile[[paste0(genome, '/indptr')]]
-      shp <- infile[[paste0(genome, '/shape')]]
-      features <- GetFeatures(infile, genome, feature.slot, unique.features)
-      barcodes <- infile[[paste0(genome, '/barcodes')]]
-      sparse.mat <- sparseMatrix(
-        i = indices[] + 1,
-        p = indptr[],
-        x = as.numeric(x = counts[]),
-        dims = shp[],
-        giveCsparse = FALSE
-      )
-      features <- as.character(unlist(sapply(rownames(mat), function(s)
-                                strsplit(s, "_")[[1]][2])))
-      rownames(x = sparse.mat) <- features
-      colnames(x = sparse.mat) <- barcodes[]
-      sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
-      output[[genome]] <- sparse.mat
-    }
-    infile$close_all()
-    return(output)
-  }
-
-  # Get data from v3 H5 file
-  GetOutputV3 <- function(infile, feature.slot, unique.features) {
-
-    # Get genomes and indices (of features)
-    GetGenomes <- function(infile, base.slot) {
-      genome.arr <- infile[[paste0(base.slot, "/features/genome")]][]
-      name <- unique(genome.arr)
-      genome.arr <- lapply(name, function(x) which(genome.arr == x))
-      names(genome.arr) <- name
-      return(genome.arr)
-    }
-
-    # Get feature type
-    GetFeatureType <- function(infile, base.slot) {
-      return (if (infile$exists(name = paste0(base.slot, '/features/feature_type'))) {
-        infile[[paste0(base.slot, '/features/feature_type')]][]
-      } else {
-        NULL
-      })
-    }
-
-    output <- list()
-    base.slot <- names(x = infile)
-    genomes <- GetGenomes(infile, base.slot)
-    counts <- infile[[paste0(base.slot, '/data')]]
-    indices <- infile[[paste0(base.slot, '/indices')]]
-    indptr <- infile[[paste0(base.slot, '/indptr')]]
-    shp <- infile[[paste0(base.slot, '/shape')]]
-    features <- GetFeatures(infile, base.slot, feature.slot, unique.features)
-    types <- GetFeatureType(infile, base.slot)
-    barcodes <- infile[[paste0(base.slot, '/barcodes')]]
-    sparse.mat <- sparseMatrix(
-      i = genomes[[matrix_name]]$indices[],
-      p = genomes[[matrix_name]]$indptr[],
-      x = as.numeric(x = genomes[[matrix_name]]$data[]),
-      dims = genomes[[matrix_name]]$shape[],
-      giveCsparse = FALSE
-    )
-    rownames(x = sparse.mat) <- features
-    colnames(x = sparse.mat) <- genome$barcodes[]
-    sparse.mat <- as(object = sparse.mat, Class = 'dgCMatrix')
+  for (matrix_name in genomes_name) {
+    # Convert dgTMatrix => dgCMatrix
+    sparse.mat <- as(object = genomes[[matrix_name]]$mat, Class = 'dgCMatrix')
 
     # Split v3 multimodal
-    types.unique <- unique(types)
-    output <- lapply(names(genomes), function(genome) {
-      ft.idx <- genomes[[genome]]
-      sparse.mat2 <- sparse.mat[ft.idx, ]
-      ft <- as.character(unlist(sapply(rownames(sparse.mat2), function(s)
-        strsplit(s, "_")[[1]][2])))
-      rownames(sparse.mat2) <- ft
-      types2 <- types[ft.idx]
-      sparse.mat2 <- lapply(types.unique, function(x) sparse.mat2[which(x = types2 == x), ])
-      names(sparse.mat2) <- types.unique
-      return(sparse.mat2)
-    })
-    names(output) <- names(genomes)
-    infile$close_all()
+    feature_genome_names <- names(genomes[[matrix_name]]$feature_genome)
+    types.unique <- unique(genomes[[matrix_name]]$feature_type)
+    if (length(feature_genome_names) > 0) {
+      if(length(types.unique) > 1) {
+        message("Genome ", matrix_name, " has multiple modalities, returning a list of matrices for this genome")
+      }
+      out_temp <- lapply(feature_genome_names, function(genome_name) {
+        ft.idx <- genomes[[matrix_name]]$feature_genome[[genome_name]]
+        sparse.mat2 <- sparse.mat[ft.idx, ]
+        ft <- as.character(unlist(sapply(rownames(sparse.mat2), function(s)
+          strsplit(s, "_")[[1]][2])))
+        rownames(sparse.mat2) <- ft
+        types2 <- genomes[[matrix_name]]$feature_type[ft.idx]
+        sparse.mat2 <- lapply(types.unique, function(x) sparse.mat2[which(x = types2 == x), ])
+        names(sparse.mat2) <- types.unique
+        list(Name = genome_name, Mat = sparse.mat2)
+      })
+
+      for (out_temp_item in out_temp) {
+        output[[matrix_name]][[out_temp_item$Name]] <- out_temp_item$Mat
+      }
+    } else {
+      output[[matrix_name]] <- sparse.mat
+    }
+  }
+
+  if (length(x = output) == 1) {
+    return(output[[genomes_name[1]]])
+  } else{
     return(output)
   }
-
-  infile <- H5File$new(filename = filename, mode = 'r')
-  version <- GetVersion(infile)
-  feature.slot <- GetFeatureSlot(version, use.names)
-  GetOutputFunc <- if (version == 2) GetOuputV2 else GetOutputV3
-  output <- GetOutputFunc(infile, feature.slot, unique.features)
-
-  if (length(output) == 1) {
-    names(output) <- "default"
-  } else {
-    opt <- AskForChoices(names(output))
-    output <- output[[opt]]
-  }
-
-  return(output)
-}
-
-#' Read sparse matrix from HDF5 file
-#' @param h5.path Path to HDF5 file
-#' @param group.name Group name in dataset. Default is "bioturing"
-#' @param auto.update Auto sync if missing V2 data. Default is FALSE
-#'
-#' @useDynLib Signac, .registration = TRUE
-#' @importFrom Rcpp evalCpp
-#' @importFrom RcppParallel RcppParallelLibs
-#'
-#' @export
-#'
-#' @examples
-#' spMat <- ReadSpMt(h5.path = path2hdf5, group.name = "bioturing")
-#' spMat
-#'
-ReadSpMt <- function(h5.path, group.name = "bioturing", auto.update = FALSE) {
-    mat <- Signac::ReadSpMtAsSPMat(h5.path, group.name)
-    if (length(mat) == 0) {
-        mat <- Signac::ReadSpMtAsS4(h5.path, group.name)
-        if(auto.update) {
-            Signac::WriteSpMtAsSPMat(h5.path, group.name, mat);
-        }
-    }
-    return(mat)
 }
 
 #' Read sparse matrix from HDF5 file
