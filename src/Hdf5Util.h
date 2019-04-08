@@ -13,7 +13,6 @@
 #include <unordered_map>
 #include <fstream>
 #include <string>
-#include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include "CommonUtil.h"
 #include <highfive/H5File.hpp>
