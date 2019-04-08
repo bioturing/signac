@@ -980,6 +980,9 @@ public:
             throw;
         }
 
+        Environment pkg = Environment::namespace_env("Matrix");
+        Function fMatrix = pkg["sparseMatrix"];
+
         Rcpp::List arrList = Rcpp::List::create();
         try {
             std::vector<std::string> genomes;
@@ -1048,7 +1051,8 @@ public:
                 }
 
                 std::transform(std::begin(arrIndices),std::end(arrIndices),std::begin(arrIndices),[](int x){return x+1;});
-                arrList[groupName] = Rcpp::List::create(Named("indptr") = arrIndptr, Named("indices") = arrIndices, Named("data") = arrData, Named("shape") = arrDims, Named("features") = arrFeature, Named("feature_type") = arrFeatureType, Named("barcodes") = arrBarcode);
+                S4 mat = fMatrix(Named("i", arrIndices), Named("p", arrIndptr), Named("x", arrData), Named("dims", arrDims), Named("giveCsparse", false), Named("dimnames", Rcpp::List::create(arrFeature, arrBarcode)));
+                arrList[groupName] = Rcpp::List::create(Named("mat") = mat, Named("feature_type") = arrFeatureType);
             }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
