@@ -42,18 +42,13 @@ double HarmonicMean(double a, double b)
     return 2 * a * b / (a + b);
 }
 
-bool Compare(int i, int j, const std::vector<double> &res)
-{
-    return res[i] < res[j];
-}
-
 double LnPvalue(double score, int n1, int n2, int bin_cnt)
 {
     if (bin_cnt <= 0)
         throw std::domain_error("Bin count should be positive");
 
     if (bin_cnt == 1)
-        return std::numeric_limits<double>::infinity();
+        return 0.0;
 
     double mean = 0.25 * (bin_cnt - 1) * (1.0 / n1 + 1.0 / n2);
 
@@ -70,7 +65,9 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
     return logincbeta(shape1, shape2, score);
 }
 
-void GetTotalCount(const Rcpp::NumericVector &cluster, std::array<int, 2> &total_cnt)
+void GetTotalCount(
+    const Rcpp::NumericVector &cluster,
+    std::array<int, 2> &total_cnt)
 {
     total_cnt[0] = total_cnt[1] = 0;
 
@@ -92,17 +89,72 @@ int GetThreshold(int total)
     return thres;
 }
 
-std::tuple<double, double, double> ComputeSimilarity(
+// Expression matrix needs to be sorted
+double ComputeUDScore(
         const Rcpp::NumericVector &cluster,
-        std::vector<std::pair<double, int>> &exp,
+        const std::vector<std::pair<double, int>> &exp,
+        const std::array<int, 2> &cnt,
+        const std::array<int, 2> &zero_cnt)
+{
+    double up = 0;
+    double down = 0;
+
+    const int in = cnt[0];
+    const int out = cnt[1];
+
+    int c_in = 0;
+    int c_out = 0;
+    int e_in = zero_cnt[0];
+    int e_out = zero_cnt[1];
+
+    double prev_exp = 0;
+    int n = exp.size();
+    for (int i = 0; i < n; ++i) {
+        double e = exp[i].first;
+        if (std::fabs(e - prev_exp) > HARMONY_EPS) {
+            if (e_in > 0) {
+                double l = (double) e_in/in;
+
+                double in_l = (double) c_in/in;
+                double in_r = (double) (c_in + e_in)/in;
+
+                double out_l = (double) c_out/out;
+                double out_r = (double) (c_out + e_out)/out;
+
+                up += std::min(l, std::max(0.0, out_l - in_l));
+                down += std::min(l, std::max(0.0, in_r - out_r));
+            }
+
+            prev_exp = e;
+
+            c_in += e_in;
+            c_out += e_out;
+            e_in = e_out = 0;
+        }
+
+        int group = exp[i].second;
+
+        e_in += group == 1;
+        e_out += group == 2;
+    }
+
+    up += std::max(0.0, (double)c_out/out - (double)c_in/in);
+
+    return (up - down) / (up + down);
+}
+
+// Expression matrix needs to be sorted
+std::tuple<double, double> ComputeSimilarity(
+        const Rcpp::NumericVector &cluster,
+        const std::vector<std::pair<double, int>> &exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres)
 {
-    int in = cnt[0];
-    int out = cnt[1];
-    int zero_in = zero_cnt[0];
-    int zero_out = zero_cnt[1];
+    const int in = cnt[0];
+    const int out = cnt[1];
+    const int zero_in = zero_cnt[0];
+    const int zero_out = zero_cnt[1];
 
     int bin_in = zero_in;
     int bin_out = zero_out;
@@ -111,15 +163,12 @@ std::tuple<double, double, double> ComputeSimilarity(
     int bin_cnt = 0;
     double sim = 0;
 
-    std::sort(exp.begin(), exp.end());
-
-    if (!exp.empty() && exp[0].first < HARMONY_EPS)
-        throw std::domain_error("Zero expression should not be included in exp matrix");
-
     double prev_exp = 0;
 
-    for(const std::pair<double, int> &e : exp) {
-        if (std::fabs(e.first - prev_exp) > HARMONY_EPS) {
+    int n = exp.size();
+    for (int i = 0; i < n; ++i) {
+        double e = exp[i].first;
+        if (std::fabs(e - prev_exp) > HARMONY_EPS) {
             if (bin_both >= thres) {
                 sim += HarmonicMean((double)bin_in/in,
                                     (double)bin_out/out);
@@ -127,11 +176,12 @@ std::tuple<double, double, double> ComputeSimilarity(
                 bin_in = bin_out = bin_both = 0;
                 ++bin_cnt;
             }
-            prev_exp = e.first;
+            prev_exp = e;
         }
 
-        bin_in += e.second == 1;
-        bin_out += e.second == 2;
+        int group = exp[i].second;
+        bin_in += group == 1;
+        bin_out += group == 2;
         ++bin_both;
     }
 
@@ -144,49 +194,28 @@ std::tuple<double, double, double> ComputeSimilarity(
                 + (double) bin_out / out) / 2;
     }
 
-    double cnt_up = 0;
-    double cnt_down = 0;
-
-
-    int in_cnt = 0;
-    int out_cnt = 0;
-    int in_ecnt = zero_in;
-    int out_ecnt = zero_out;
-
-    prev_exp = 0;
-    for(const std::pair<double, int> &e : exp) {
-        if (std::fabs(e.first - prev_exp) > HARMONY_EPS) {
-            // up region (in_cnt/in, (in_cnt+in_ecnt)/in), ...
-            // down (in_cnt+x)/in == (out_cnt + y)/out
-            //
-            if (in_ecnt > 0) {
-                double left = (double)in_cnt/in;
-                double right = (double)(in_cnt + in_ecnt)/in;
-
-                double mid1 = std::min(right, std::max((double)in_cnt/in, (double)out_cnt/out));
-                double mid2 = std::max(left, std::min((double)(in_cnt + in_ecnt)/in, (double)(out_cnt + out_ecnt)/out));
-
-                cnt_up += mid1 - left;
-                cnt_down += right - mid2;
-            }
-
-            prev_exp = e.first;
-
-            in_cnt += in_ecnt;
-            out_cnt += out_ecnt;
-            in_ecnt = out_ecnt = 0;
-        }
-
-        in_ecnt += e.second == 1;
-        out_ecnt += e.second == 2;
-    }
-
-    cnt_up += std::max(0.0, (double)out_cnt/out - (double)in_cnt/in);
-
     return std::make_tuple(
         sim,
-        LnPvalue(sim, in, out, bin_cnt),
-        (cnt_up - cnt_down) / (cnt_up + cnt_down)
+        LnPvalue(sim, in, out, bin_cnt)
+    );
+}
+
+std::tuple<double, double, double> ProcessGene(
+        const Rcpp::NumericVector &cluster,
+        std::vector<std::pair<double, int>> exp,
+        const std::array<int, 2> &cnt,
+        const std::array<int, 2> &zero_cnt,
+        int thres)
+{
+    std::sort(exp.begin(), exp.end());
+
+    if (!exp.empty() && exp[0].first < HARMONY_EPS)
+        throw std::domain_error("Zero expression should not "
+                                "be included in exp matrix");
+
+    return std::tuple_cat(
+        ComputeSimilarity(cluster, exp, cnt, zero_cnt, thres),
+        std::make_tuple(ComputeUDScore(cluster, exp, cnt, zero_cnt))
     );
 }
 
@@ -199,10 +228,11 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
     int n_genes = mtx.n_rows;
 
     if (cluster.size() != mtx.n_cols)
-        throw std::domain_error("Input cluster size is not equal to the number of columns in matrix");
+        throw std::domain_error("Input cluster size is not equal "
+                                "to the number of columns in matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
-    std::vector<std::array<int, 2>> zero_cnt(n_genes);
+    std::vector<std::array<int, 2>> nz_cnt(n_genes);
 
     std::vector<std::tuple<double, double, double>> res(n_genes);
     arma::sp_mat::const_col_iterator c_it;
@@ -215,15 +245,19 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
             if (*c_it) {
                 int r = c_it.row();
                 exp[r].push_back({*c_it, (int)cluster[i]});
-                ++zero_cnt[r][(int)cluster[i] - 1];
+                ++nz_cnt[r][(int)cluster[i] - 1];
             }
         }
     }
 
     for (int i = 0; i < n_genes; ++i) {
-        zero_cnt[i][0] = total_cnt[0] - zero_cnt[i][0];
-        zero_cnt[i][1] = total_cnt[1] - zero_cnt[i][1];
-        res[i] = ComputeSimilarity(cluster, exp[i], total_cnt, zero_cnt[i], thres);
+        res[i] = ProcessGene(
+            cluster,
+            std::move(exp[i]),
+            total_cnt,
+            {total_cnt[0] - nz_cnt[i][0], total_cnt[1] - nz_cnt[i][1]},
+            thres
+        );
 
         if ((i + 1) % 1000 == 0)
         Rcout << "Processed " << i + 1 << " genes\r";
@@ -245,7 +279,8 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
     int n_genes = shape[1];
 
     if (cluster.size() != shape[0])
-        throw std::domain_error("Input cluster size is not equal to the number of columns in matrix");
+        throw std::domain_error("Input cluster size is not equal to "
+                                "the number of columns in matrix");
 
     std::vector<std::tuple<double, double, double>> res(n_genes);
 
@@ -265,7 +300,13 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
             }
         }
 
-        res[i] = ComputeSimilarity(cluster, exp, total_cnt, zero_cnt, thres);
+        res[i] = ProcessGene(
+            cluster,
+            std::move(exp),
+            total_cnt,
+            zero_cnt,
+            thres
+        );
     }
 
     return res;
@@ -276,16 +317,12 @@ DataFrame PostProcess(
         std::vector<std::string> &rownames)
 {
     int n_gene = res.size();
-    std::vector<int> order(n_gene);
-    std::vector<double> pvalue(n_gene);
+    std::vector<std::pair<double,int>> order(n_gene);
 
-    for (int i = 0; i < n_gene; ++i) {
-        order[i] = i;
-        pvalue[i] = std::get<1>(res[i]);
-    }
+    for (int i = 0; i < n_gene; ++i)
+        order[i] = std::make_pair(std::get<1>(res[i]), i);
 
-    std::sort(order.begin(), order.end(),
-              std::bind(Compare, _1, _2, pvalue));
+    std::sort(order.begin(), order.end());
 
     std::vector<double> p_value(n_gene), similarity(n_gene);
     std::vector<double> p_adjusted(n_gene);
@@ -295,8 +332,7 @@ DataFrame PostProcess(
     //Adjust p value
     double prev = 0;
     for(int i = 0; i < n_gene; ++i) {
-        int k = order[i];
-        double p = std::exp(pvalue[k]) * n_gene / (i + 1);
+        double p = std::exp(order[i].first) * n_gene / (i + 1);
 
         if (p > 1)
             p = 1;
@@ -308,11 +344,9 @@ DataFrame PostProcess(
     }
 
     for(int i = 0; i < n_gene; ++i) {
-        int k = order[i];
+        int k = order[i].second;
         g_names[i] = rownames[k];
-        similarity[i] = std::get<0>(res[k]);
-        p_value[i] = std::get<1>(res[k]);
-        change[i] = std::get<2>(res[k]);
+        std::tie(similarity[i], p_value[i], change[i]) = res[k];
     }
 
     Rcout << "Done all" << std::endl;
@@ -332,14 +366,18 @@ DataFrame PostProcess(
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
+DataFrame HarmonyMarker(const Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
 {
+    Rcout << "Enter" << std::endl;
+
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
-    const arma::sp_mat mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
-    std::vector<std::tuple<double, double, double>> res;
-    res = HarmonyTest(mtx, cluster, total_cnt);
+    const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
+    Rcout << "Done parse" << std::endl;
+
+    std::vector<std::tuple<double, double, double>> res
+                    = HarmonyTest(mtx, cluster, total_cnt);
     Rcout << "Done calculate" << std::endl;
 
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
@@ -355,7 +393,9 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector &cluster)
+DataFrame HarmonyMarkerH5(
+    const std::string &hdf5Path,
+    const Rcpp::NumericVector &cluster)
 {
     com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
     HighFive::File *file = oHdf5Util.Open(1);
@@ -363,15 +403,17 @@ DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
-    Rcout << "Group1 " << total_cnt[0] << "Group2 " << total_cnt[1] << std::endl;
+    Rcout << "Group1 " << total_cnt[0]
+          << "Group2 " << total_cnt[1] << std::endl;
 
-    std::vector<std::tuple<double, double, double>> res;
-    res = HarmonyTest(oHdf5Util, file, cluster, total_cnt);
+    std::vector<std::tuple<double, double, double>> res
+        = HarmonyTest(oHdf5Util, file, cluster, total_cnt);
+
     Rcout << "Done calculate" << std::endl;
     std::vector<std::string> rownames;
     // Read the barcode slot since this is the transposed matrix
-    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME, "barcodes", rownames);
-
+    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME,
+                                            "barcodes", rownames);
     oHdf5Util.Close(file);
 
     return PostProcess(res, rownames);
