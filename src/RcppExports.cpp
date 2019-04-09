@@ -41,12 +41,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // HarmonyMarker
-DataFrame HarmonyMarker(Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster);
+DataFrame HarmonyMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster);
 RcppExport SEXP _Signac_HarmonyMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
     rcpp_result_gen = Rcpp::wrap(HarmonyMarker(S4_mtx, cluster));
     return rcpp_result_gen;
