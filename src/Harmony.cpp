@@ -95,115 +95,116 @@ int GetThreshold(int total)
 std::tuple<double, double, double> ComputeSimilarity(
         const Rcpp::NumericVector &cluster,
         std::vector<std::pair<double, int>> &exp,
-        std::array<int, 2> total_cnt,
-        std::array<int, 2> zero_cnt,
+        const std::array<int, 2> &cnt,
+        const std::array<int, 2> &zero_cnt,
         int thres)
 {
-    int total_in = total_cnt[0];
-    int total_out = total_cnt[1];
+    int in = cnt[0];
+    int out = cnt[1];
     int zero_in = zero_cnt[0];
     int zero_out = zero_cnt[1];
-    int cnt_in = zero_in;
-    int cnt_out = zero_out;
-    int cnt_both = cnt_in + cnt_out;
+
+    int bin_in = zero_in;
+    int bin_out = zero_out;
+    int bin_both = bin_in + bin_out;
 
     int bin_cnt = 0;
     double sim = 0;
 
-
-
     std::sort(exp.begin(), exp.end());
 
-    for(int i = 0, l = exp.size(); i < l; ++i) {
-        if ((!i ||  std::fabs(exp[i].first - exp[i - 1].first) > HARMONY_EPS)) {
-            if (cnt_both >= thres) {
-                sim += HarmonicMean((double)cnt_in/total_in,
-                                    (double)cnt_out/total_out);
+    if (!exp.empty() && exp[0].first < HARMONY_EPS)
+        throw std::domain_error("Zero expression should not be included in exp matrix");
 
-                cnt_in = cnt_out = cnt_both = 0;
+    double prev_exp = 0;
+
+    for(const std::pair<double, int> &e : exp) {
+        if (std::fabs(e.first - prev_exp) > HARMONY_EPS) {
+            if (bin_both >= thres) {
+                sim += HarmonicMean((double)bin_in/in,
+                                    (double)bin_out/out);
+
+                bin_in = bin_out = bin_both = 0;
                 ++bin_cnt;
             }
+            prev_exp = e.first;
         }
 
-        cnt_in += exp[i].second == 1;
-        cnt_out += exp[i].second == 2;
-        ++cnt_both;
+        bin_in += e.second == 1;
+        bin_out += e.second == 2;
+        ++bin_both;
     }
 
-    if (cnt_both >= MINIMAL_SAMPLE) {
-        sim += HarmonicMean((double)cnt_in/total_in,
-                            (double)cnt_out/total_out);
+    if (bin_both >= MINIMAL_SAMPLE) {
+        sim += HarmonicMean((double)bin_in/in,
+                            (double)bin_out/out);
         ++bin_cnt;
     } else {
-        sim += ((double) cnt_in / total_in
-                + (double) cnt_out / total_out) / 2.0;
+        sim += ((double) bin_in / in
+                + (double) bin_out / out) / 2;
     }
 
-    int cnt_up = 0;
-    int cnt_down = 0;
-
-    int x = -zero_in - 1;
-    int y = -zero_out - 1;
-    int z = -zero_out - 1;
-    int cnt_x = -1;
-    int cnt_y = -1;
-    int cnt_z = -1;
-
-    for (int i = 0; i < total_in; ++i) {
-        double j = (double) i / (total_in - 1) * (total_out - 1);
-        int j_down =  std::floor(j);
-        int j_up = std::ceil(j);
+    double cnt_up = 0;
+    double cnt_down = 0;
 
 
-        while (cnt_x < i) {
-            ++x;
-            cnt_x += x < 0 || exp[x].second == 1;
+    int in_cnt = 0;
+    int out_cnt = 0;
+    int in_ecnt = zero_in;
+    int out_ecnt = zero_out;
+
+    prev_exp = 0;
+    for(const std::pair<double, int> &e : exp) {
+        if (std::fabs(e.first - prev_exp) > HARMONY_EPS) {
+            // up region (in_cnt/in, (in_cnt+in_ecnt)/in), ...
+            // down (in_cnt+x)/in == (out_cnt + y)/out
+            //
+            if (in_ecnt > 0) {
+                double left = (double)in_cnt/in;
+                double right = (double)(in_cnt + in_ecnt)/in;
+
+                double mid1 = std::min(right, std::max((double)in_cnt/in, (double)out_cnt/out));
+                double mid2 = std::max(left, std::min((double)(in_cnt + in_ecnt)/in, (double)(out_cnt + out_ecnt)/out));
+
+                cnt_up += mid1 - left;
+                cnt_down += right - mid2;
+            }
+
+            prev_exp = e.first;
+
+            in_cnt += in_ecnt;
+            out_cnt += out_ecnt;
+            in_ecnt = out_ecnt = 0;
         }
 
-
-        while (cnt_y < j_down) {
-            ++y;
-            cnt_y += y < 0 || exp[y].second == 2;
-        }
-
-        while (cnt_z < j_up) {
-            ++z;
-            cnt_z += z < 0 || exp[z].second == 2;
-        }
-
-        double i_exp = (x < 0? 0 : exp[x].first);
-        double j_down_exp = (y < 0? 0 : exp[y].first);
-        double j_up_exp = (z < 0? 0 : exp[z].first);
-
-        double j_exp = (j_up == j_down?j_down_exp: (j_up_exp *(j - j_down) + j_down_exp * (j_up - j)));
-
-        cnt_up += i_exp > j_exp;
-        cnt_down += i_exp < j_exp;
+        in_ecnt += e.second == 1;
+        out_ecnt += e.second == 2;
     }
+
+    cnt_up += std::max(0.0, (double)out_cnt/out - (double)in_cnt/in);
 
     return std::make_tuple(
         sim,
-        LnPvalue(sim, total_in, total_out, bin_cnt),
-        1.0 * (cnt_up - cnt_down) / (cnt_up + cnt_down)
+        LnPvalue(sim, in, out, bin_cnt),
+        (cnt_up - cnt_down) / (cnt_up + cnt_down)
     );
 }
 
-void HarmonyTest(
+std::vector<std::tuple<double, double, double>> HarmonyTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
-        std::vector<std::tuple<double, double, double> > &res,
-        std::array<int, 2> total_cnt)
+        const std::array<int, 2> &total_cnt)
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
     int n_genes = mtx.n_rows;
 
     if (cluster.size() != mtx.n_cols)
-        throw std::domain_error("Input cluster size is not equal to the number of rows in matrix");
+        throw std::domain_error("Input cluster size is not equal to the number of columns in matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
     std::vector<std::array<int, 2>> zero_cnt(n_genes);
 
-    res.resize(n_genes);
+    std::vector<std::tuple<double, double, double>> res(n_genes);
     arma::sp_mat::const_col_iterator c_it;
 
     for (int i = 0; i < mtx.n_cols; ++i) {
@@ -223,15 +224,19 @@ void HarmonyTest(
         zero_cnt[i][0] = total_cnt[0] - zero_cnt[i][0];
         zero_cnt[i][1] = total_cnt[1] - zero_cnt[i][1];
         res[i] = ComputeSimilarity(cluster, exp[i], total_cnt, zero_cnt[i], thres);
+
+        if ((i + 1) % 1000 == 0)
+        Rcout << "Processed " << i + 1 << " genes\r";
     }
+
+    return res;
 }
 
-void HarmonyTest(
+std::vector<std::tuple<double, double, double>> HarmonyTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
-        std::vector<std::tuple<double, double, double> > &res,
-        std::array<int, 2> total_cnt)
+        const std::array<int, 2> &total_cnt)
 {
     int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
     std::vector<int> shape;
@@ -240,28 +245,30 @@ void HarmonyTest(
     int n_genes = shape[1];
 
     if (cluster.size() != shape[0])
-        throw std::domain_error("Input cluster size is not equal to the number of rows in matrix");
+        throw std::domain_error("Input cluster size is not equal to the number of columns in matrix");
 
-    res.resize(n_genes);
+    std::vector<std::tuple<double, double, double>> res(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
         std::vector<int> col_idx;
         std::vector<double> g_exp;
         oHdf5Util.ReadGeneExpH5(file, GROUP_NAME, i, col_idx,  g_exp);
 
-        std::vector<std::pair<double, int>> exp;
+        std::vector<std::pair<double, int>> exp(col_idx.size());
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
 
         for (int k = 0; k < col_idx.size(); ++k) {
             int idx = (int)cluster[col_idx[k]];
             if (idx && g_exp[k]) {
-                exp.push_back({g_exp[k], idx});
+                exp[k] = {g_exp[k], idx};
                 --zero_cnt[idx - 1];
             }
         }
 
         res[i] = ComputeSimilarity(cluster, exp, total_cnt, zero_cnt, thres);
     }
+
+    return res;
 }
 
 DataFrame PostProcess(
@@ -283,8 +290,7 @@ DataFrame PostProcess(
     std::vector<double> p_value(n_gene), similarity(n_gene);
     std::vector<double> p_adjusted(n_gene);
     std::vector<std::string> g_names(n_gene);
-    std::vector<double> diff_class(n_gene);
-
+    std::vector<double> change(n_gene);
 
     //Adjust p value
     double prev = 0;
@@ -306,7 +312,7 @@ DataFrame PostProcess(
         g_names[i] = rownames[k];
         similarity[i] = std::get<0>(res[k]);
         p_value[i] = std::get<1>(res[k]);
-        diff_class[i] = std::get<2>(res[k]);
+        change[i] = std::get<2>(res[k]);
     }
 
     Rcout << "Done all" << std::endl;
@@ -314,7 +320,7 @@ DataFrame PostProcess(
                               Named("Similarity") = wrap(similarity),
                               Named("Log P value") = wrap(p_value),
                               Named("P-adjusted value") = wrap(p_adjusted),
-                              Named("Type") = wrap(diff_class)
+                              Named("Up-Down score") = wrap(change)
                             );
 }
 
@@ -333,8 +339,7 @@ DataFrame HarmonyMarker(Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &cluster)
 
     const arma::sp_mat mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
     std::vector<std::tuple<double, double, double>> res;
-
-    HarmonyTest(mtx, cluster, res, total_cnt);
+    res = HarmonyTest(mtx, cluster, total_cnt);
     Rcout << "Done calculate" << std::endl;
 
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
@@ -361,8 +366,7 @@ DataFrame HarmonyMarkerH5(const std::string &hdf5Path, const Rcpp::NumericVector
     Rcout << "Group1 " << total_cnt[0] << "Group2 " << total_cnt[1] << std::endl;
 
     std::vector<std::tuple<double, double, double>> res;
-
-    HarmonyTest(oHdf5Util, file, cluster, res, total_cnt);
+    res = HarmonyTest(oHdf5Util, file, cluster, total_cnt);
     Rcout << "Done calculate" << std::endl;
     std::vector<std::string> rownames;
     // Read the barcode slot since this is the transposed matrix
