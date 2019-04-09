@@ -29,6 +29,8 @@ Suggests:
     rbenchmark
 Depends: 
     Matrix,
-    readr
+    readr,
+    httpuv,
+    jsonlite
 SystemRequirements: 
     C++11
