@@ -22,6 +22,7 @@ StartHttpServer <- function(server.host = "127.0.0.1", server.port = 9009) {
 
   app <- list(
     onWSOpen = function(ws) {
+      cat("Opened conenction with WS client => Start to receive message\n")
       ws$onMessage(function(binary, message) {
         if(message == "stop_server") {
           StopHttpServer()
