@@ -34,12 +34,18 @@ using namespace std::placeholders;
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
 
-double HarmonicMean(double a, double b)
+double HarmonicMean(double a, double b) {
+    return 2 / (1 / a + 1 / b);
+}
+
+double Score(int x, int y, int in, int out)
 {
-    if (fmin(a,b) < HARMONY_EPS)
+    if (x == 0 || y == 0)
         return 0;
 
-    return 2 * a * b / (a + b);
+    double a = (double)x / in;
+    double b = (double)y / out;
+    return pow(a-b,2)/(2*(a+b));
 }
 
 double LnPvalue(double score, int n1, int n2, int bin_cnt)
@@ -60,9 +66,9 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
     double var = 0.125 * (bin_cnt - 1) * pow(1.0 / n1 + 1.0 / n2,2);
     double scale =  (mean * (1 - mean) / var - 1);
     double shape1 = (1 - mean) * scale;
-    double shape2 = mean * scale;
+    double shape2 = (mean) * scale;
 
-    return logincbeta(shape1, shape2, score);
+    return logincbeta(shape1, shape2, 1 - score);
 }
 
 void GetTotalCount(
@@ -76,14 +82,15 @@ void GetTotalCount(
             ++total_cnt[(int)cluster[i] - 1];
 }
 
-int GetThreshold(int total)
+int GetThreshold(const std::array<int,2> &cnt)
 {
-    int thres = std::max(std::min(total, MINIMAL_SAMPLE),
-                        (int) std::pow(total,GROUPING_RATE));
+    double avg = HarmonicMean(cnt[0],cnt[1]);
+    int thres = std::max(std::min((int)avg, MINIMAL_SAMPLE),
+                        (int) std::pow(avg,GROUPING_RATE));
 
-    Rcout << thres << std::endl;
+    Rcout << cnt[0] << " " << cnt[1] << " " << avg << " " << thres << std::endl;
 
-    if(thres * 2 > total)
+    if(thres * 2 > cnt[0] + cnt[1])
         throw std::runtime_error("Not enough bins to compare. "
                                 "Please choose larger clusters to compare");
     return thres;
@@ -161,17 +168,15 @@ std::tuple<double, double> ComputeSimilarity(
     int bin_both = bin_in + bin_out;
 
     int bin_cnt = 0;
-    double sim = 0;
+    double diff = 0;
 
     double prev_exp = 0;
-
     int n = exp.size();
     for (int i = 0; i < n; ++i) {
         double e = exp[i].first;
         if (std::fabs(e - prev_exp) > HARMONY_EPS) {
             if (bin_both >= thres) {
-                sim += HarmonicMean((double)bin_in/in,
-                                    (double)bin_out/out);
+                diff += Score(bin_in, bin_out, in, out);
 
                 bin_in = bin_out = bin_both = 0;
                 ++bin_cnt;
@@ -186,17 +191,13 @@ std::tuple<double, double> ComputeSimilarity(
     }
 
     if (bin_both >= MINIMAL_SAMPLE) {
-        sim += HarmonicMean((double)bin_in/in,
-                            (double)bin_out/out);
+        diff += Score(bin_in, bin_out, in, out);
         ++bin_cnt;
-    } else {
-        sim += ((double) bin_in / in
-                + (double) bin_out / out) / 2;
     }
 
     return std::make_tuple(
-        sim,
-        LnPvalue(sim, in, out, bin_cnt)
+        diff,
+        LnPvalue(diff, in, out, bin_cnt)
     );
 }
 
@@ -224,7 +225,7 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
         const Rcpp::NumericVector &cluster,
         const std::array<int, 2> &total_cnt)
 {
-    int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
+    int thres = GetThreshold(total_cnt);
     int n_genes = mtx.n_rows;
 
     if (cluster.size() != mtx.n_cols)
@@ -272,7 +273,7 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
         const Rcpp::NumericVector &cluster,
         const std::array<int, 2> &total_cnt)
 {
-    int thres = GetThreshold(total_cnt[0] + total_cnt[1]);
+    int thres = GetThreshold(total_cnt);
     std::vector<int> shape;
     oHdf5Util.ReadDatasetVector<int>(file, GROUP_NAME, "shape", shape);
 
@@ -351,7 +352,7 @@ DataFrame PostProcess(
 
     Rcout << "Done all" << std::endl;
     return DataFrame::create( Named("Gene Name") = wrap(g_names),
-                              Named("Similarity") = wrap(similarity),
+                              Named("Dissimilarity") = wrap(similarity),
                               Named("Log P value") = wrap(p_value),
                               Named("P-adjusted value") = wrap(p_adjusted),
                               Named("Up-Down score") = wrap(change)
