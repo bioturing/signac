@@ -87,7 +87,7 @@ int GetThreshold(const std::array<int,2> &cnt)
 {
     double avg = HarmonicMean(cnt[0],cnt[1]);
     double est_bin = std::max(MINIMAL_BIN, std::pow(avg,1 - GROUPING_RATE));
-    int thres = std::min(MINIMAL_SAMPLE,(int) (cnt[0] + cnt[1]) / est_bin);
+    int thres = std::max(MINIMAL_SAMPLE,(int) ((cnt[0] + cnt[1]) / est_bin));
 
     Rcout << cnt[0] << " " << cnt[1] << " " << avg << " " << thres << std::endl;
 
