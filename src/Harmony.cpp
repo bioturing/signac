@@ -4,8 +4,7 @@
 #define HARMONY_RATIO 1e-5
 #define HARMONY_EPS 1e-50
 #define MINIMAL_SAMPLE 10
-#define GROUPING_RATE 0.6
-#define MINIMAL_BIN 2
+#define GROUPING_RATE 0.7
 #define GROUP_NAME "bioturing"
 
 #include <RcppArmadillo.h>
@@ -23,8 +22,9 @@
 
 #include "CommonUtil.h"
 #include "SparseMatrixUtil.h"
-#include "incbeta.h"
 #include "Hdf5Util.h"
+#include "chisq.h"
+#include "incbeta.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -41,12 +41,23 @@ double HarmonicMean(double a, double b) {
 
 double Score(int x, int y, int in, int out)
 {
-    if (x == 0 || y == 0)
+    if (x == 0 && y == 0)
         return 0;
 
     double a = (double)x / in;
     double b = (double)y / out;
     return pow(a-b,2)/(2*(a+b));
+}
+
+double ChiSqScore(int x, int y, int in, int out)
+{
+    if (x == 0 && y == 0)
+        return 0;
+
+    double a = (double)x / in;
+    double b = (double)y / out;
+    double p = (double)(x + y) / (in + out);
+    return pow(a-b,2)/(4 * p);
 }
 
 double LnPvalue(double score, int n1, int n2, int bin_cnt)
@@ -55,21 +66,9 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
         throw std::domain_error("Bin count should be positive");
 
     if (bin_cnt == 1)
-        return 0.0;
+        return 0;
 
-    double mean = 0.25 * (bin_cnt - 1) * (1.0 / n1 + 1.0 / n2);
-
-    if (mean > 1 || mean < 0) {
-        throw std::runtime_error("Mean estimation lies outside [0,1] range. "
-                                 "Cluster sizes may be too small.");
-    }
-
-    double var = 0.125 * (bin_cnt - 1) * pow(1.0 / n1 + 1.0 / n2,2);
-    double scale =  (mean * (1 - mean) / var - 1);
-    double shape1 = (1 - mean) * scale;
-    double shape2 = (mean) * scale;
-
-    return logincbeta(shape1, shape2, 1 - score);
+    return log_chisqr(bin_cnt - 1, 2 * score * HarmonicMean(n1, n2));
 }
 
 void GetTotalCount(
@@ -152,7 +151,7 @@ double ComputeUDScore(
 }
 
 // Expression matrix needs to be sorted
-std::tuple<double, double> ComputeSimilarity(
+std::tuple<double, double, double> ComputeSimilarity(
         const Rcpp::NumericVector &cluster,
         const std::vector<std::pair<double, int>> &exp,
         const std::array<int, 2> &cnt,
@@ -170,6 +169,7 @@ std::tuple<double, double> ComputeSimilarity(
 
     int bin_cnt = 0;
     double diff = 0;
+    double csdiff = 0;
 
     double prev_exp = 0;
     int n = exp.size();
@@ -178,6 +178,7 @@ std::tuple<double, double> ComputeSimilarity(
         if (std::fabs(e - prev_exp) > HARMONY_EPS) {
             if (bin_both >= thres) {
                 diff += Score(bin_in, bin_out, in, out);
+                csdiff += ChiSqScore(bin_in, bin_out, in, out);
 
                 bin_in = bin_out = bin_both = 0;
                 ++bin_cnt;
@@ -193,16 +194,18 @@ std::tuple<double, double> ComputeSimilarity(
 
     if (bin_both >= MINIMAL_SAMPLE) {
         diff += Score(bin_in, bin_out, in, out);
+        csdiff += ChiSqScore(bin_in, bin_out, in, out);
         ++bin_cnt;
     }
 
     return std::make_tuple(
         diff,
-        LnPvalue(diff, in, out, bin_cnt)
+        csdiff,
+        LnPvalue(csdiff, in, out, bin_cnt)
     );
 }
 
-std::tuple<double, double, double> ProcessGene(
+std::tuple<double, double, double, double> ProcessGene(
         const Rcpp::NumericVector &cluster,
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &cnt,
@@ -221,7 +224,7 @@ std::tuple<double, double, double> ProcessGene(
     );
 }
 
-std::vector<std::tuple<double, double, double>> HarmonyTest(
+std::vector<std::tuple<double, double, double, double>> HarmonyTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
         const std::array<int, 2> &total_cnt)
@@ -236,7 +239,7 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
     std::vector<std::array<int, 2>> nz_cnt(n_genes);
 
-    std::vector<std::tuple<double, double, double>> res(n_genes);
+    std::vector<std::tuple<double, double, double, double>> res(n_genes);
     arma::sp_mat::const_col_iterator c_it;
 
     for (int i = 0; i < mtx.n_cols; ++i) {
@@ -268,7 +271,7 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
     return res;
 }
 
-std::vector<std::tuple<double, double, double>> HarmonyTest(
+std::vector<std::tuple<double, double, double, double>> HarmonyTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
@@ -284,7 +287,7 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
         throw std::domain_error("Input cluster size is not equal to "
                                 "the number of columns in matrix");
 
-    std::vector<std::tuple<double, double, double>> res(n_genes);
+    std::vector<std::tuple<double, double, double, double>> res(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
         std::vector<int> col_idx;
@@ -315,18 +318,18 @@ std::vector<std::tuple<double, double, double>> HarmonyTest(
 }
 
 DataFrame PostProcess(
-        std::vector<std::tuple<double, double, double>> &res,
+        std::vector<std::tuple<double, double, double, double>> &res,
         std::vector<std::string> &rownames)
 {
     int n_gene = res.size();
     std::vector<std::pair<double,int>> order(n_gene);
 
     for (int i = 0; i < n_gene; ++i)
-        order[i] = std::make_pair(std::get<1>(res[i]), i);
+        order[i] = std::make_pair(std::get<2>(res[i]), i);
 
     std::sort(order.begin(), order.end());
 
-    std::vector<double> p_value(n_gene), similarity(n_gene);
+    std::vector<double> p_value(n_gene), diff(n_gene), chi_sq(n_gene);
     std::vector<double> p_adjusted(n_gene);
     std::vector<std::string> g_names(n_gene);
     std::vector<double> change(n_gene);
@@ -348,12 +351,13 @@ DataFrame PostProcess(
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i].second;
         g_names[i] = rownames[k];
-        std::tie(similarity[i], p_value[i], change[i]) = res[k];
+        std::tie(diff[i], chi_sq[i], p_value[i], change[i]) = res[k];
     }
 
     Rcout << "Done all" << std::endl;
     return DataFrame::create( Named("Gene Name") = wrap(g_names),
-                              Named("Dissimilarity") = wrap(similarity),
+                              Named("Dissimilarity") = wrap(diff),
+                              Named("ChiSq") = wrap(chi_sq),
                               Named("Log P value") = wrap(p_value),
                               Named("P-adjusted value") = wrap(p_adjusted),
                               Named("Up-Down score") = wrap(change)
@@ -378,7 +382,7 @@ DataFrame HarmonyMarker(const Rcpp::S4 &S4_mtx, const Rcpp::NumericVector &clust
     const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
     Rcout << "Done parse" << std::endl;
 
-    std::vector<std::tuple<double, double, double>> res
+    std::vector<std::tuple<double, double, double, double>> res
                     = HarmonyTest(mtx, cluster, total_cnt);
     Rcout << "Done calculate" << std::endl;
 
@@ -408,7 +412,7 @@ DataFrame HarmonyMarkerH5(
     Rcout << "Group1 " << total_cnt[0]
           << "Group2 " << total_cnt[1] << std::endl;
 
-    std::vector<std::tuple<double, double, double>> res
+    std::vector<std::tuple<double, double, double, double>> res
         = HarmonyTest(oHdf5Util, file, cluster, total_cnt);
 
     Rcout << "Done calculate" << std::endl;
