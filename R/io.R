@@ -42,7 +42,7 @@ CreateSignacObject <- function(
                          `csv` = function(path, ...) ReadDelim(path, sep = ",", ...),
                          `tsv` = function(path, ...) ReadDelim(path, sep = "\t", ...),
                          `h5`  = function(path, ...) Read10XH5(path, ...),
-                         `space`  = function(path, ...) Read10XH5(path, sep = " ", ...)
+                         `space`  = function(path, ...) ReadDelim(path, sep = " ", ...)
                          )
 
   data <- ReadFunction(raw.data, ...)
