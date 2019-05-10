@@ -2,16 +2,14 @@ library(Matrix)
 library(numbers)
 context("test-number-util")
 
-test_that("Compute GCD", {
-    a <- 3214
-    b <- 9876
-    x <- FastComputeGCD(a,b)
-    expect_equal(x, GCD(a,b))
+test_that("FastGetCurrentDate", {
+    x <- Signac::FastGetCurrentDate()
+    expect_equal(length(x), 1)
 })
 
-test_that("Compute LCM", {
-    a <- 3214
-    b <- 9876
-    x <- FastComputeLCM(a,b)
-    expect_equal(x, LCM(a,b))
+test_that("FastDiffVector", {
+    a <- c(1,3,4,7)
+    b <- c(3,4,8)
+    x <- Signac::FastDiffVector(a,b)
+    expect_equal(length(x), 2)
 })

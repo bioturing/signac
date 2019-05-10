@@ -3,3 +3,5 @@
 .Rproj.user
 *.swp
 tmp
+
+.vscode
