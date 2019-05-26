@@ -85,12 +85,12 @@ void GetTotalCount(
 int GetThreshold(const std::array<int,2> &cnt)
 {
     double avg = HarmonicMean(cnt[0],cnt[1]);
-    int thres = std::max(std::min((int)avg, MINIMAL_SAMPLE),
-                        (int) std::pow(avg,GROUPING_RATE));
+    double est_bin = std::max<double>(MINIMAL_BIN, std::pow(avg,1 - GROUPING_RATE));
+    int thres = std::max<int>(MINIMAL_SAMPLE,(int) ((cnt[0] + cnt[1]) / est_bin));
 
     Rcout << cnt[0] << " " << cnt[1] << " " << avg << " " << thres << std::endl;
 
-    if(thres * 2 > cnt[0] + cnt[1])
+    if(thres * MINIMAL_BIN > cnt[0] + cnt[1])
         throw std::runtime_error("Not enough bins to compare. "
                                 "Please choose larger clusters to compare");
     return thres;
