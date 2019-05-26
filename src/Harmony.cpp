@@ -4,7 +4,8 @@
 #define HARMONY_RATIO 1e-5
 #define HARMONY_EPS 1e-50
 #define MINIMAL_SAMPLE 10
-#define GROUPING_RATE 0.7
+#define MINIMAL_BIN 2
+#define GROUPING_RATE 0.6
 #define GROUP_NAME "bioturing"
 
 #include <RcppArmadillo.h>
@@ -39,24 +40,29 @@ double HarmonicMean(double a, double b) {
     return 2 / (1 / a + 1 / b);
 }
 
-double Score(int x, int y, int in, int out)
+double Score(int x, int y, int n1, int n2)
 {
     if (x == 0 && y == 0)
         return 0;
 
-    double a = (double)x / in;
-    double b = (double)y / out;
-    return pow(a-b,2)/(2*(a+b));
+    double a = (double)x / n1;
+    double b = (double)y / n2;
+
+    double result = pow(a-b,2)/(2*(a+b));
+    //correction
+    double correction = 2 * a * b * (n1 * a * (1 - b) + n2 * b *(1 - a)) / (n1 * n2 * pow(a + b, 3));
+
+    return result - correction;
 }
 
-double ChiSqScore(int x, int y, int in, int out)
+double ChiSqScore(int x, int y, int n1, int n2)
 {
     if (x == 0 && y == 0)
         return 0;
 
-    double a = (double)x / in;
-    double b = (double)y / out;
-    double p = (double)(x + y) / (in + out);
+    double a = (double)x / n1;
+    double b = (double)y / n2;
+    double p = (double)(x + y) / (n1 + n2);
     return pow(a-b,2)/(4 * p);
 }
 
