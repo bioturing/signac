@@ -272,6 +272,7 @@ std::vector<struct GeneResult> HarmonyTest(
     }
 
     for (int i = 0; i < n_genes; ++i) {
+        res[i].gene_id = i + 1;
         ProcessGene(
             cluster,
             std::move(exp[i]),
@@ -347,9 +348,11 @@ DataFrame PostProcess(
 
     std::sort(order.begin(), order.end());
 
+    std::vector<std::string> g_names(n_gene);
+    std::vector<int> g_id(n_gene);
+
     std::vector<double> p_value(n_gene), d_score(n_gene), c_score(n_gene);
     std::vector<double> p_adjusted(n_gene);
-    std::vector<std::string> g_names(n_gene);
     std::vector<double> ud_score(n_gene);
 
     //Adjust p value
@@ -368,7 +371,9 @@ DataFrame PostProcess(
 
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i].second;
+        
         g_names[i] = rownames[k];
+        g_id[i] = res[k].gene_id;
         d_score[i] = res[k].dscore;
         c_score[i] = res[k].cscore;
         p_value[i] = res[k].pvalue;
@@ -376,7 +381,8 @@ DataFrame PostProcess(
     }
 
     Rcout << "Done all" << std::endl;
-    return DataFrame::create( Named("Gene Name") = wrap(g_names),
+    return DataFrame::create( Named("Gene ID") = wrap(g_id),
+                              Named("Gene Name") = wrap(g_names),
                               Named("Dissimilarity") = wrap(d_score),
                               Named("ChiSq") = wrap(c_score),
                               Named("Log P value") = wrap(p_value),
