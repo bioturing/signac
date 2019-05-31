@@ -41,15 +41,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // HarmonyMarker
-DataFrame HarmonyMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold);
-RcppExport SEXP _Signac_HarmonyMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP) {
+DataFrame HarmonyMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold, int perm);
+RcppExport SEXP _Signac_HarmonyMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
-    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(S4_mtx, cluster, threshold));
+    Rcpp::traits::input_parameter< int >::type perm(permSEXP);
+    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(S4_mtx, cluster, threshold, perm));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -679,7 +680,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
-    {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 3},
+    {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 4},
     {"_Signac_HarmonyMarkerH5", (DL_FUNC) &_Signac_HarmonyMarkerH5, 3},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsSpMatFromS4", (DL_FUNC) &_Signac_WriteSpMtAsSpMatFromS4, 3},
