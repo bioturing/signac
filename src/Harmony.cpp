@@ -39,12 +39,13 @@ struct GeneResult {
     int gene_id;
     std::string gene_name;
 
-    double dscore; //dissimilarity score
-    double cscore; //chisq score
+    double d_score; //dissimilarity score
+    double b_cnt; //chisq score
 
-    double pvalue;
+    double p_value;
+    double perm_p_value;
 
-    double udscore; //up-down score
+    double ud_score; //up-down score
 };
 
 double HarmonicMean(double a, double b)
@@ -62,21 +63,10 @@ double Score(int x, int y, int n1, int n2)
 
     double result = pow(a-b,2)/(2*(a+b));
     //correction
-    double correction = 2 * a * b * (n1 * a * (1 - b) + n2 * b *(1 - a)) 
+    double correction = 2 * a * b * (n1 * a * (1 - b) + n2 * b *(1 - a))
                         / (n1 * n2 * pow(a + b, 3));
 
     return result - correction;
-}
-
-double ChiSqScore(int x, int y, int n1, int n2)
-{
-    if (x == 0 && y == 0)
-        return 0;
-
-    double a = (double)x / n1;
-    double b = (double)y / n2;
-    double p = (double)(x + y) / (n1 + n2);
-    return pow(a-b,2)/(4 * p);
 }
 
 double LnPvalue(double score, int n1, int n2, int bin_cnt)
@@ -87,7 +77,7 @@ double LnPvalue(double score, int n1, int n2, int bin_cnt)
     if (bin_cnt == 1)
         return 0;
 
-    return log_chisqr(bin_cnt - 1, 2 * score * HarmonicMean(n1, n2));
+    return log_chisqr(bin_cnt - 1, 2 * score * HarmonicMean(n1, n2) + bin_cnt - 1);
 }
 
 void GetTotalCount(
@@ -105,7 +95,7 @@ int GetThreshold(const std::array<int,2> &cnt)
 {
     double avg = HarmonicMean(cnt[0],cnt[1]);
     double est_bin = std::max<double>(
-                            MINIMAL_BIN, 
+                            MINIMAL_BIN,
                             std::pow(avg,1 - GROUPING_RATE)
                      );
 
@@ -123,8 +113,7 @@ int GetThreshold(const std::array<int,2> &cnt)
 }
 
 // Expression matrix needs to be sorted
-double ComputeUDScore(
-        const Rcpp::NumericVector &cluster,
+double ComputeUd_score(
         const std::vector<std::array<int, 2>> &bins,
         const std::array<int, 2> &cnt)
 {
@@ -165,73 +154,35 @@ double ComputeUDScore(
     return (up - down) / (up + down);
 }
 
-// Bins is the group count for each UMI value after sorted
-void ComputeSimilarity(
-        const Rcpp::NumericVector &cluster,
-        const std::vector<std::array<int, 2>> &bins,
-        const std::array<int, 2> &cnt,
-        int thres,
-        struct GeneResult &result)
+
+void Resample(std::vector<std::array<int, 2>> &bins, const std::array<int, 2> &cnt)
 {
-    const int n1 = cnt[0];
-    const int n2 = cnt[1];
+    std::vector<bool> group(cnt[0] + cnt[1]);
+    std::fill(group.begin(), group.begin() + cnt[0], true);
 
-    int b1 = 0;
-    int b2 = 0;
+    std::random_shuffle(group.begin(), group.end());
 
-    int n_bin = 0;
-    double dscore = 0;
-    double cscore = 0;
+    int j = 0;
+    for (int i = 0; i < bins.size(); ++i) {
+        int next_j = j + bins[i][0] + bins[i][1];
 
-    int n = bins.size();
+        int x = 0;
 
-    std::vector<double> score(n + 1);
-    std::vector<int> count(n + 1);
+        for (int j = 0; j < next_j; ++j)
+            x += group[j];
 
-    int i = 0, j = 0;
+        j = next_j;
 
-    for (int i = 0; i < n; ++i) {
-        while (j < n && b1 + b2 < thres) {
-            b1 += bins[j][0];
-            b2 += bins[j][1];
-            ++j;
-        }
+        int y = bins[i][0] + bins[i][1] - x;
 
-        double s = Score(b1, b2, n1, n2) / (b1 + b2);
-        score[i] += s;
-        score[j] -= s;
-
-        count[i] += 1;
-        count[j] -= 1;
-
-
-        if (b1 + b2 < thres)
-            break;
-
-        b1 -= bins[i][0];
-        b2 -= bins[i][1];
+        bins[i][0] = x;
+        bins[i][1] = y;
     }
-
-    double cum_score = 0;
-    int cum_count = 0;
-
-    for (int i = 0; i < n; ++i) {
-        cum_score += score[i];
-        cum_count += count[i];
-
-        dscore += cum_score / cum_count;
-    }
-
-    result.dscore = dscore;
-    result.cscore = cscore;
-    result.pvalue = -dscore; //LnPvalue(cscore, n1, n2, n_bin);
 }
 
 // Bins is the group count for each UMI value after sorted
-void ComputeSimilarityOld(
-        const Rcpp::NumericVector &cluster,
+void ComputeSimilarity(
         const std::vector<std::array<int, 2>> &bins,
-        const std::array<int, 2> &cnt,
         int thres,
         struct GeneResult &result)
 {
@@ -241,33 +192,41 @@ void ComputeSimilarityOld(
     int b1 = 0;
     int b2 = 0;
 
+    int r1 = cnt[0];
+    int r2 = cnt[1];
+
     int n_bin = 0;
-    double dscore = 0;
-    double cscore = 0;
+    double d_score = 0;
 
     int n = bins.size();
-    for (int i = 0; i < n; ++i) {
+
+    int i = 0;
+
+    for (; i < n; ++i) {
+        b1 += bins[i][0];
+        b2 += bins[i][1];
+
         if (b1 + b2 >= thres) {
-            dscore += Score(b1, b2, n1, n2);
-            cscore += ChiSqScore(b1, b2, n1, n2);
+
+            if (r1 + r2 - b1 - b2 < MINIMAL_SAMPLE)
+                break;
+
+            d_score += Score(b1, b2, n1, n2);
+
+            r1 -= b1;
+            r2 -= b2;
 
             b1 = b2 = 0;
             ++n_bin;
         }
-
-        b1 += bins[i][0];
-        b2 += bins[i][1];
     }
 
-    if (b1 + b2 >= MINIMAL_SAMPLE) {
-        dscore += Score(b1, b2, n1, n2);
-        cscore += ChiSqScore(b1, b2, n1, n2);
-        ++n_bin;
-    }
+    d_score += Score(r1, r2, n1, n2);
+    ++n_bin;
 
-    result.dscore = dscore;
-    result.cscore = cscore;
-    result.pvalue = LnPvalue(cscore, n1, n2, n_bin);
+    result.d_score = d_score;
+    result.b_cnt = n_bin;//cscore;
+    result.p_value = LnPvalue(d_score, n1, n2, n_bin);
 }
 
 
@@ -281,44 +240,62 @@ std::vector<std::array<int, 2>> Binning(
 
     double p_exp = exp[0].first;
 
-    for (int i = 0, j = 0; i < exp.size(); ++i) {
+    int i = 0, j = 0;
+    for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
-        if (abs(c_exp - p_exp) >= HARMONY_EPS) {
-            //create new bin
-            if (p_exp <= 0 && c_exp >= 0) {
-                j += p_exp < HARMONY_EPS; //too far back need to create new bin
-                result[j][0] += zero_cnt[0];
-                result[j][1] += zero_cnt[1];
-            }
+        if (c_exp >= 0)
+            break;
 
+        if (abs(c_exp - p_exp) >= HARMONY_EPS) {
             ++j;
             p_exp = c_exp;
         }
-
         ++result[j][exp[i].second];
     }
 
+    if (zero_cnt[0] + zero_cnt[1] > 0) {
+        if (p_exp < -HARMONY_EPS) {
+            ++j;
+            p_exp = 0;
+        }
+
+        result[j][0] += zero_cnt[0];
+        result[j][1] += zero_cnt[1];
+    }
+
+    for (; i < exp.size(); ++i) {
+        double c_exp = exp[i].first;
+
+        if (abs(c_exp - p_exp) >= HARMONY_EPS) {
+            ++j;
+            p_exp = c_exp;
+        }
+        ++result[j][exp[i].second];
+    }
+
+    result.resize(j + 1);
     return result;
 }
 
 void ProcessGene(
-        const Rcpp::NumericVector &cluster,
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
+        int perm,
         struct GeneResult &result)
 {
+    std::array<int, 2> real_cnt(cnt);
 
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
 
-    if (!exp.empty() && exp[0].first < HARMONY_EPS)
-        throw std::domain_error("Zero expression should not "
-                                "be included in exp matrix");
+    ComputeSimilarity(bins, cnt, thres, result);
+    result.ud_score = ComputeUd_score(bins, cnt);
 
-    ComputeSimilarity(cluster, bins, cnt, thres, result);
-    result.udscore = ComputeUDScore(cluster, bins, cnt);
+    for(int i = 0; i < perm; ++i) {
+        C
+    }
 }
 
 std::vector<struct GeneResult> HarmonyTest(
@@ -335,10 +312,11 @@ std::vector<struct GeneResult> HarmonyTest(
                                 "to the number of columns in matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
-    std::vector<std::array<int, 2>> nz_cnt(n_genes);
 
     std::vector<struct GeneResult> res(n_genes);
     arma::sp_mat::const_col_iterator c_it;
+
+    std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
 
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (!(int)cluster[i])
@@ -347,17 +325,18 @@ std::vector<struct GeneResult> HarmonyTest(
         for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
             int r = c_it.row();
             exp[r].push_back({*c_it, (int)cluster[i] - 1});
-            ++nz_cnt[r][(int)cluster[i] - 1];
+            --zero_cnt[r][(int)cluster[i] - 1];
         }
     }
 
+
     for (int i = 0; i < n_genes; ++i) {
         res[i].gene_id = i + 1;
+
         ProcessGene(
-            cluster,
             std::move(exp[i]),
             total_cnt,
-            {total_cnt[0] - nz_cnt[i][0], total_cnt[1] - nz_cnt[i][1]},
+            std::move(zero_cnt[i]),
             thres,
             res[i]
         );
@@ -405,7 +384,6 @@ std::vector<struct GeneResult> HarmonyTest(
         }
 
         ProcessGene(
-            cluster,
             std::move(exp),
             total_cnt,
             zero_cnt,
@@ -425,14 +403,14 @@ DataFrame PostProcess(
     std::vector<std::pair<double,int>> order(n_gene);
 
     for (int i = 0; i < n_gene; ++i)
-        order[i] = std::make_pair(res[i].pvalue, i);
+        order[i] = std::make_pair(res[i].p_value, i);
 
     std::sort(order.begin(), order.end());
 
     std::vector<std::string> g_names(n_gene);
     std::vector<int> g_id(n_gene);
 
-    std::vector<double> p_value(n_gene), d_score(n_gene), c_score(n_gene);
+    std::vector<double> p_value(n_gene), d_score(n_gene), b_cnt(n_gene);
     std::vector<double> p_adjusted(n_gene);
     std::vector<double> ud_score(n_gene);
 
@@ -455,17 +433,17 @@ DataFrame PostProcess(
 
         g_names[i] = rownames[k];
         g_id[i] = res[k].gene_id;
-        d_score[i] = res[k].dscore;
-        c_score[i] = res[k].cscore;
-        p_value[i] = res[k].pvalue;
-        ud_score[i] = res[k].udscore;
+        d_score[i] = res[k].d_score;
+        b_cnt[i] = res[k].b_cnt;
+        p_value[i] = res[k].p_value;
+        ud_score[i] = res[k].ud_score;
     }
 
     Rcout << "Done all" << std::endl;
     return DataFrame::create( Named("Gene ID") = wrap(g_id),
                               Named("Gene Name") = wrap(g_names),
                               Named("Dissimilarity") = wrap(d_score),
-                              Named("ChiSq") = wrap(c_score),
+                              Named("Bin count") = wrap(b_cnt),
                               Named("Log P value") = wrap(p_value),
                               Named("P-adjusted value") = wrap(p_adjusted),
                               Named("Up-Down score") = wrap(ud_score)
@@ -494,7 +472,7 @@ DataFrame HarmonyMarker(
     Rcout << "Done parse" << std::endl;
 
     std::vector<struct GeneResult> res
-                    = HarmonyTest(mtx, cluster, total_cnt, threshold);
+            = HarmonyTest(mtx, cluster, total_cnt, threshold);
     Rcout << "Done calculate" << std::endl;
 
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));

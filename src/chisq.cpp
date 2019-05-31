@@ -112,6 +112,9 @@ double log_chisqr2(int Dof, double x)
 
 double log_chisqr(int Dof, double x)
 {
+    if (x <= 0)
+        return 0;
+
     x /= 2;
 
     if (Dof == 1)
