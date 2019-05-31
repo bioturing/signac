@@ -183,6 +183,7 @@ void Resample(std::vector<std::array<int, 2>> &bins, const std::array<int, 2> &c
 // Bins is the group count for each UMI value after sorted
 void ComputeSimilarity(
         const std::vector<std::array<int, 2>> &bins,
+        const std::array<int, 2> &cnt,
         int thres,
         struct GeneResult &result)
 {
@@ -283,19 +284,12 @@ void ProcessGene(
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
-        int perm,
         struct GeneResult &result)
 {
-    std::array<int, 2> real_cnt(cnt);
-
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
 
     ComputeSimilarity(bins, cnt, thres, result);
     result.ud_score = ComputeUd_score(bins, cnt);
-
-    for(int i = 0; i < perm; ++i) {
-        C
-    }
 }
 
 std::vector<struct GeneResult> HarmonyTest(
@@ -342,7 +336,7 @@ std::vector<struct GeneResult> HarmonyTest(
         );
 
         if ((i + 1) % 1000 == 0)
-        Rcout << "Processed " << i + 1 << " genes\r";
+            Rcout << "Processed " << i + 1 << " genes\r";
     }
 
     return res;
