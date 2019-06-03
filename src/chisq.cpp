@@ -123,7 +123,7 @@ double log_chisqr(int Dof, double x)
     double lx = log(x);
 
     double lvalue = lx - log(i);
-    double lsum = lvalue;
+    double lsum = (Dof & 1) ? lvalue : log1p(x/i);
 
     while (++i < Dof/2) {
         lvalue += lx - log(i);

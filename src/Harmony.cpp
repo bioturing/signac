@@ -24,7 +24,6 @@
 #include "SparseMatrixUtil.h"
 #include "Hdf5Util.h"
 #include "chisq.h"
-#include "incbeta.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -69,12 +68,14 @@ inline double Score(int x, int y, int n1, int n2)
     return result - correction;
 }
 
-double LnPvalue(double score, int n1, int n2, int b_cnt)
+inline double LnPvalue(double score, int n1, int n2, int b_cnt)
 {
     if (b_cnt <= 0)
         throw std::domain_error("Bin count should be positive");
 
-    return log_chisqr(b_cnt - 1, 2 * score * HarmonicMean(n1, n2) + b_cnt - 1);
+    int Dof = b_cnt - 1;
+    double x = 2 * score * HarmonicMean(n1, n2) + b_cnt - 1;
+    return log_chisqr(Dof, x);
 }
 
 void GetTotalCount(
@@ -154,13 +155,9 @@ double ComputeUd_score(
 
 void Resample(
     std::vector<std::array<int, 2>> &bins,
+    const std::vector<bool> &group,
     const std::array<int, 2> &cnt)
 {
-    std::vector<bool> group(cnt[0] + cnt[1]);
-    std::fill(group.begin(), group.begin() + cnt[0], true);
-
-    std::random_shuffle(group.begin(), group.end());
-
     int j = 0;
     for (int i = 0; i < bins.size(); ++i) {
         int next_j = j + bins[i][0] + bins[i][1];
@@ -303,9 +300,13 @@ void ProcessGene(
     result.b_cnt = bins.size();
     result.p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
 
+    std::vector<bool> group(cnt[0] + cnt[1]);
+    std::fill(group.begin(), group.begin() + cnt[0], true);
+
     int count = 0;
     for(int i = 0; i < perm; ++i) {
-        Resample(bins, cnt);
+        std::random_shuffle(group.begin(), group.end());
+        Resample(bins, group, cnt);
         double score = ComputeSimilarity(bins, cnt);
         count += score >= result.d_score;
     }
