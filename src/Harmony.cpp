@@ -205,6 +205,11 @@ std::vector<std::array<int, 2>> Binning(
 {
     std::vector<std::array<int, 2>> result(exp.size() + 1);    //+1 for zero
 
+    if (exp.size() == 0) {
+        result[0] = zero_cnt;
+        return result;
+    }
+
     std::sort(exp.begin(), exp.end());
 
     double p_exp = exp[0].first;
@@ -293,12 +298,18 @@ void ProcessGene(
         struct GeneResult &result)
 {
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
-    result.ud_score = ComputeUd_score(bins, cnt);
 
+    result.ud_score = ComputeUd_score(bins, cnt);
     Grouping(bins, thres);
+
     result.d_score = ComputeSimilarity(bins, cnt);
     result.b_cnt = bins.size();
     result.p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
+
+    if (bins.size() <= 1) {
+        result.perm_p_value = 1;
+        return;
+    }
 
     std::vector<bool> group(cnt[0] + cnt[1]);
     std::fill(group.begin(), group.begin() + cnt[0], true);
@@ -374,6 +385,11 @@ std::vector<struct GeneResult> HarmonyTest(
         int threshold)
 {
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
+
+    if (thres < MINIMAL_SAMPLE)
+        throw std::runtime_error("Threshold is too small."
+            "Maybe the number of cells in one cluster is too small");
+
     std::vector<int> shape;
     oHdf5Util.ReadDatasetVector<int>(file, GROUP_NAME, "shape", shape);
 
