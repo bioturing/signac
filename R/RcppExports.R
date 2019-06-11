@@ -38,8 +38,8 @@ FastRandVector <- function(num) {
 #' @param S4_mtx A sparse matrix
 #' @param cluster A numeric vector
 #' @export
-HarmonyMarker <- function(S4_mtx, cluster) {
-    .Call(`_Signac_HarmonyMarker`, S4_mtx, cluster)
+HarmonyMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L) {
+    .Call(`_Signac_HarmonyMarker`, S4_mtx, cluster, threshold, perm)
 }
 
 #' HarmonyMarkerH5
@@ -49,8 +49,8 @@ HarmonyMarker <- function(S4_mtx, cluster) {
 #' @param hdf5Path A string path
 #' @param cluster A numeric vector
 #' @export
-HarmonyMarkerH5 <- function(hdf5Path, cluster) {
-    .Call(`_Signac_HarmonyMarkerH5`, hdf5Path, cluster)
+HarmonyMarkerH5 <- function(hdf5Path, cluster, threshold = 0L) {
+    .Call(`_Signac_HarmonyMarkerH5`, hdf5Path, cluster, threshold)
 }
 
 #' WriteSpMtAsSpMat
