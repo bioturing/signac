@@ -3,90 +3,38 @@
 #include <stdexcept>
 #include "chisq.h"
 
-#define MAX_LOOP 200
-#define ACCURACY_EPS 1e-20
-#define M_SQRTPI 1.77245385090551602729816748334
-#define GSL_ROOT6_DBL_EPSILON  2.4607833005759251e-03
+#define M_SQRTPI 1.7724538509055160272981674833411451827975494561224
+#define M_LN_SQRTPI 0.57236494292470008707171367567652935582364740645766
 
-static double erfc8_sum(double x)
+double log_erfc(double x)
 {
-    /* estimates erfc(x) valid for 8 < x < 100 */
-    /* This is based on index 5725 in Hart et al */
+    double x2 = x * x;
 
-    static double P[] = {
-        2.97886562639399288862,
-        7.409740605964741794425,
-        6.1602098531096305440906,
-        5.019049726784267463450058,
-        1.275366644729965952479585264,
-        0.5641895835477550741253201704
-    };
-    static double Q[] = {
-        3.3690752069827527677,
-        9.608965327192787870698,
-        17.08144074746600431571095,
-        12.0489519278551290360340491,
-        9.396034016235054150430579648,
-        2.260528520767326969591866945,
-        1.0
-    };
-    double num=0.0, den=0.0;
-    int i;
+    const int order = 11;
 
-    num = P[5];
-    for (i=4; i>=0; --i) {
-        num = x*num + P[i];
-    }
-    den = Q[6];
-    for (i=5; i>=0; --i) {
-        den = x*den + Q[i];
-    }
+    if (x < 0.4) {
+        //continue fraction
+        double tmp = 0;
+        int sign = 2 * (order & 1) - 1;
 
-    return num/den;
-}
+        for (int i = order; i > 0; --i) {
+            tmp = (2 * i * x2)/(2*i + 1 + sign * tmp);
+            sign = -sign;
+        }
 
+        return log1p(-2/M_SQRTPI * exp(-x2) * x / (1-tmp));
+    } else if (x > 12) {
 
-inline
-static double log_erfc8(double x)
-{
-    double e;
-    e = erfc8_sum(x);
-    e = log(e) - x*x;
-    return e;
-}
+        double tmp = 0;
 
+        for (int i = order; i > 0; --i)
+            tmp = (0.5 * i)/(x + tmp);
 
-double gsl_sf_log_erfc(double x)
-{
-  /* CHECK_POINTER(result) */
-
-    if(x*x < 10.0*GSL_ROOT6_DBL_EPSILON) {
-        const double y = x / M_SQRTPI;
-        /* series for -1/2 Log[Erfc[Sqrt[Pi] y]] */
-        const double c3 = (4.0 - M_PI)/3.0;
-        const double c4 = 2.0*(1.0 - M_PI/3.0);
-        const double c5 = -0.001829764677455021;  /* (96.0 - 40.0*M_PI + 3.0*M_PI*M_PI)/30.0  */
-        const double c6 =  0.02629651521057465;   /* 2.0*(120.0 - 60.0*M_PI + 7.0*M_PI*M_PI)/45.0 */
-        const double c7 = -0.01621575378835404;
-        const double c8 =  0.00125993961762116;
-        const double c9 =  0.00556964649138;
-        const double c10 = -0.0045563339802;
-        const double c11 =  0.0009461589032;
-        const double c12 =  0.0013200243174;
-        const double c13 = -0.00142906;
-        const double c14 =  0.00048204;
-        double series = c8 + y*(c9 + y*(c10 + y*(c11 + y*(c12 + y*(c13 + c14*y)))));
-        series = y*(1.0 + y*(1.0 + y*(c3 + y*(c4 + y*(c5 + y*(c6 + y*(c7 + y*series)))))));
-        return -2.0 * series;
-    }
-    else if(x > 8.0) {
-        return log_erfc8(x);
-    }
-    else {
+        return - M_LN_SQRTPI - x2 - log(x + tmp);
+    } else {
         return  log(std::erfc(x));
     }
 }
-
 
 double log1pexp(double x) {
     if (x <= -37)
@@ -110,7 +58,10 @@ double log_chisqr(int Dof, double x)
     x /= 2;
 
     if (Dof == 1)
-        return gsl_sf_log_erfc(sqrt(x));
+        return log_erfc(sqrt(x));
+
+    if (Dof == 2)
+        return -x;
 
     double f = -x;
     double i = 1;
@@ -133,7 +84,7 @@ double log_chisqr(int Dof, double x)
     lsum += f;
 
     if (Dof & 1)
-        lsum += log1pexp(gsl_sf_log_erfc(sqrt(x)) - lsum);
+        lsum += log1pexp(log_erfc(sqrt(x)) - lsum);
     
     return lsum;
 }

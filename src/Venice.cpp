@@ -7,8 +7,12 @@
 #define GROUPING_RATE 0.6
 #define GROUP_NAME "bioturing"
 
+#define C_INSIDE 1
+#define C_OUTSIDE 0
+
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
+#include <Rmath.h>
 
 #include <progress.hpp>
 #include <progress_bar.hpp>
@@ -26,7 +30,6 @@
 #include "CommonUtil.h"
 #include "SparseMatrixUtil.h"
 #include "Hdf5Util.h"
-#include "chisq.h"
 
 
 using namespace Rcpp;
@@ -45,7 +48,8 @@ struct GeneResult {
     std::string gene_name;
 
     double d_score; //dissimilarity score
-    double b_cnt;
+    double d_bias; //correction for d_score bias
+    int b_cnt;
 
     double log_p_value;
     double perm_p_value;
@@ -60,30 +64,31 @@ inline double HarmonicMean(double a, double b)
     return 2 / (1 / a + 1 / b);
 }
 
-inline double Score(int x, int y, int n1, int n2)
+inline std::pair<double, double> Score(int x, int y, int n1, int n2)
 {
     if (x == 0 && y == 0)
-        return 0;
+        return std::make_pair(0.0, 0.0);
 
     double a = (double)x / n1;
     double b = (double)y / n2;
 
-    double result = pow(a-b,2)/(2*(a+b));
-    //correction
-    double correction = 2 * a * b * (n1 * a * (1 - b) + n2 * b *(1 - a))
+    double result = pow(a - b, 2) / (2 * (a + b));
+    //bias correction
+    double correction = 2 * a * b * (x * (1 - b) + y * (1 - a))
                         / (n1 * n2 * pow(a + b, 3));
 
-    return result - correction;
+    return std::make_pair(result, correction);
 }
 
-inline double LnPvalue(double score, int n1, int n2, int b_cnt)
+inline double LogPvalue(double score, int n1, int n2, int b_cnt)
 {
     if (b_cnt <= 0)
         throw std::domain_error("Bin count should be positive");
 
     int Dof = b_cnt - 1;
-    double x = 2 * score * HarmonicMean(n1, n2) + b_cnt - 1;
-    return log_chisqr(Dof, x);
+    double x = 2 * score * (HarmonicMean(n1, n2) - 1);
+
+    return R::pchisq(x, Dof, false, true);
 }
 
 void GetTotalCount(
@@ -92,9 +97,13 @@ void GetTotalCount(
 {
     total_cnt[0] = total_cnt[1] = 0;
 
-    for (int i = 0; i < cluster.size(); ++i)
-        if ((int)cluster[i])
-            ++total_cnt[(int)cluster[i] - 1];
+    for (int i = 0; i < cluster.size(); ++i) {
+        int c = (int)cluster[i];
+        if (c == C_INSIDE)
+            ++total_cnt[0];
+        else if (c == C_OUTSIDE)
+            ++total_cnt[1];
+    }
 }
 
 int GetThreshold(const std::array<int,2> &cnt)
@@ -161,31 +170,34 @@ double ComputeUd_score(
 
 void Resample(
     std::vector<std::array<int, 2>> &bins,
-    const std::vector<bool> &group,
     const std::array<int, 2> &cnt)
 {
     int j = 0;
+
+    int n1 = cnt[0];
+    int n2 = cnt[1];
+
     for (int i = 0; i < bins.size(); ++i) {
-        int next_j = j + bins[i][0] + bins[i][1];
 
-        int x = 0;
+        int k = bins[i][0] + bins[i][1];
 
-        for (; j < next_j; ++j)
-            x += group[j];
+        int r = R::rhyper(n1, n2, k);
 
-        int y = bins[i][0] + bins[i][1] - x;
+        bins[i][0] = r;
+        bins[i][1] = k - r;
 
-        bins[i][0] = x;
-        bins[i][1] = y;
+        n1 -= r;
+        n2 -= k - r;
     }
 }
 
 // Bins is the group count for each UMI value after sorted
-double ComputeSimilarity(
+std::pair<double, double> ComputeSimilarity(
         const std::vector<std::array<int, 2>> &bins,
         const std::array<int, 2> &cnt)
 {
     double d_score = 0;
+    double d_bias = 0;
 
     int n1 = cnt[0];
     int n2 = cnt[1];
@@ -198,12 +210,29 @@ double ComputeSimilarity(
         int b1 = bins[i][0];
         int b2 = bins[i][1];
 
-        d_score += Score(b1, b2, n1, n2);
+        std::pair<double, double> s = Score(b1, b2, n1, n2);
+
+        d_score += s.first;
+        d_bias += s.second;
     }
 
-    return d_score;
+    return std::make_pair(d_score, d_bias);
 }
 
+double ComputeLogFC(
+            const std::vector<std::pair<double, int>> & exp,
+            const std::array<int, 2> &cnt)
+{
+    double m[2];
+
+    for (int i = 0; i < exp.size(); ++i)
+        m[exp[i].second] += exp[i].first;
+    
+    m[0] /= cnt[0];
+    m[1] /= cnt[1];
+
+    return log(m[0] + 1) - log(m[1] + 1);
+}
 
 std::vector<std::array<int, 2>> Binning(
         std::vector<std::pair<double, int>> exp,
@@ -295,57 +324,67 @@ void Grouping(
     bins.resize(j + 1);
 }
 
+double PermPvalue(
+            std::vector<std::array<int, 2>> bins,
+            const std::array<int, 2> &cnt,
+            double d_score,
+            int perm)
+{
+    if (bins.size() <= 1)
+        return 1;
+
+    int count = 0;
+    for(int i = 0; i < perm; ++i) {
+        Resample(bins, cnt);
+        double score = ComputeSimilarity(bins, cnt).first;
+        count += score >= d_score;
+    }
+
+    return (double)count/perm;
+}
+
 void ProcessGene(
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
         int perm,
-        struct GeneResult &result)
+        struct GeneResult &res)
 {
+    res.log_fc = ComputeLogFC(exp, cnt);
+
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
 
-    result.ud_score = ComputeUd_score(bins, cnt);
+    res.ud_score = ComputeUd_score(bins, cnt);
+
     Grouping(bins, thres);
 
-    result.d_score = ComputeSimilarity(bins, cnt);
-    result.b_cnt = bins.size();
-    result.log_p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
+    std::pair<double, double> score = ComputeSimilarity(bins, cnt);
+    res.d_score = score.first;
+    res.d_bias = score.second;
 
-    if (bins.size() <= 1) {
-        result.perm_p_value = 1;
-        return;
-    }
-
-    std::vector<bool> group(cnt[0] + cnt[1]);
-    std::fill(group.begin(), group.begin() + cnt[0], true);
-
-    int count = 0;
-    for(int i = 0; i < perm; ++i) {
-        std::random_shuffle(group.begin(), group.end());
-        Resample(bins, group, cnt);
-        double score = ComputeSimilarity(bins, cnt);
-        count += score >= result.d_score;
-    }
-
-    result.perm_p_value = (double)count/perm;
+    res.b_cnt = bins.size();
+    res.log_p_value = LogPvalue(res.d_score, cnt[0], cnt[1], bins.size());
+    res.perm_p_value = PermPvalue(std::move(bins), cnt, res.d_score, perm);
 }
 
 std::vector<struct GeneResult> VeniceTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
-        const std::array<int, 2> &total_cnt,
         int threshold,
         int perm,
         bool display_progress = true)
 {
+    std::array<int, 2> total_cnt;
+    GetTotalCount(cluster, total_cnt);
+
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
     int n_genes = mtx.n_rows;
     Progress p(n_genes, display_progress);
 
     if (cluster.size() != mtx.n_cols)
-        throw std::domain_error("Input cluster size is not equal "
-                                "to the number of columns in matrix");
+        throw std::domain_error("The length of cluster vector is not equal "
+                                "to the number of columns in the matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
 
@@ -354,19 +393,24 @@ std::vector<struct GeneResult> VeniceTest(
 
     std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
 
-    std::vector<std::array<double, 2>> total_exp(n_genes);
-
     for (int i = 0; i < mtx.n_cols; ++i) {
-        if (!(int)cluster[i])
-            continue;
+        if (Progress::check_abort())
+            return {};
 
-        int cid = (int)cluster[i] - 1;
+        int c = (int)cluster[i];
+        int cid;
+
+        if (c == C_INSIDE)
+            cid = 0;
+        else if (c == C_OUTSIDE)
+            cid = 1;
+        else
+            continue;
 
         for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
             int r = c_it.row();
 
             exp[r].push_back({*c_it, cid});
-            total_exp[r][cid] += *c_it;
             --zero_cnt[r][cid];
         }
     }
@@ -375,12 +419,7 @@ std::vector<struct GeneResult> VeniceTest(
     for (int i = 0; i < n_genes; ++i) {
         res[i].gene_id = i + 1;
 
-        double m1 = total_exp[i][0] / total_cnt[0];
-        double m2 = total_exp[i][1] / total_cnt[1];
-
-        res[i].log_fc = log(m1 + 1) - log(m2 + 1);
-
-        if (Progress::check_abort() )
+        if (Progress::check_abort())
             return {};
 
         ProcessGene(
@@ -402,9 +441,12 @@ std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
-        const std::array<int, 2> &total_cnt,
-        int threshold)
+        int threshold,
+        int perm)
 {
+    std::array<int, 2> total_cnt;
+    GetTotalCount(cluster, total_cnt);
+
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
 
     if (thres < MINIMAL_SAMPLE)
@@ -431,11 +473,18 @@ std::vector<struct GeneResult> VeniceTest(
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
 
         for (int k = 0; k < col_idx.size(); ++k) {
-            int idx = (int)cluster[col_idx[k]];
-            if (idx) {
-                exp[k] = {g_exp[k], idx - 1};
-                --zero_cnt[idx - 1];
-            }
+            int c = (int)cluster[col_idx[k]];
+            int cid;
+
+            if (c == C_INSIDE)
+                cid = 0;
+            else if (c == C_OUTSIDE)
+                cid = 1;
+            else
+                continue;
+             
+            exp[k] = {g_exp[k], cid};
+            --zero_cnt[cid];
         }
 
         ProcessGene(
@@ -443,7 +492,7 @@ std::vector<struct GeneResult> VeniceTest(
             total_cnt,
             zero_cnt,
             thres,
-            0,
+            perm,
             res[i]
         );
     }
@@ -453,7 +502,8 @@ std::vector<struct GeneResult> VeniceTest(
 
 DataFrame PostProcess(
         std::vector<struct GeneResult> &res,
-        std::vector<std::string> &rownames)
+        std::vector<std::string> &rownames,
+        bool correct = true)
 {
     int n_gene = res.size();
     std::vector<std::pair<double,int>> order(n_gene);
@@ -468,7 +518,7 @@ DataFrame PostProcess(
 
     std::vector<double> d_score(n_gene), ud_score(n_gene), log2_fc(n_gene);
     std::vector<double> log10_pv(n_gene), perm_pv(n_gene), log10_adj_pv(n_gene);
-    std::vector<double> b_cnt(n_gene);
+    std::vector<int> b_cnt(n_gene);
 
     //Adjust p value
     double prev = -std::numeric_limits<double>::infinity();
@@ -489,7 +539,12 @@ DataFrame PostProcess(
 
         g_names[i]  = rownames[k];
         g_id[i]     = res[k].gene_id;
-        d_score[i]  = res[k].d_score;
+
+        if (correct)
+            d_score[i] = res[k].d_score - res[k].d_bias;
+        else
+            d_score[i] = res[k].d_score;
+        
         b_cnt[i]    = res[k].b_cnt;
         log10_pv[i] = res[k].log_p_value * M_LOG10E;
         perm_pv[i]  = res[k].perm_p_value;
@@ -525,26 +580,24 @@ DataFrame VeniceMarker(
         const Rcpp::NumericVector &cluster,
         int threshold = 0,
         int perm = 0,
+        bool correct = true,
         bool verbose = false)
 {
 #ifdef DEBUG
     Rcout << "Enter" << std::endl;
 #endif
 
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
-
     const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
 #ifdef DEBUG
     Rcout << "Done parse" << std::endl;
 #endif
-    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, total_cnt, threshold, perm, verbose);
+    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, threshold, perm, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
     std::vector<std::string> rownames = dim_names[0];
-    return PostProcess(res, rownames);
+    return PostProcess(res, rownames, correct);
 }
 
 //' VeniceMarkerH5
@@ -557,19 +610,16 @@ DataFrame VeniceMarker(
 // [[Rcpp::export]]
 DataFrame VeniceMarkerH5(
     const std::string &hdf5Path,
-    const Rcpp::NumericVector &cluster, int threshold = 0)
+    const Rcpp::NumericVector &cluster,
+    int threshold = 0,
+    int perm = 0,
+    bool correct = true)
 {
     com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
     HighFive::File *file = oHdf5Util.Open(1);
 
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
-#ifdef DEBUG
-    Rcout << "Group1 " << total_cnt[0]
-          << "Group2 " << total_cnt[1] << std::endl;
-#endif
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, total_cnt, threshold);
+        = VeniceTest(oHdf5Util, file, cluster, threshold, perm);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
@@ -579,5 +629,5 @@ DataFrame VeniceMarkerH5(
                                             "barcodes", rownames);
     oHdf5Util.Close(file);
 
-    return PostProcess(res, rownames);
+    return PostProcess(res, rownames, correct);
 }
