@@ -70,7 +70,7 @@ inline double Score(int x, int y, int n1, int n2)
     return result - correction;
 }
 
-inline double LnPvalue(double score, int n1, int n2, int b_cnt)
+inline double LogPvalue(double score, int n1, int n2, int b_cnt)
 {
     if (b_cnt <= 0)
         throw std::domain_error("Bin count should be positive");
@@ -197,6 +197,20 @@ double ComputeSimilarity(
     return d_score;
 }
 
+double ComputeLogFC(
+            const std::vector<std::pair<double, int>> & exp,
+            const std::array<int, 2> &cnt)
+{
+    double m[2];
+
+    for (int i = 0; i < exp.size(); ++i)
+        m[exp[i].second] += exp[i].first;
+    
+    m[0] /= cnt[0];
+    m[1] /= cnt[1];
+
+    return log(m[0]/m[1]);
+}
 
 std::vector<std::array<int, 2>> Binning(
         std::vector<std::pair<double, int>> exp,
@@ -288,27 +302,14 @@ void Grouping(
     bins.resize(j + 1);
 }
 
-void ProcessGene(
-        std::vector<std::pair<double, int>> exp,
-        const std::array<int, 2> &cnt,
-        const std::array<int, 2> &zero_cnt,
-        int thres,
-        int perm,
-        struct GeneResult &result)
+double PermPvalue(
+            std::vector<std::array<int, 2>> bins,
+            const std::array<int, 2> &cnt,
+            double d_score,
+            int perm)
 {
-    std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
-
-    result.ud_score = ComputeUd_score(bins, cnt);
-    Grouping(bins, thres);
-
-    result.d_score = ComputeSimilarity(bins, cnt);
-    result.b_cnt = bins.size();
-    result.log_p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
-
-    if (bins.size() <= 1) {
-        result.perm_p_value = 1;
-        return;
-    }
+    if (bins.size() <= 1)
+        return 1;
 
     std::vector<bool> group(cnt[0] + cnt[1]);
     std::fill(group.begin(), group.begin() + cnt[0], true);
@@ -318,10 +319,31 @@ void ProcessGene(
         std::random_shuffle(group.begin(), group.end());
         Resample(bins, group, cnt);
         double score = ComputeSimilarity(bins, cnt);
-        count += score >= result.d_score;
+        count += score >= d_score;
     }
 
-    result.perm_p_value = (double)count/perm;
+    return (double)count/perm;
+}
+
+void ProcessGene(
+        std::vector<std::pair<double, int>> exp,
+        const std::array<int, 2> &cnt,
+        const std::array<int, 2> &zero_cnt,
+        int thres,
+        int perm,
+        struct GeneResult &res)
+{
+    res.log_fc = ComputeLogFC(exp, cnt);
+
+    std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
+
+    res.ud_score = ComputeUd_score(bins, cnt);
+
+    Grouping(bins, thres);
+    res.d_score = ComputeSimilarity(bins, cnt);
+    res.b_cnt = bins.size();
+    res.log_p_value = LogPvalue(res.d_score, cnt[0], cnt[1], bins.size());
+    res.perm_p_value = PermPvalue(std::move(bins), cnt, res.d_score, perm);
 }
 
 std::vector<struct GeneResult> HarmonyTest(
@@ -335,8 +357,8 @@ std::vector<struct GeneResult> HarmonyTest(
     int n_genes = mtx.n_rows;
 
     if (cluster.size() != mtx.n_cols)
-        throw std::domain_error("Input cluster size is not equal "
-                                "to the number of columns in matrix");
+        throw std::domain_error("The length of cluster vector is not equal "
+                                "to the number of columns in the matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
 
@@ -344,9 +366,6 @@ std::vector<struct GeneResult> HarmonyTest(
     arma::sp_mat::const_col_iterator c_it;
 
     std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
-
-    std::vector<std::array<double, 2>> total_exp(n_genes);
-
 
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (!(int)cluster[i])
@@ -358,7 +377,6 @@ std::vector<struct GeneResult> HarmonyTest(
             int r = c_it.row();
 
             exp[r].push_back({*c_it, cid});
-            total_exp[r][cid] += *c_it;
             --zero_cnt[r][cid];
         }
     }
@@ -366,11 +384,6 @@ std::vector<struct GeneResult> HarmonyTest(
 
     for (int i = 0; i < n_genes; ++i) {
         res[i].gene_id = i + 1;
-
-        double m1 = total_exp[i][0] / total_cnt[0];
-        double m2 = total_exp[i][1] / total_cnt[1];
-
-        res[i].log_fc = log(m1 / m2);
 
         ProcessGene(
             std::move(exp[i]),
