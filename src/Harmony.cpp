@@ -39,12 +39,14 @@ struct GeneResult {
     std::string gene_name;
 
     double d_score; //dissimilarity score
-    double b_cnt; //chisq score
+    double b_cnt;
 
-    double p_value;
+    double log_p_value;
     double perm_p_value;
 
     double ud_score; //up-down score
+
+    double log_fc;
 };
 
 inline double HarmonicMean(double a, double b)
@@ -92,10 +94,7 @@ void GetTotalCount(
 int GetThreshold(const std::array<int,2> &cnt)
 {
     double avg = HarmonicMean(cnt[0],cnt[1]);
-    double est_bin = std::max<double>(
-                            MINIMAL_BIN,
-                            std::pow(avg,1 - GROUPING_RATE)
-                     );
+    double est_bin = std::pow(avg,1 - GROUPING_RATE);
 
     int thres = std::max<int>(
                         MINIMAL_SAMPLE,
@@ -106,7 +105,7 @@ int GetThreshold(const std::array<int,2> &cnt)
 
     if(thres * MINIMAL_BIN > cnt[0] + cnt[1])
         throw std::runtime_error("Not enough bins to compare. "
-                                "Please choose larger clusters to compare");
+                                "Please choose larger groups to compare");
     return thres;
 }
 
@@ -304,7 +303,7 @@ void ProcessGene(
 
     result.d_score = ComputeSimilarity(bins, cnt);
     result.b_cnt = bins.size();
-    result.p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
+    result.log_p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
 
     if (bins.size() <= 1) {
         result.perm_p_value = 1;
@@ -346,20 +345,32 @@ std::vector<struct GeneResult> HarmonyTest(
 
     std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
 
+    std::vector<std::array<double, 2>> total_exp(n_genes);
+
+
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (!(int)cluster[i])
             continue;
 
+        int cid = (int)cluster[i] - 1;
+
         for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
             int r = c_it.row();
-            exp[r].push_back({*c_it, (int)cluster[i] - 1});
-            --zero_cnt[r][(int)cluster[i] - 1];
+
+            exp[r].push_back({*c_it, cid});
+            total_exp[r][cid] += *c_it;
+            --zero_cnt[r][cid];
         }
     }
 
 
     for (int i = 0; i < n_genes; ++i) {
         res[i].gene_id = i + 1;
+
+        double m1 = total_exp[i][0] / total_cnt[0];
+        double m2 = total_exp[i][1] / total_cnt[1];
+
+        res[i].log_fc = log(m1 / m2);
 
         ProcessGene(
             std::move(exp[i]),
@@ -438,53 +449,56 @@ DataFrame PostProcess(
     std::vector<std::pair<double,int>> order(n_gene);
 
     for (int i = 0; i < n_gene; ++i)
-        order[i] = std::make_pair(res[i].p_value, i);
+        order[i] = std::make_pair(res[i].log_p_value, i);
 
     std::sort(order.begin(), order.end());
 
     std::vector<std::string> g_names(n_gene);
     std::vector<int> g_id(n_gene);
 
-    std::vector<double> d_score(n_gene), ud_score(n_gene);
-    std::vector<double> p_value(n_gene), perm_value(n_gene), p_adjusted(n_gene);
+    std::vector<double> d_score(n_gene), ud_score(n_gene), log2_fc(n_gene);
+    std::vector<double> log10_pv(n_gene), perm_pv(n_gene), log10_adj_pv(n_gene);
     std::vector<double> b_cnt(n_gene);
 
     //Adjust p value
-    double prev = 0;
+    double prev = -std::numeric_limits<double>::infinity();
     for(int i = 0; i < n_gene; ++i) {
-        double p = std::exp(order[i].first) * n_gene / (i + 1);
+        double log_p = order[i].first  + log(n_gene) - log(i + 1);
 
-        if (p > 1)
-            p = 1;
+        if (log_p > 0)
+            log_p = 0;
 
-        if (p >= prev)
-            prev = p;
+        if (log_p > prev)
+            prev = log_p;
 
-        p_adjusted[i] = prev;
+        log10_adj_pv[i] = prev * M_LOG10E;
     }
 
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i].second;
 
-        g_names[i]    = rownames[k];
-        g_id[i]       = res[k].gene_id;
-        d_score[i]    = res[k].d_score;
-        b_cnt[i]      = res[k].b_cnt;
-        p_value[i]    = res[k].p_value;
-        perm_value[i] = res[k].perm_p_value;
-        ud_score[i]   = res[k].ud_score;
+        g_names[i]  = rownames[k];
+        g_id[i]     = res[k].gene_id;
+        d_score[i]  = res[k].d_score;
+        b_cnt[i]    = res[k].b_cnt;
+        log10_pv[i] = res[k].log_p_value * M_LOG10E;
+        perm_pv[i]  = res[k].perm_p_value;
+        ud_score[i] = res[k].ud_score;
+        log2_fc[i]  = res[k].log_fc * M_LOG2E;
     }
 
     Rcout << "Done all" << std::endl;
-    return DataFrame::create( Named("Gene ID")          = wrap(g_id),
-                              Named("Gene Name")        = wrap(g_names),
-                              Named("Dissimilarity")    = wrap(d_score),
-                              Named("Bin count")        = wrap(b_cnt),
-                              Named("Log P value")      = wrap(p_value),
-                              Named("Perm P value")     = wrap(perm_value),
-                              Named("P-adjusted value") = wrap(p_adjusted),
-                              Named("Up-Down score")    = wrap(ud_score)
-                            );
+    return DataFrame::create(
+                    Named("Gene ID")                = wrap(g_id),
+                    Named("Gene Name")              = wrap(g_names),
+                    Named("Dissimilarity")          = wrap(d_score),
+                    Named("Bin count")              = wrap(b_cnt),
+                    Named("Log10 p value")          = wrap(log10_pv),
+                    Named("Perm p value")           = wrap(perm_pv),
+                    Named("Log10 adjusted p value") = wrap(log10_adj_pv),
+                    Named("Up-Down score")          = wrap(ud_score),
+                    Named("Log2 fold change")       = wrap(log2_fc)
+            );
 }
 
 //' HarmonyMarker
