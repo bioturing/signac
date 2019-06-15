@@ -170,6 +170,9 @@ void Resample(
 
         bins[i][0] = r;
         bins[i][1] = k - r;
+
+        n1 -= r;
+        n2 -= k - r;
     }
 }
 
