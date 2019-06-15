@@ -9,6 +9,7 @@
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
+#include <Rmath.h>
 
 #include <string>
 #include <fstream>
@@ -64,7 +65,7 @@ inline double Score(int x, int y, int n1, int n2)
 
     double result = pow(a-b,2)/(2*(a+b));
     //correction
-    double correction = 2 * a * b * (n1 * a * (1 - b) + n2 * b *(1 - a))
+    double correction = 2 * a * b * (x * (1 - b) + y *(1 - a))
                         / (n1 * n2 * pow(a + b, 3));
 
     return result - correction;
@@ -77,7 +78,8 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
 
     int Dof = b_cnt - 1;
     double x = 2 * score * HarmonicMean(n1, n2) + b_cnt - 1;
-    return log_chisqr(Dof, x);
+
+    return R::pchisq(x, Dof, false, true);
 }
 
 void GetTotalCount(
@@ -154,22 +156,21 @@ double ComputeUd_score(
 
 void Resample(
     std::vector<std::array<int, 2>> &bins,
-    const std::vector<bool> &group,
     const std::array<int, 2> &cnt)
 {
     int j = 0;
+
+    int n1 = cnt[0];
+    int n2 = cnt[1];
+
     for (int i = 0; i < bins.size(); ++i) {
-        int next_j = j + bins[i][0] + bins[i][1];
 
-        int x = 0;
+        int k = bins[i][0] + bins[i][1];
 
-        for (; j < next_j; ++j)
-            x += group[j];
+        int r = R::rhyper(n1, n2, k);
 
-        int y = bins[i][0] + bins[i][1] - x;
-
-        bins[i][0] = x;
-        bins[i][1] = y;
+        bins[i][0] = r;
+        bins[i][1] = k - r;
     }
 }
 
@@ -311,13 +312,9 @@ double PermPvalue(
     if (bins.size() <= 1)
         return 1;
 
-    std::vector<bool> group(cnt[0] + cnt[1]);
-    std::fill(group.begin(), group.begin() + cnt[0], true);
-
     int count = 0;
     for(int i = 0; i < perm; ++i) {
-        std::random_shuffle(group.begin(), group.end());
-        Resample(bins, group, cnt);
+        Resample(bins, cnt);
         double score = ComputeSimilarity(bins, cnt);
         count += score >= d_score;
     }
