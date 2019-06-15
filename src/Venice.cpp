@@ -31,7 +31,6 @@
 #include "SparseMatrixUtil.h"
 #include "Hdf5Util.h"
 
-
 using namespace Rcpp;
 using namespace arma;
 using namespace RcppParallel;
