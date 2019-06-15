@@ -24,7 +24,6 @@
 #include "CommonUtil.h"
 #include "SparseMatrixUtil.h"
 #include "Hdf5Util.h"
-#include "chisq.h"
 
 using namespace Rcpp;
 using namespace arma;
