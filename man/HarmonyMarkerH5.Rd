@@ -4,7 +4,7 @@
 \alias{HarmonyMarkerH5}
 \title{HarmonyMarkerH5}
 \usage{
-HarmonyMarkerH5(hdf5Path, cluster)
+HarmonyMarkerH5(hdf5Path, cluster, threshold = 0L)
 }
 \arguments{
 \item{hdf5Path}{A string path}

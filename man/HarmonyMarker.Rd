@@ -4,7 +4,7 @@
 \alias{HarmonyMarker}
 \title{HarmonyMarker}
 \usage{
-HarmonyMarker(S4_mtx, mtx, cluster)
+HarmonyMarker(S4_mtx, cluster, threshold = 0L, perm = 0L)
 }
 \arguments{
 \item{S4_mtx}{A sparse matrix}
