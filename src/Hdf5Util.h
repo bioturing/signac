@@ -811,7 +811,7 @@ public:
                 }
             }
 
-            std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot, "barcodes"};
+            std::vector<std::string> arrDatasetName = {"data", "indices", "indptr", "shape", feature_slot};
             for(const std::string &datasetName : arrDatasetName) {
                 if(file->exist(groupName + "/" + datasetName) == false) {
                     std::stringstream ostr;
@@ -833,13 +833,19 @@ public:
             std::vector<std::string> arrFeature;
             ReadDatasetVector(file, groupName, feature_slot, arrFeature);
             std::vector<std::string> arrBarcode;
-            ReadDatasetVector(file, groupName, "barcodes", arrBarcode);
 
             s.slot("p") = std::move(arrIndptr);
             s.slot("i") = std::move(arrIndices);
             s.slot("x") = std::move(arrData);
             s.slot("Dim") = std::move(arrDims);
-            s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
+
+            if (file->exist(groupName + "/" + "barcodes")) {
+              ReadDatasetVector(file, groupName, "barcodes", arrBarcode);
+              s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
+            } else{
+              arrBarcode.resize(arrDims[1], "col");
+              s.slot("Dimnames") = Rcpp::List::create(arrFeature, arrBarcode);
+            }
             return s;
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
