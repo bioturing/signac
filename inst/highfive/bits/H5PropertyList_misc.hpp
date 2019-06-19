@@ -20,35 +20,35 @@ inline hid_t convert_plist_type(PropertyType propertyType) {
     // The HP5_XXX are macros with function calls so we can't assign
     // them as the enum values
     switch (propertyType) {
-    case PropertyType::OBJECT_CREATE:
+    case PropertyType::OBJECT_CREATE_PROP:
         return H5P_OBJECT_CREATE;
-    case PropertyType::FILE_CREATE:
+    case PropertyType::FILE_CREATE_PROP:
         return H5P_FILE_CREATE;
-    case PropertyType::FILE_ACCESS:
+    case PropertyType::FILE_ACCESS_PROP:
         return H5P_FILE_ACCESS;
-    case PropertyType::DATASET_CREATE:
+    case PropertyType::DATASET_CREATE_PROP:
         return H5P_DATASET_CREATE;
-    case PropertyType::DATASET_ACCESS:
+    case PropertyType::DATASET_ACCESS_PROP:
         return H5P_DATASET_ACCESS;
-    case PropertyType::DATASET_XFER:
+    case PropertyType::DATASET_XFER_PROP:
         return H5P_DATASET_XFER;
-    case PropertyType::GROUP_CREATE:
+    case PropertyType::GROUP_CREATE_PROP:
         return H5P_GROUP_CREATE;
-    case PropertyType::GROUP_ACCESS:
+    case PropertyType::GROUP_ACCESS_PROP:
         return H5P_GROUP_ACCESS;
-    case PropertyType::DATATYPE_CREATE:
+    case PropertyType::DATATYPE_CREATE_PROP:
         return H5P_DATATYPE_CREATE;
-    case PropertyType::DATATYPE_ACCESS:
+    case PropertyType::DATATYPE_ACCESS_PROP:
         return H5P_DATATYPE_ACCESS;
-    case PropertyType::STRING_CREATE:
+    case PropertyType::STRING_CREATE_PROP:
         return H5P_STRING_CREATE;
-    case PropertyType::ATTRIBUTE_CREATE:
+    case PropertyType::ATTRIBUTE_CREATE_PROP:
         return H5P_ATTRIBUTE_CREATE;
-    case PropertyType::OBJECT_COPY:
+    case PropertyType::OBJECT_COPY_PROP:
         return H5P_OBJECT_COPY;
-    case PropertyType::LINK_CREATE:
+    case PropertyType::LINK_CREATE_PROP:
         return H5P_LINK_CREATE;
-    case PropertyType::LINK_ACCESS:
+    case PropertyType::LINK_ACCESS_PROP:
         return H5P_LINK_ACCESS;
     default:
         HDF5ErrMapper::ToException<PropertyException>(

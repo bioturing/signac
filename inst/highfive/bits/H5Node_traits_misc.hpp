@@ -93,7 +93,7 @@ NodeTraits<Derivate>::getDataSet(const std::string& dataset_name,
 template <typename Derivate>
 inline Group NodeTraits<Derivate>::createGroup(const std::string& group_name,
                                                bool parents) {
-    RawPropertyList<PropertyType::LINK_CREATE> lcpl;
+    RawPropertyList<PropertyType::LINK_CREATE_PROP> lcpl;
     if (parents) {
         lcpl.add(H5Pset_create_intermediate_group, 1u);
     }

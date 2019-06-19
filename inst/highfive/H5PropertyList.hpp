@@ -17,21 +17,21 @@ namespace HighFive {
 
 
 enum class PropertyType : int {
-    OBJECT_CREATE,
-    FILE_CREATE,
-    FILE_ACCESS,
-    DATASET_CREATE,
-    DATASET_ACCESS,
-    DATASET_XFER,
-    GROUP_CREATE,
-    GROUP_ACCESS,
-    DATATYPE_CREATE,
-    DATATYPE_ACCESS,
-    STRING_CREATE,
-    ATTRIBUTE_CREATE,
-    OBJECT_COPY,
-    LINK_CREATE,
-    LINK_ACCESS,
+    OBJECT_CREATE_PROP,
+    FILE_CREATE_PROP,
+    FILE_ACCESS_PROP,
+    DATASET_CREATE_PROP,
+    DATASET_ACCESS_PROP,
+    DATASET_XFER_PROP,
+    GROUP_CREATE_PROP,
+    GROUP_ACCESS_PROP,
+    DATATYPE_CREATE_PROP,
+    DATATYPE_ACCESS_PROP,
+    STRING_CREATE_PROP,
+    ATTRIBUTE_CREATE_PROP,
+    OBJECT_COPY_PROP,
+    LINK_CREATE_PROP,
+    LINK_ACCESS_PROP,
 };
 
 ///
@@ -78,11 +78,11 @@ class PropertyList {
 #endif
 };
 
-typedef PropertyList<PropertyType::FILE_CREATE> FileCreateProps;
-typedef PropertyList<PropertyType::FILE_ACCESS> FileAccessProps ;
-typedef PropertyList<PropertyType::DATASET_CREATE> DataSetCreateProps;
-typedef PropertyList<PropertyType::DATASET_ACCESS> DataSetAccessProps;
-typedef PropertyList<PropertyType::DATASET_XFER> DataTransferProps;
+typedef PropertyList<PropertyType::FILE_CREATE_PROP> FileCreateProps;
+typedef PropertyList<PropertyType::FILE_ACCESS_PROP> FileAccessProps ;
+typedef PropertyList<PropertyType::DATASET_CREATE_PROP> DataSetCreateProps;
+typedef PropertyList<PropertyType::DATASET_ACCESS_PROP> DataSetAccessProps;
+typedef PropertyList<PropertyType::DATASET_XFER_PROP> DataTransferProps;
 
 ///
 /// RawPropertieLists are to be used when advanced H5 properties
