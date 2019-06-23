@@ -4,7 +4,8 @@ We introduce **Signac**, a versatile R package to facilitate the analysis workfl
 
 This package can also be used as the reference for the computational methods used in **BioTuring Browser** software.
 
-*24/06/2019*
+### 24/06/2019
+
 Please visit [this blog](https://blog.bioturing.com/) to read about **Harmony**, the fast and accurate method for finding marker genes, which is incorporated into Signac. Harmony function can be accessed via `Signac::HarmonyMarker`
 
 Below is the benchmark when finding 4 types of DE genes in a simulated dataset (using scDD R package). Total 15 methods included Harmony are tested. The dataset has 2000 DE genes that are even divided into 4 groups (DE, DP, DB, DM), and 18000 non-DE genes (EP and EE).
