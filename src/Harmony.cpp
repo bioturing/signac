@@ -370,7 +370,7 @@ std::vector<struct GeneResult> HarmonyTest(
         double m1 = total_exp[i][0] / total_cnt[0];
         double m2 = total_exp[i][1] / total_cnt[1];
 
-        res[i].log_fc = log(m1 / m2);
+        res[i].log_fc = log((m1 / m2) + 1);
 
         ProcessGene(
             std::move(exp[i]),
