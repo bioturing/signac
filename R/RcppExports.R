@@ -31,26 +31,26 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
-#' HarmonyMarker
+#' VeniceMarker
 #'
 #' Find gene marker for a cluster in sparse matrix
 #'
 #' @param S4_mtx A sparse matrix
 #' @param cluster A numeric vector
 #' @export
-HarmonyMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L) {
-    .Call(`_Signac_HarmonyMarker`, S4_mtx, cluster, threshold, perm)
+VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L) {
+    .Call(`_Signac_VeniceMarker`, S4_mtx, cluster, threshold, perm)
 }
 
-#' HarmonyMarkerH5
+#' VeniceMarkerH5
 #'
 #' Find gene marker for a cluster in H5 file
 #'
 #' @param hdf5Path A string path
 #' @param cluster A numeric vector
 #' @export
-HarmonyMarkerH5 <- function(hdf5Path, cluster, threshold = 0L) {
-    .Call(`_Signac_HarmonyMarkerH5`, hdf5Path, cluster, threshold)
+VeniceMarkerH5 <- function(hdf5Path, cluster, threshold = 0L) {
+    .Call(`_Signac_VeniceMarkerH5`, hdf5Path, cluster, threshold)
 }
 
 #' WriteSpMtAsSpMat

@@ -1,7 +1,7 @@
 #define ARMA_USE_CXX11
 #define ARMA_NO_DEBUG
 
-#define HARMONY_EPS 1e-50
+#define VENICE_EPS 1e-50
 #define MINIMAL_SAMPLE 10
 #define MINIMAL_BIN 2
 #define GROUPING_RATE 0.6
@@ -220,7 +220,7 @@ std::vector<std::array<int, 2>> Binning(
         if (c_exp >= 0)
             break;
 
-        if (abs(c_exp - p_exp) >= HARMONY_EPS) {
+        if (abs(c_exp - p_exp) >= VENICE_EPS) {
             ++j;
             p_exp = c_exp;
         }
@@ -228,7 +228,7 @@ std::vector<std::array<int, 2>> Binning(
     }
 
     if (zero_cnt[0] + zero_cnt[1] > 0) {
-        if (p_exp < -HARMONY_EPS) {
+        if (p_exp < -VENICE_EPS) {
             ++j;
             p_exp = 0;
         }
@@ -240,7 +240,7 @@ std::vector<std::array<int, 2>> Binning(
     for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
-        if (abs(c_exp - p_exp) >= HARMONY_EPS) {
+        if (abs(c_exp - p_exp) >= VENICE_EPS) {
             ++j;
             p_exp = c_exp;
         }
@@ -324,7 +324,7 @@ void ProcessGene(
     result.perm_p_value = (double)count/perm;
 }
 
-std::vector<struct GeneResult> HarmonyTest(
+std::vector<struct GeneResult> VeniceTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
         const std::array<int, 2> &total_cnt,
@@ -388,7 +388,7 @@ std::vector<struct GeneResult> HarmonyTest(
     return res;
 }
 
-std::vector<struct GeneResult> HarmonyTest(
+std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
@@ -501,7 +501,7 @@ DataFrame PostProcess(
             );
 }
 
-//' HarmonyMarker
+//' VeniceMarker
 //'
 //' Find gene marker for a cluster in sparse matrix
 //'
@@ -509,7 +509,7 @@ DataFrame PostProcess(
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame HarmonyMarker(
+DataFrame VeniceMarker(
         const Rcpp::S4 &S4_mtx,
         const Rcpp::NumericVector &cluster,
         int threshold = 0,
@@ -524,7 +524,7 @@ DataFrame HarmonyMarker(
     Rcout << "Done parse" << std::endl;
 
     std::vector<struct GeneResult> res
-            = HarmonyTest(mtx, cluster, total_cnt, threshold, perm);
+            = VeniceTest(mtx, cluster, total_cnt, threshold, perm);
     Rcout << "Done calculate" << std::endl;
 
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
@@ -532,7 +532,7 @@ DataFrame HarmonyMarker(
     return PostProcess(res, rownames);
 }
 
-//' HarmonyMarkerH5
+//' VeniceMarkerH5
 //'
 //' Find gene marker for a cluster in H5 file
 //'
@@ -540,7 +540,7 @@ DataFrame HarmonyMarker(
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame HarmonyMarkerH5(
+DataFrame VeniceMarkerH5(
     const std::string &hdf5Path,
     const Rcpp::NumericVector &cluster, int threshold = 0)
 {
@@ -554,7 +554,7 @@ DataFrame HarmonyMarkerH5(
           << "Group2 " << total_cnt[1] << std::endl;
 
     std::vector<struct GeneResult> res
-        = HarmonyTest(oHdf5Util, file, cluster, total_cnt, threshold);
+        = VeniceTest(oHdf5Util, file, cluster, total_cnt, threshold);
 
     Rcout << "Done calculate" << std::endl;
     std::vector<std::string> rownames;
