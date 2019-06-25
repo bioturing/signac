@@ -356,7 +356,6 @@ std::vector<struct GeneResult> VeniceTest(
 
     std::vector<std::array<double, 2>> total_exp(n_genes);
 
-
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (!(int)cluster[i])
             continue;
@@ -367,7 +366,7 @@ std::vector<struct GeneResult> VeniceTest(
             int r = c_it.row();
 
             exp[r].push_back({*c_it, cid});
-            total_exp[r][cid] += expm1(*c_it);
+            total_exp[r][cid] += (*c_it);
             --zero_cnt[r][cid];
         }
     }
