@@ -20,6 +20,7 @@ LinkingTo:
     RcppArmadillo,
     RcppParallel,
     Rhdf5lib,
+    RcppProgress,
     BH
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.1.1
