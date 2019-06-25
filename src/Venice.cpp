@@ -366,7 +366,7 @@ std::vector<struct GeneResult> VeniceTest(
             int r = c_it.row();
 
             exp[r].push_back({*c_it, cid});
-            total_exp[r][cid] += *c_it;
+            total_exp[r][cid] += expm1(*c_it);
             --zero_cnt[r][cid];
         }
     }
