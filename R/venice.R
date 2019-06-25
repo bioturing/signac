@@ -2,11 +2,9 @@
 #'
 #' This function helps to find marker genes for all clusters in a Seurat v3 object.
 #' We adapted some utilities functions in Seurat v3 package (Butler et al., Nature Biotechnology 2018) to handle the annotation of an
-#' object.
+#' object, extract the counts data from an object, and build the cluster tree.
 #'
 #' @param object An Seurat v3 object which contain at least one identification of clusters
-#' @param ident.1 Name of the first indentification
-#' @param ident.2 NULL if finding all markers, name of the second indentification otherwise
 #' @param assay name of the assay to be used
 #' @param slot name of the slot to be used
 #' @param pvalue cut off p.value
@@ -20,8 +18,6 @@
 #' @examples
 VeniceAllMarkers <- function(
   object,
-  ident.1 = NULL,
-  ident.2 = NULL,
   assay = "RNA",
   slot = 'data',
   pvalue = 0.05,
@@ -71,7 +67,7 @@ VeniceAllMarkers <- function(
       expr = {
         Signac::VeniceMarker(
           S4_mtx  = data.use,
-          cluster = GetCellsIndices(data.use, object, idents.all[i], ident.2),
+          cluster = GetCellsIndices(data.use, object, idents.all[i],  NULL),
           perm = nperm,
           verbose = verbose
         )
@@ -128,6 +124,90 @@ VeniceAllMarkers <- function(
   return(gde.all)
 }
 
+#' This function helps to find marker genes for two clusters in a Seurat v3 object.
+#' We adapted some utilities functions in Seurat v3 package (Butler et al., Nature Biotechnology 2018) to handle the annotation of an
+#' object, extract the counts data from an object, and build the cluster tree.
+#' Some parameters are derived from the FindMarkers function of Seurat package v3
+#' https://github.com/satijalab/seurat/blob/master/R/differential_expression.R
+#' @param ident.1 Identity class to define markers for; pass an object of class
+#' \code{phylo} or 'clustertree' to find markers for a node in a cluster tree;
+#' passing 'clustertree' requires \code{\link{BuildClusterTree}} to have been run
+#' @param ident.2 A second identity class for comparison; if \code{NULL},
+#' use all other cells for comparison; if an object of class \code{phylo} or
+#' 'clustertree' is passed to \code{ident.1}, must pass a node to find markers for
+#' @param group.by Regroup cells into a different identity class prior to performing differential expression (see example)
+#' @param subset.ident Subset a particular identity class prior to regrouping. Only relevant if group.by is set (see example)
+#' @param assay Assay to use in differential expression testing
+#' @param slot Slot to pull data from; note that if \code{test.use} is "negbinom", "poisson", or "DESeq2",
+#' \code{slot} will be set to "counts"
+#'
+#' @importFrom methods is
+#'
+#' @rdname VeniceFindMarkers
+#' @export
+#' @method VeniceFindMarkers
+#'
+VeniceFindMarkers <- function(
+  object,
+  ident.1 = NULL,
+  ident.2 = NULL,
+  group.by = NULL,
+  subset.ident = NULL,
+  assay = NULL,
+  slot = 'data',
+  reduction = NULL,
+  features = NULL,
+  logfc.threshold = 0.25,
+  verbose = TRUE,
+  pvalue = 0.05,
+  only.pos = FALSE,
+  nperm = 0
+) {
+  if (!is.null(x = group.by)) {
+    if (!is.null(x = subset.ident)) {
+      object <- subset(x = object, idents = subset.ident)
+    }
+    Idents(object = object) <- group.by
+  }
+  if (!is.null(x = assay) && !is.null(x = reduction)) {
+    stop("Please only specify either assay or reduction.")
+  }
+  assay <- if (is.null(assay)) DefaultAssay(object = object) else assay
+  data.use <-  GetAssayData(object = object[[assay]], slot = slot)
+
+  counts <- switch(
+    EXPR = slot,
+    'scale.data' = Seurat:::GetAssayData(object = object[[assay]], slot = "counts"),
+    numeric()
+  )
+
+  indices <- GetCellsIndices(data.use, object, ident.1, ident.2)
+  de.results <- Signac::VeniceMarker(
+    S4_mtx  = data.use,
+    cluster = indices,
+    perm = nperm,
+    verbose = verbose
+  )
+  de.results <- de.results[, c("Gene.Name", "Log2.fold.change", "Log10.adjusted.p.value",
+                         "Log10.p.value", "Dissimilarity", "Bin.count", "Up.Down.score")]
+  de.results <- subset(de.results, abs(Log2.fold.change) > logfc.threshold)
+  return(de.results)
+}
+
+#' This function helps to extract the cell indices given two indents
+#' We adapted some utilities functions in Seurat v3 package (Butler et al., Nature Biotechnology 2018) to handle the annotation of an
+#' object
+#' This function are edited from the FindMarkers function of Seurat package v3
+#' https://github.com/satijalab/seurat/blob/master/R/differential_expression.R
+#'
+#' @param data.use The sparse matrix object that contains the counts data
+#' @param object The Seurat v3 object
+#' @param ident.1 Identity class to define markers for; pass an object of class
+#' \code{phylo} or 'clustertree' to find markers for a node in a cluster tree;
+#' passing 'clustertree' requires \code{\link{BuildClusterTree}} to have been run
+#' @param ident.2 A second identity class for comparison; if \code{NULL},
+#' use all other cells for comparison; if an object of class \code{phylo} or
+#' 'clustertree' is passed to \code{ident.1}, must pass a node to find markers for
 GetCellsIndices <- function(data.use, object, ident.1, ident.2) {
   if (is.null(x = ident.1)) {
     stop("Please provide ident.1")
