@@ -10,6 +10,9 @@
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
 
+#include <progress.hpp>
+#include <progress_bar.hpp>
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -25,6 +28,7 @@
 #include "Hdf5Util.h"
 #include "chisq.h"
 
+
 using namespace Rcpp;
 using namespace arma;
 using namespace RcppParallel;
@@ -33,6 +37,8 @@ using namespace std::placeholders;
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
+// [[Rcpp::depends(RcppProgress)]]
+
 
 struct GeneResult {
     int gene_id;
@@ -100,8 +106,9 @@ int GetThreshold(const std::array<int,2> &cnt)
                         MINIMAL_SAMPLE,
                         ((cnt[0] + cnt[1]) / est_bin)
                 );
-
+#ifdef DEBUG
     Rcout << cnt[0] << " " << cnt[1] << " " << avg << " " << thres << std::endl;
+#endif
 
     if(thres * MINIMAL_BIN > cnt[0] + cnt[1])
         throw std::runtime_error("Not enough bins to compare. "
@@ -329,10 +336,12 @@ std::vector<struct GeneResult> VeniceTest(
         const Rcpp::NumericVector &cluster,
         const std::array<int, 2> &total_cnt,
         int threshold,
-        int perm)
+        int perm,
+        bool display_progress = true)
 {
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
     int n_genes = mtx.n_rows;
+    Progress p(n_genes, display_progress);
 
     if (cluster.size() != mtx.n_cols)
         throw std::domain_error("Input cluster size is not equal "
@@ -358,7 +367,7 @@ std::vector<struct GeneResult> VeniceTest(
             int r = c_it.row();
 
             exp[r].push_back({*c_it, cid});
-            total_exp[r][cid] += *c_it;
+            total_exp[r][cid] += expm1(*c_it);
             --zero_cnt[r][cid];
         }
     }
@@ -370,7 +379,10 @@ std::vector<struct GeneResult> VeniceTest(
         double m1 = total_exp[i][0] / total_cnt[0];
         double m2 = total_exp[i][1] / total_cnt[1];
 
-        res[i].log_fc = log((m1 / (m2 + 1)) + 1);
+        res[i].log_fc = log(m1 + 1) - log(m2 + 1);
+
+        if (Progress::check_abort() )
+            return {};
 
         ProcessGene(
             std::move(exp[i]),
@@ -381,8 +393,7 @@ std::vector<struct GeneResult> VeniceTest(
             res[i]
         );
 
-        if ((i + 1) % 1000 == 0)
-            Rcout << "Processed " << i + 1 << " genes\r";
+        p.increment();
     }
 
     return res;
@@ -486,8 +497,9 @@ DataFrame PostProcess(
         ud_score[i] = res[k].ud_score;
         log2_fc[i]  = res[k].log_fc * M_LOG2E;
     }
-
-    Rcout << "Done all" << std::endl;
+#ifdef DEBUG
+    Rcout << "Done!" << std::endl;
+#endif
     return DataFrame::create(
                     Named("Gene ID")                = wrap(g_id),
                     Named("Gene Name")              = wrap(g_names),
@@ -513,20 +525,24 @@ DataFrame VeniceMarker(
         const Rcpp::S4 &S4_mtx,
         const Rcpp::NumericVector &cluster,
         int threshold = 0,
-        int perm = 0)
+        int perm = 0,
+        bool verbose = false)
 {
+#ifdef DEBUG
     Rcout << "Enter" << std::endl;
+#endif
 
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
     const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
+#ifdef DEBUG
     Rcout << "Done parse" << std::endl;
-
-    std::vector<struct GeneResult> res
-            = VeniceTest(mtx, cluster, total_cnt, threshold, perm);
+#endif
+    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, total_cnt, threshold, perm, verbose);
+#ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
-
+#endif
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
     std::vector<std::string> rownames = dim_names[0];
     return PostProcess(res, rownames);
@@ -549,14 +565,15 @@ DataFrame VeniceMarkerH5(
 
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
-
+#ifdef DEBUG
     Rcout << "Group1 " << total_cnt[0]
           << "Group2 " << total_cnt[1] << std::endl;
-
+#endif
     std::vector<struct GeneResult> res
         = VeniceTest(oHdf5Util, file, cluster, total_cnt, threshold);
-
+#ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
+#endif
     std::vector<std::string> rownames;
     // Read the barcode slot since this is the transposed matrix
     oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME,
