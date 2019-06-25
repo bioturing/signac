@@ -40,9 +40,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// HarmonyMarker
-DataFrame HarmonyMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold, int perm);
-RcppExport SEXP _Signac_HarmonyMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP) {
+// VeniceMarker
+DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold, int perm);
+RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -50,20 +50,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type perm(permSEXP);
-    rcpp_result_gen = Rcpp::wrap(HarmonyMarker(S4_mtx, cluster, threshold, perm));
+    rcpp_result_gen = Rcpp::wrap(VeniceMarker(S4_mtx, cluster, threshold, perm));
     return rcpp_result_gen;
 END_RCPP
 }
-// HarmonyMarkerH5
-DataFrame HarmonyMarkerH5(const std::string& hdf5Path, const Rcpp::NumericVector& cluster, int threshold);
-RcppExport SEXP _Signac_HarmonyMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP, SEXP thresholdSEXP) {
+// VeniceMarkerH5
+DataFrame VeniceMarkerH5(const std::string& hdf5Path, const Rcpp::NumericVector& cluster, int threshold);
+RcppExport SEXP _Signac_VeniceMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP, SEXP thresholdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type hdf5Path(hdf5PathSEXP);
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
-    rcpp_result_gen = Rcpp::wrap(HarmonyMarkerH5(hdf5Path, cluster, threshold));
+    rcpp_result_gen = Rcpp::wrap(VeniceMarkerH5(hdf5Path, cluster, threshold));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -680,8 +680,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
-    {"_Signac_HarmonyMarker", (DL_FUNC) &_Signac_HarmonyMarker, 4},
-    {"_Signac_HarmonyMarkerH5", (DL_FUNC) &_Signac_HarmonyMarkerH5, 3},
+    {"_Signac_VeniceMarker", (DL_FUNC) &_Signac_VeniceMarker, 4},
+    {"_Signac_VeniceMarkerH5", (DL_FUNC) &_Signac_VeniceMarkerH5, 3},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsSpMatFromS4", (DL_FUNC) &_Signac_WriteSpMtAsSpMatFromS4, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
