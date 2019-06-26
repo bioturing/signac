@@ -36,7 +36,7 @@ Now we find marker genes for all annotated clusters using
     system.time(pbmc.markers <- VeniceAllMarkers(pbmc, only.pos = TRUE, logfc.threshold = 0.25, verbose = F))
 
     ##    user  system elapsed 
-    ##   3.761   0.318   4.081
+    ##   4.008   0.281   4.289
 
     pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = Log2.fold.change)
 
@@ -44,24 +44,24 @@ Now we find marker genes for all annotated clusters using
     ## # Groups:   cluster [9]
     ##    Gene.Name Log2.fold.change Log10.adjusted.… Log10.p.value cluster
     ##    <fct>                <dbl>            <dbl>         <dbl> <fct>  
-    ##  1 CD3D                 0.631           -55.6          -58.0 Naive …
-    ##  2 CCR7                 0.639           -26.9          -28.9 Naive …
-    ##  3 IL32                 0.738           -83.7          -87.9 Memory…
-    ##  4 IL7R                 0.666           -35.0          -37.6 Memory…
-    ##  5 S100A9               1.95           -288.          -292.  CD14+ …
-    ##  6 S100A8               2.00           -281.          -285.  CD14+ …
-    ##  7 CD79A                1.83           -210.          -213.  B      
-    ##  8 CD79B                1.54           -178.          -181.  B      
-    ##  9 CCL5                 1.57           -140.          -144.  CD8 T  
-    ## 10 NKG7                 1.50           -137.          -141.  CD8 T  
-    ## 11 LST1                 1.43            -94.0          -98.2 FCGR3A…
-    ## 12 FCGR3A               1.59            -82.8          -86.2 FCGR3A…
-    ## 13 GZMB                 2.00           -103.          -107.  NK     
-    ## 14 GNLY                 2.06           -103.          -107.  NK     
-    ## 15 HLA-DQA1             1.40            -12.4          -16.5 DC     
-    ## 16 FCER1A               1.60            -11.6          -15.2 DC     
-    ## 17 PPBP                 2.72             -9.11         -13.2 Mk     
-    ## 18 PF4                  2.54             -9.11         -13.2 Mk     
+    ##  1 CCR7                  1.33           -26.9         -28.9  Naive …
+    ##  2 LDLRAP1               1.10            -7.78         -9.38 Naive …
+    ##  3 LTB                   1.29           -77.4         -81.0  Memory…
+    ##  4 AQP3                  1.24           -14.8         -16.9  Memory…
+    ##  5 S100A9                5.57          -288.         -292.   CD14+ …
+    ##  6 S100A8                5.48          -281.         -285.   CD14+ …
+    ##  7 CD79A                 4.31          -210.         -213.   B      
+    ##  8 TCL1A                 3.59           -97.9        -101.   B      
+    ##  9 CCL5                  3.06          -140.         -144.   CD8 T  
+    ## 10 GZMK                  2.95           -58.5         -61.8  CD8 T  
+    ## 11 LST1                  3.09           -94.0         -98.2  FCGR3A…
+    ## 12 FCGR3A                3.31           -82.8         -86.2  FCGR3A…
+    ## 13 GZMB                  4.83          -103.         -107.   NK     
+    ## 14 GNLY                  5.32          -103.         -107.   NK     
+    ## 15 HLA-DPB1              2.87           -11.7         -15.3  DC     
+    ## 16 FCER1A                3.87           -11.6         -15.2  DC     
+    ## 17 PPBP                  8.58            -9.11        -13.2  Mk     
+    ## 18 PF4                   7.24            -9.11        -13.2  Mk     
     ## # … with 3 more variables: Dissimilarity <dbl>, Bin.count <dbl>,
     ## #   Up.Down.score <dbl>
 
@@ -70,7 +70,7 @@ Compare with `Seurat::FindAllMarkers` results
     system.time(pbmc.markers.seurat <- FindAllMarkers(pbmc, only.pos = TRUE, logfc.threshold = 0.25, verbose = F, min.cells.feature = 0))
 
     ##    user  system elapsed 
-    ## 106.767   0.814 107.580
+    ## 122.215   0.918 123.130
 
     pbmc.markers.seurat %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
 
@@ -120,19 +120,19 @@ type (cluster). We only plot top 20 features (all features if less than
     head(Signac::VeniceFindMarkers(pbmc, ident.1 = "CD14+ Mono", ident.2 = "FCGR3A+ Mono", logfc.threshold = log(2)))
 
     ##   Gene.Name Log2.fold.change Log10.adjusted.p.value Log10.p.value
-    ## 2    FCGR3A       -1.6631222              -71.17833     -75.01446
-    ## 3    S100A8        1.2752262              -62.41254     -66.07258
-    ## 4    S100A9        0.7930380              -61.23949     -64.77459
-    ## 5    IFITM2       -0.8010430              -56.30591     -59.74410
-    ## 6    LGALS2        1.2904962              -49.87441     -53.23342
-    ## 7      GPX1        0.7329328              -39.49077     -42.78284
+    ## 1       LYZ         2.614275              -74.02894     -78.16610
+    ## 2    FCGR3A        -3.776553              -71.17833     -75.01446
+    ## 3    S100A8         3.766437              -62.41254     -66.07258
+    ## 4    S100A9         3.299060              -61.23949     -64.77459
+    ## 5    IFITM2        -2.085807              -56.30591     -59.74410
+    ## 6    LGALS2         2.956704              -49.87441     -53.23342
     ##   Dissimilarity Bin.count Up.Down.score
+    ## 1     0.7480570         4             1
     ## 2     0.7303167         3            -1
     ## 3     0.6406856         5             1
     ## 4     0.6282687         5             1
     ## 5     0.5724071         4            -1
     ## 6     0.5219134         3             1
-    ## 7     0.4105139         4             1
 
     head(FindMarkers(pbmc, ident.1 = "CD14+ Mono", ident.2 = "FCGR3A+ Mono", logfc.threshold = log(2)))
 
