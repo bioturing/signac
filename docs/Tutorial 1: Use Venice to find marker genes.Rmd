@@ -1,7 +1,7 @@
 ---
 title: 'Signac: Finding marker genes using Venice algorithm'
 output:
-  html_document: default
+  md_document: default
 ---
 
 In this vignette, we will find marker genes for every cluster in the **PBMC3k** dataset. For convenience, we use the pre-processed R object from Seurat.v3 tutorial Guide clustering (https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html) to find markers for the annotated clusters. You can download the object [here](https://www.dropbox.com/s/63gnlw45jf7cje8/pbmc3k_final.rds?dl=1). This vignette requires Signac and Seurat.v3 has been installed. If you have not installed **Signac**, please install the latest version at https://github.com/bioturing/signac
