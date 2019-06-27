@@ -395,10 +395,6 @@ std::vector<struct GeneResult> VeniceTest(
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (Progress::check_abort())
             return {};
-
-        int c = (int)cluster[i];
-        int cid;
-
         if (c == C_INSIDE)
             cid = 0;
         else if (c == C_OUTSIDE)
