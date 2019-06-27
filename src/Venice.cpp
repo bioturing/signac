@@ -7,6 +7,9 @@
 #define GROUPING_RATE 0.6
 #define GROUP_NAME "bioturing"
 
+#define C_INSIDE 1
+#define C_OUTSIDE 0
+
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
 #include <Rmath.h>
@@ -93,9 +96,13 @@ void GetTotalCount(
 {
     total_cnt[0] = total_cnt[1] = 0;
 
-    for (int i = 0; i < cluster.size(); ++i)
-        if ((int)cluster[i])
-            ++total_cnt[(int)cluster[i] - 1];
+    for (int i = 0; i < cluster.size(); ++i) {
+        int c = (int)cluster[i];
+        if (c == C_INSIDE)
+            ++total_cnt[0];
+        else if (c == C_OUTSIDE)
+            ++total_cnt[1];
+    }
 }
 
 int GetThreshold(const std::array<int,2> &cnt)
@@ -219,7 +226,7 @@ double ComputeLogFC(
     m[0] /= cnt[0];
     m[1] /= cnt[1];
 
-    return log(m[0]/m[1]);
+    return log(m[0] + 1) - log(m[1] + 1);
 }
 
 std::vector<std::array<int, 2>> Binning(
@@ -355,11 +362,13 @@ void ProcessGene(
 std::vector<struct GeneResult> VeniceTest(
         const arma::sp_mat &mtx,
         const Rcpp::NumericVector &cluster,
-        const std::array<int, 2> &total_cnt,
         int threshold,
         int perm,
         bool display_progress = true)
 {
+    std::array<int, 2> total_cnt;
+    GetTotalCount(cluster, total_cnt);
+
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
     int n_genes = mtx.n_rows;
     Progress p(n_genes, display_progress);
@@ -376,10 +385,18 @@ std::vector<struct GeneResult> VeniceTest(
     std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
 
     for (int i = 0; i < mtx.n_cols; ++i) {
-        if (!(int)cluster[i])
-            continue;
+        if (Progress::check_abort())
+            return {};
 
-        int cid = (int)cluster[i] - 1;
+        int c = (int)cluster[i];
+        int cid;
+
+        if (c == C_INSIDE)
+            cid = 0;
+        else if (c == C_OUTSIDE)
+            cid = 1;
+        else
+            continue;
 
         for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
             int r = c_it.row();
@@ -415,9 +432,11 @@ std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
-        const std::array<int, 2> &total_cnt,
         int threshold)
 {
+    std::array<int, 2> total_cnt;
+    GetTotalCount(cluster, total_cnt);
+
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
 
     if (thres < MINIMAL_SAMPLE)
@@ -444,11 +463,18 @@ std::vector<struct GeneResult> VeniceTest(
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
 
         for (int k = 0; k < col_idx.size(); ++k) {
-            int idx = (int)cluster[col_idx[k]];
-            if (idx) {
-                exp[k] = {g_exp[k], idx - 1};
-                --zero_cnt[idx - 1];
-            }
+            int c = (int)cluster[col_idx[k]];
+            int cid;
+
+            if (c == C_INSIDE)
+                cid = 0;
+            else if (c == C_OUTSIDE)
+                cid = 1;
+            else
+                continue;
+             
+            exp[k] = {g_exp[k], cid};
+            --zero_cnt[cid];
         }
 
         ProcessGene(
@@ -544,14 +570,11 @@ DataFrame VeniceMarker(
     Rcout << "Enter" << std::endl;
 #endif
 
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
-
     const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
 #ifdef DEBUG
     Rcout << "Done parse" << std::endl;
 #endif
-    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, total_cnt, threshold, perm, verbose);
+    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, threshold, perm, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
@@ -575,14 +598,8 @@ DataFrame VeniceMarkerH5(
     com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
     HighFive::File *file = oHdf5Util.Open(1);
 
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
-#ifdef DEBUG
-    Rcout << "Group1 " << total_cnt[0]
-          << "Group2 " << total_cnt[1] << std::endl;
-#endif
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, total_cnt, threshold);
+        = VeniceTest(oHdf5Util, file, cluster, threshold);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
