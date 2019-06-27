@@ -9,6 +9,7 @@
 
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
+#include <Rmath.h>
 
 #include <progress.hpp>
 #include <progress_bar.hpp>
@@ -26,7 +27,6 @@
 #include "CommonUtil.h"
 #include "SparseMatrixUtil.h"
 #include "Hdf5Util.h"
-#include "chisq.h"
 
 
 using namespace Rcpp;
@@ -70,20 +70,21 @@ inline double Score(int x, int y, int n1, int n2)
 
     double result = pow(a-b,2)/(2*(a+b));
     //correction
-    double correction = 2 * a * b * (n1 * a * (1 - b) + n2 * b *(1 - a))
+    double correction = 2 * a * b * (x * (1 - b) + y *(1 - a))
                         / (n1 * n2 * pow(a + b, 3));
 
     return result - correction;
 }
 
-inline double LnPvalue(double score, int n1, int n2, int b_cnt)
+inline double LogPvalue(double score, int n1, int n2, int b_cnt)
 {
     if (b_cnt <= 0)
         throw std::domain_error("Bin count should be positive");
 
     int Dof = b_cnt - 1;
     double x = 2 * score * HarmonicMean(n1, n2) + b_cnt - 1;
-    return log_chisqr(Dof, x);
+
+    return R::pchisq(x, Dof, false, true);
 }
 
 void GetTotalCount(
@@ -161,22 +162,24 @@ double ComputeUd_score(
 
 void Resample(
     std::vector<std::array<int, 2>> &bins,
-    const std::vector<bool> &group,
     const std::array<int, 2> &cnt)
 {
     int j = 0;
+
+    int n1 = cnt[0];
+    int n2 = cnt[1];
+
     for (int i = 0; i < bins.size(); ++i) {
-        int next_j = j + bins[i][0] + bins[i][1];
 
-        int x = 0;
+        int k = bins[i][0] + bins[i][1];
 
-        for (; j < next_j; ++j)
-            x += group[j];
+        int r = R::rhyper(n1, n2, k);
 
-        int y = bins[i][0] + bins[i][1] - x;
+        bins[i][0] = r;
+        bins[i][1] = k - r;
 
-        bins[i][0] = x;
-        bins[i][1] = y;
+        n1 -= r;
+        n2 -= k - r;
     }
 }
 
@@ -204,6 +207,20 @@ double ComputeSimilarity(
     return d_score;
 }
 
+double ComputeLogFC(
+            const std::vector<std::pair<double, int>> & exp,
+            const std::array<int, 2> &cnt)
+{
+    double m[2];
+
+    for (int i = 0; i < exp.size(); ++i)
+        m[exp[i].second] += exp[i].first;
+    
+    m[0] /= cnt[0];
+    m[1] /= cnt[1];
+
+    return log(m[0]/m[1]);
+}
 
 std::vector<std::array<int, 2>> Binning(
         std::vector<std::pair<double, int>> exp,
@@ -295,40 +312,44 @@ void Grouping(
     bins.resize(j + 1);
 }
 
+double PermPvalue(
+            std::vector<std::array<int, 2>> bins,
+            const std::array<int, 2> &cnt,
+            double d_score,
+            int perm)
+{
+    if (bins.size() <= 1)
+        return 1;
+
+    int count = 0;
+    for(int i = 0; i < perm; ++i) {
+        Resample(bins, cnt);
+        double score = ComputeSimilarity(bins, cnt);
+        count += score >= d_score;
+    }
+
+    return (double)count/perm;
+}
+
 void ProcessGene(
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
         int perm,
-        struct GeneResult &result)
+        struct GeneResult &res)
 {
+    res.log_fc = ComputeLogFC(exp, cnt);
+
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
 
-    result.ud_score = ComputeUd_score(bins, cnt);
+    res.ud_score = ComputeUd_score(bins, cnt);
+
     Grouping(bins, thres);
-
-    result.d_score = ComputeSimilarity(bins, cnt);
-    result.b_cnt = bins.size();
-    result.log_p_value = LnPvalue(result.d_score, cnt[0], cnt[1], bins.size());
-
-    if (bins.size() <= 1) {
-        result.perm_p_value = 1;
-        return;
-    }
-
-    std::vector<bool> group(cnt[0] + cnt[1]);
-    std::fill(group.begin(), group.begin() + cnt[0], true);
-
-    int count = 0;
-    for(int i = 0; i < perm; ++i) {
-        std::random_shuffle(group.begin(), group.end());
-        Resample(bins, group, cnt);
-        double score = ComputeSimilarity(bins, cnt);
-        count += score >= result.d_score;
-    }
-
-    result.perm_p_value = (double)count/perm;
+    res.d_score = ComputeSimilarity(bins, cnt);
+    res.b_cnt = bins.size();
+    res.log_p_value = LogPvalue(res.d_score, cnt[0], cnt[1], bins.size());
+    res.perm_p_value = PermPvalue(std::move(bins), cnt, res.d_score, perm);
 }
 
 std::vector<struct GeneResult> VeniceTest(
@@ -344,8 +365,8 @@ std::vector<struct GeneResult> VeniceTest(
     Progress p(n_genes, display_progress);
 
     if (cluster.size() != mtx.n_cols)
-        throw std::domain_error("Input cluster size is not equal "
-                                "to the number of columns in matrix");
+        throw std::domain_error("The length of cluster vector is not equal "
+                                "to the number of columns in the matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
 
@@ -353,8 +374,6 @@ std::vector<struct GeneResult> VeniceTest(
     arma::sp_mat::const_col_iterator c_it;
 
     std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
-
-    std::vector<std::array<double, 2>> total_exp(n_genes);
 
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (!(int)cluster[i])
@@ -366,7 +385,6 @@ std::vector<struct GeneResult> VeniceTest(
             int r = c_it.row();
 
             exp[r].push_back({*c_it, cid});
-            total_exp[r][cid] += *c_it;
             --zero_cnt[r][cid];
         }
     }
@@ -375,12 +393,7 @@ std::vector<struct GeneResult> VeniceTest(
     for (int i = 0; i < n_genes; ++i) {
         res[i].gene_id = i + 1;
 
-        double m1 = total_exp[i][0] / total_cnt[0];
-        double m2 = total_exp[i][1] / total_cnt[1];
-
-        res[i].log_fc = log(m1 + 1) - log(m2 + 1);
-
-        if (Progress::check_abort() )
+        if (Progress::check_abort())
             return {};
 
         ProcessGene(
