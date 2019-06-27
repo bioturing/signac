@@ -21,7 +21,7 @@ pbmc
 table(Idents(pbmc))
 ```
 
-Now we find marker genes for all annotated clusters using ```VeniceAllMarkers``` function in Signac
+Now we find marker genes for all annotated clusters using ```VeniceAllMarkers``` function in Signac. 
 
 ```{r echo=TRUE, message=TRUE, warning=FALSE, paged.print=TRUE}
 system.time(pbmc.markers <- VeniceAllMarkers(pbmc, only.pos = TRUE, logfc.threshold = 0.25, verbose = F))
@@ -39,20 +39,24 @@ Finally, we use ```DoHeatmap``` function from **Seurat** package to draw two hea
 ### Heatmap of marker genes found by Venice
 
 ```{r}
-top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = Log2.fold.change)
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = -Log10.adjusted.p.value)
 DoHeatmap(pbmc, features = as.character(top10$Gene.Name)) + NoLegend()
 ```
 
 ### Heatmap of marker genes found by Seurat default method
 ```{r}
-top10 <- pbmc.markers.seurat %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+top10 <- pbmc.markers.seurat %>% group_by(cluster) %>% top_n(n = 10, wt = -p_val_adj)
 DoHeatmap(pbmc, features = as.character(top10$gene)) + NoLegend()
 ```
 
+To perform the Differential expression (DE) test on two individual clusters, one can use the function ```VeniceFindMarkers```. We designed the user interface that is similar to Seurat R package (Butler et al., Nature Biotechnology 2018). Please specify two cluster names ```ident.1```, ```ident.2``` as the parameters. 
+
+### Find DE genes between CD14+ Mono and FCGR3A+ Mono using Venice algorithm
 ```{r}
 head(Signac::VeniceFindMarkers(pbmc, ident.1 = "CD14+ Mono", ident.2 = "FCGR3A+ Mono", logfc.threshold = log(2)))
 ```
 
+### Find DE genes between CD14+ Mono and FCGR3A+ Mono using Seurat default algorithm
 ```{r}
 head(FindMarkers(pbmc, ident.1 = "CD14+ Mono", ident.2 = "FCGR3A+ Mono", logfc.threshold = log(2)))
 ```
