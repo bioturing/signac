@@ -395,6 +395,10 @@ std::vector<struct GeneResult> VeniceTest(
     for (int i = 0; i < mtx.n_cols; ++i) {
         if (Progress::check_abort())
             return {};
+
+        int c = (int)cluster[i];
+        int cid;
+
         if (c == C_INSIDE)
             cid = 0;
         else if (c == C_OUTSIDE)
@@ -436,8 +440,7 @@ std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
-        int threshold,
-        int perm)
+        int threshold)
 {
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
@@ -614,7 +617,7 @@ DataFrame VeniceMarkerH5(
     HighFive::File *file = oHdf5Util.Open(1);
 
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, threshold, perm);
+        = VeniceTest(oHdf5Util, file, cluster, threshold);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
