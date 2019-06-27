@@ -1,0 +1,62 @@
+---
+title: 'Signac: Finding marker genes using Venice algorithm'
+output:
+  md_document: default
+---
+
+In this vignette, we will find marker genes for every cluster in the **PBMC3k** dataset. For convenience, we use the pre-processed R object from Seurat.v3 tutorial Guide clustering (https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html) to find markers for the annotated clusters. You can download the object [here](https://www.dropbox.com/s/63gnlw45jf7cje8/pbmc3k_final.rds?dl=1). This vignette requires Signac and Seurat.v3 has been installed. If you have not installed **Signac**, please install the latest version at https://github.com/bioturing/signac
+
+```{r echo=T, results='hide'}
+suppressMessages(library(Signac))
+suppressMessages(library(Seurat))
+suppressMessages(require(dplyr))
+```
+First let take a look at the structure of the pre-processed object
+
+```{r}
+pbmc <- readRDS("~/Downloads/pbmc3k_final.rds")
+pbmc
+```
+```{r}
+table(Idents(pbmc))
+```
+
+Now we find marker genes for all annotated clusters using ```VeniceAllMarkers``` function in Signac. 
+
+```{r echo=TRUE, message=TRUE, warning=FALSE, paged.print=TRUE}
+system.time(pbmc.markers <- VeniceAllMarkers(pbmc, only.pos = TRUE, logfc.threshold = 0.25, verbose = F))
+pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = Log2.fold.change)
+```
+
+Compare with ```Seurat::FindAllMarkers``` results
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=TRUE}
+system.time(pbmc.markers.seurat <- FindAllMarkers(pbmc, only.pos = TRUE, logfc.threshold = 0.25, verbose = F, min.cells.feature = 0))
+pbmc.markers.seurat %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
+```
+Finally, we use ```DoHeatmap``` function from **Seurat** package to draw two heatmaps of expression of the marker genes found by two method: Seurat default and Harmony to see the distinct expression pattern of each cell type (cluster). We only plot top 20 features (all features if less than 20). 
+
+### Heatmap of marker genes found by Venice
+
+```{r}
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = -Log10.adjusted.p.value)
+DoHeatmap(pbmc, features = as.character(top10$Gene.Name)) + NoLegend()
+```
+
+### Heatmap of marker genes found by Seurat default method
+```{r}
+top10 <- pbmc.markers.seurat %>% group_by(cluster) %>% top_n(n = 10, wt = -p_val_adj)
+DoHeatmap(pbmc, features = as.character(top10$gene)) + NoLegend()
+```
+
+To perform the Differential expression (DE) test on two individual clusters, one can use the function ```VeniceFindMarkers```. We designed the user interface that is similar to Seurat R package (Butler et al., Nature Biotechnology 2018). Please specify two cluster names ```ident.1```, ```ident.2``` as the parameters. 
+
+### Find DE genes between CD14+ Mono and FCGR3A+ Mono using Venice algorithm
+```{r}
+head(Signac::VeniceFindMarkers(pbmc, ident.1 = "CD14+ Mono", ident.2 = "FCGR3A+ Mono", logfc.threshold = log(2)))
+```
+
+### Find DE genes between CD14+ Mono and FCGR3A+ Mono using Seurat default algorithm
+```{r}
+head(FindMarkers(pbmc, ident.1 = "CD14+ Mono", ident.2 = "FCGR3A+ Mono", logfc.threshold = log(2)))
+```
