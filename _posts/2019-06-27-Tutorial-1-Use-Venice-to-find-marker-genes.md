@@ -2,7 +2,7 @@
 layout: page 
 title: "Tutorial 1: Use Venice to find marker genes"
 subtitle: "Simple usage to find marker genes for all clusters in a Single-cell data"
-image: /assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png
+image: {{site.baseurl}}/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png
 permalink: /Use-Venice-to-find-marker-genes/
 ---
 In this vignette, we will find marker genes for every cluster in the
@@ -123,14 +123,14 @@ type (cluster). We only plot top 20 features (all features if less than
 top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = -Log10.adjusted.p.value)
 DoHeatmap(pbmc, features = as.character(top10$Gene.Name)) + NoLegend()
 ```
-![Marker genes found by Venice](/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png)
+![Marker genes found by Venice]({{site.baseurl}}/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png)
 
 ### Heatmap of marker genes found by Seurat default method
 ```R
 top10 <- pbmc.markers.seurat %>% group_by(cluster) %>% top_n(n = 10, wt = -p_val_adj)
 DoHeatmap(pbmc, features = as.character(top10$gene)) + NoLegend()
 ```
-![Marker genes found by Seurat default method](/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-7-1.png)
+![Marker genes found by Seurat default method]({{site.baseurl}}/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-7-1.png)
 
 To perform the Differential expression (DE) test on two individual
 clusters, one can use the function `VeniceFindMarkers`. We designed the
