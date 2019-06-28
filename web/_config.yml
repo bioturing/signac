@@ -1,0 +1,67 @@
+# Site Settings
+title: Signac package 
+tagline: An analytics package for Single-cell analysis
+email: support@bioturing.com
+description: >
+  We introduce Signac, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database
+baseurl: ""
+url: ""
+permalink: pretty
+
+paginate: 5
+paginate_path: "/blog/page:num"
+
+plugins:
+  - jekyll-sitemap
+  - jekyll-paginate
+  - jekyll-feed
+  - jekyll-seo-tag
+  - kramdown
+  - rouge
+
+exclude: 
+  - Gemfile
+  - clean-theme.gemspec
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/ 
+
+livereload: true
+
+sass:
+  style: compressed
+  source_dir: _sass
+
+#google_analytics: UA-code-here
+
+defaults:
+  -
+    scope:
+      path: ""
+      type: "pages"
+    values:
+      show_sidebar: true
+  -
+    scope:
+      path: ""
+      type: "posts"
+    values:
+      author: "C.S. Rhymes"
+      layout: post
+      image: https://via.placeholder.com/1200x800
+      show_sidebar: false
+
+markdown: kramdown
+highlighter:
+
+footer_menu: example_footer_menu
+
+collections:
+  products: 
+    output: true
+    layout: product
+    image: https://via.placeholder.com/800x600
+    show_sidebar: false
