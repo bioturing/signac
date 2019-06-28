@@ -6,13 +6,13 @@
     {% include hero.html %}
     <section class="section">
         <div class="container">
-            <div class="columns is-multiline">
+            <div class="columns">
                 {% if page.menubar %}
                 <div class="column is-4-desktop is-4-tablet">
                     {% include menubar.html %}
                 </div>
                 {% endif %}
-                <div class="column">
+                <div class="column is-8-desktop is-12-tablet">
                     {% include tabs.html %}
                     {{ content }}
                 </div>
