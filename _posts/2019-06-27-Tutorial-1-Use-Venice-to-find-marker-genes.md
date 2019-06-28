@@ -2,7 +2,7 @@
 layout: page 
 title: "Tutorial 1: Use Venice to find marker genes"
 subtitle: "Simple usage to find marker genes for all clusters in a Single-cell data"
-image: {{site.baseurl}}/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png
+image: /assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png
 permalink: /Use-Venice-to-find-marker-genes/
 ---
 In this vignette, we will find marker genes for every cluster in the
