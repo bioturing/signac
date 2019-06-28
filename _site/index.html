@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Signac - Signac package</title>
+    <link rel="stylesheet" href="/assets/css/app.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Signac | Signac package</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Signac" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="We introduce Signac, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database" />
+<meta property="og:description" content="We introduce Signac, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database" />
+<link rel="canonical" href="http://localhost:4000/" />
+<meta property="og:url" content="http://localhost:4000/" />
+<meta property="og:site_name" content="Signac package" />
+<script type="application/ld+json">
+{"url":"http://localhost:4000/","name":"Signac package","description":"We introduce Signac, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database","@type":"WebSite","headline":"Signac","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<!-- head scripts --></head>
+  <body>
+    
+<nav class="navbar is-primary" >
+    <div class="container">
+        <div class="navbar-brand">
+            <a href="https://bioturing.com" class="navbar-item">
+				BioTuring
+            </a>
+            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navMenu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-menu" id="navMenu">
+            <div class="navbar-start">
+                <a href="/" class="navbar-item is-active">Home</a>
+                
+                
+                    
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a href="" class="navbar-link ">Getting Started</a>
+                        <div class="navbar-dropdown">
+                            
+                            <a href="/Use-Venice-to-find-marker-genes/" class="navbar-item ">Use Venice to find marker genes</a>
+                            
+                        </div>
+                    </div>
+                    
+                
+                
+            </div>
+        </div>
+    </div>
+</nav>
+
+    <section class="hero  is-normal  is-bold is-primary" >
+    <div class="hero-body">
+        <div class="container">
+            <p class="title is-2">Signac</p>
+            <p class="subtitle is-3">A versatile package for Single-cell RNA-Seq analysis</p>
+        </div>
+		<div class="container hero-btn">
+		  <p class="buttons">
+			<a class="button" href=" https://github.com/bioturing/signac " target="_blank">
+			  <span class="icon">
+				<i class="fab fa-github"></i>
+			  </span>
+			  <span>GitHub</span>
+			</a>
+			<a class="button is-outline " href=" https://github.com/bioturing/signac/archive/master.zip " target="_blank">
+			  <span class="icon ">
+				<i class="fa fa-download"></i>
+			  </span>
+			  <span>Download</span>
+			</a>
+		  </p>
+		</div>
+    </div>
+</section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline">
+                
+                <div class="column">
+                    
+                    <div class="content">
+    <h1 id="introduction">Introduction</h1>
+
+<p>We introduce <strong>Signac</strong>, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database (<a href="https://bioturing.com/product/bbrowser">know more about BioTuring Browser</a>), etc. For users with a limited computational resource, we provide the helper functions to exercise all analyses for the large-scale datasets from disk. Because of its speed and flexibility, it can be adapted to any existing R analysis pipeline to help explore single-cell data more efficient.</p>
+
+<p>This package can also be used as the reference for the computational methods used in <strong>BioTuring Browser</strong> software.</p>
+
+<h3 id="24062019">24/06/2019</h3>
+
+<p>Please visit <a href="https://blog.bioturing.com/">this blog</a> to read about <strong>Venice</strong>, the fast and accurate method for finding marker genes, which is incorporated into Signac. Venice function can be accessed via <code class="highlighter-rouge">Signac::VeniceMarker</code></p>
+
+<p>Below is the benchmark when finding 4 types of DE genes in a simulated dataset (using scDD R package). Total 15 methods included Venice are tested. The dataset has 2000 DE genes that are even divided into 4 groups (DE, DP, DB, DM), and 18000 non-DE genes (EP and EE).</p>
+
+<p><img src="https://lh3.googleusercontent.com/_1GzN-XnIUNepbLaaJHFQjKMwAssfEOT4loEw-SARGu98qvgEWA1BslCNQb3daM6W6j1_Nn3pg6XqvQAxZOl4ACJuYQuUgPmlBb778_DDrgwIsH1VWtkqyJ-2h2S0vy_6NnWghEO_7TTMRp-YCpTQSTDC9gbQQJa6rGRGhbg8sJiqBXYPgPeyzTVDhe69sBjYB6HxHX6kCKI3HL9Vo9hPRENPtvsa9rGkFx0Ud0OgMxKoqSFArymODACMeZzkVjBX8hYDEcCkRga7JYNXREGCHVRsNSwZ9j-5Nc7yGU_VmxUo-PNTd-VFu7z0upcJyvkx4013gBtmH0BncB0dQfI6fVMks8OCBCQuxhojVVLZK0nV7FwqiPR645gdHk9Os8driY50jFgxJuwCtNabAR33UC_QzAB0Pc2ah7dYeAwNfX7dtfCiS-OsnVthNnJxBxaDL2uBBXRXLXXhUt7S1AC7iHw5cmr-4bW5XHUg_1aQKeAyNy0c_CtvUg7pt6lyGREAAKLtGKFDFfkQgL3bm_5dCVwX518kX4GmHgFq_kGMi5WWuGXE55yxWk1P_Q4TY01CbrpW7mZfaRcXRYtcuW32vIPhVqI20e3PMo55gRoA6O_2rjozK6w2fDI1JO7tjYvU72tJfrcoUprTb3lD4K0evDEXpOPV_Q=w1508-h953-no-tmp.jpg" width="800" style="text-align:center" /></p>
+
+<h2 id="installation">Installation</h2>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"bioturing/signac"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="usage">Usage</h2>
+<h4 id="find-marker-genes-with-signacvenicemarker">Find marker genes with <code class="highlighter-rouge">Signac::VeniceMarker</code></h4>
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span><span class="w"> </span><span class="nf">class</span><span class="p">(</span><span class="n">pbmc.mat</span><span class="p">)</span><span class="w"> 
+</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="s2">"dgCMatrix"</span><span class="w">
+</span><span class="nf">attr</span><span class="p">(,</span><span class="s2">"package"</span><span class="p">)</span><span class="w">
+</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="s2">"Matrix"</span><span class="w"> 
+</span><span class="o">&gt;</span><span class="w"> </span><span class="n">head</span><span class="p">(</span><span class="n">clusters</span><span class="p">)</span><span class="w"> 
+</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="s2">"Memory CD4 T"</span><span class="w"> </span><span class="s2">"B"</span><span class="w">            </span><span class="s2">"Memory CD4 T"</span><span class="w"> </span><span class="s2">"CD14+ Mono"</span><span class="w">   </span><span class="s2">"NK"</span><span class="w">           </span><span class="s2">"Memory CD4 T"</span><span class="w"> 
+</span><span class="c1">### Find markers for "NK" cluster</span><span class="w">
+</span><span class="o">&gt;</span><span class="w"> </span><span class="n">markers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">Signac</span><span class="o">::</span><span class="n">VeniceMarker</span><span class="p">(</span><span class="n">pbmc.mat</span><span class="p">,</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">clusters</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"NK"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="o">&gt;</span><span class="w"> </span><span class="n">head</span><span class="p">(</span><span class="n">markers</span><span class="p">)</span><span class="w"> </span><span class="c1"># Type 1: Up-regulated; -1: Down-regulated</span><span class="w">
+ </span><span class="n">Gene.Name</span><span class="w"> </span><span class="n">Similarity</span><span class="w"> </span><span class="n">Log.P.value</span><span class="w"> </span><span class="n">P.adjusted.value</span><span class="w">      </span><span class="n">Type</span><span class="w">
+</span><span class="m">1</span><span class="w">      </span><span class="n">NKG7</span><span class="w">  </span><span class="m">0.1366077</span><span class="w">   </span><span class="m">-552.6917</span><span class="w">    </span><span class="m">1.277099e-236</span><span class="w"> </span><span class="m">0.9870968</span><span class="w">
+</span><span class="m">2</span><span class="w">      </span><span class="n">GNLY</span><span class="w">  </span><span class="m">0.1575343</span><span class="w">   </span><span class="m">-520.4139</span><span class="w">    </span><span class="m">6.656220e-223</span><span class="w"> </span><span class="m">1.0000000</span><span class="w">
+</span><span class="m">3</span><span class="w">      </span><span class="n">GZMB</span><span class="w">  </span><span class="m">0.1730481</span><span class="w">   </span><span class="m">-502.0630</span><span class="w">    </span><span class="m">4.138385e-215</span><span class="w"> </span><span class="m">1.0000000</span><span class="w">
+</span><span class="m">4</span><span class="w">      </span><span class="n">PRF1</span><span class="w">  </span><span class="m">0.2285456</span><span class="w">   </span><span class="m">-418.0301</span><span class="w">    </span><span class="m">9.703964e-179</span><span class="w"> </span><span class="m">1.0000000</span><span class="w">
+</span><span class="m">5</span><span class="w">      </span><span class="n">CST7</span><span class="w">  </span><span class="m">0.2894125</span><span class="w">   </span><span class="m">-346.8274</span><span class="w">    </span><span class="m">6.500973e-148</span><span class="w"> </span><span class="m">1.0000000</span><span class="w">
+</span><span class="m">6</span><span class="w">      </span><span class="n">CTSW</span><span class="w">  </span><span class="m">0.2838700</span><span class="w">   </span><span class="m">-345.5459</span><span class="w">    </span><span class="m">1.951351e-147</span><span class="w"> </span><span class="m">0.9869281</span><span class="w">
+</span></code></pre></div></div>
+
+
+</div>
+                </div>
+                
+                <div class="column is-4-desktop is-12-tablet">
+                    <p class="title is-4">Latest Posts</p>
+
+<div class="columns is-multiline">
+    
+    <div class="column is-12">
+        <div class="card">
+    
+    <div class="card-image">
+        <img src="/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png" alt="Tutorial 1: Use Venice to find marker genes">
+    </div>
+    
+    <div class="card-content">
+        <div class="content">
+            
+            <a class="title is-4" href="/Use-Venice-to-find-marker-genes/">Tutorial 1: Use Venice to find marker genes</a>
+            
+            <p><p>In this vignette, we will find marker genes for every cluster in the
+<strong>PBMC3k</strong> dataset. For convenience, we use the pre-processed R object
+from Seurat.v3 tutorial (<a href="https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html" class="uri">Guided Clustering</a>)
+to find markers for the annotated clusters. You can download the object
+<a href="https://www.dropbox.com/s/63gnlw45jf7cje8/pbmc3k_final.rds?dl=1">here</a>.
+This vignette requires Signac and Seurat.v3 has been installed. If you
+have not installed <strong>Signac</strong>, please install the latest version at
+<a href="https://github.com/bioturing/signac" class="uri">https://github.com/bioturing/signac</a></p>
+
+</p>
+        </div>
+        <div class="has-text-centered">
+            <a href="/Use-Venice-to-find-marker-genes/" class="button is-primary">Read more</a>
+        </div>
+    </div>
+    <footer class="card-footer">
+        <p class="card-footer-item">Published: Jun 27, 2019</p>
+    </footer>
+</div>
+    </div>
+    
+</div>
+
+
+
+
+                </div>
+                
+            </div>
+        </div>
+    </section>
+    
+        <footer class="footer">
+    <div class="container">
+        
+        
+        <div class="columns is-multiline">
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="/" class="link">Home</a>
+                </div>
+            </div>
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="https://blog.bioturing.com" class="link">Blog</a>
+                </div>
+            </div>
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="https://bioturing.com/product/bbrowser" class="link">BioTuring Browser</a>
+                </div>
+            </div>
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="https://bioturing.com/contact" class="link">Contact Us</a>
+                </div>
+            </div>
+            
+        </div>
+        
+
+        <div class="content is-small has-text-centered">
+            <p class="">BioTuring INC. All rights reserved</p>
+        </div>
+    </div>
+</footer>
+
+    
+    <script src="/assets/js/app.js" type="text/javascript"></script>
+    <script src="/assets/js/prism.js" type="text/javascript"></script><!-- footer scripts --></body>
+</html>
+

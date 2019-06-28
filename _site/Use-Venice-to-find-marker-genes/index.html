@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tutorial 1: Use Venice to find marker genes - Signac package</title>
+    <link rel="stylesheet" href="/assets/css/app.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Tutorial 1: Use Venice to find marker genes | Signac package</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Tutorial 1: Use Venice to find marker genes" />
+<meta name="author" content="C.S. Rhymes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this vignette, we will find marker genes for every cluster in the PBMC3k dataset. For convenience, we use the pre-processed R object from Seurat.v3 tutorial (Guided Clustering) to find markers for the annotated clusters. You can download the object here. This vignette requires Signac and Seurat.v3 has been installed. If you have not installed Signac, please install the latest version at https://github.com/bioturing/signac" />
+<meta property="og:description" content="In this vignette, we will find marker genes for every cluster in the PBMC3k dataset. For convenience, we use the pre-processed R object from Seurat.v3 tutorial (Guided Clustering) to find markers for the annotated clusters. You can download the object here. This vignette requires Signac and Seurat.v3 has been installed. If you have not installed Signac, please install the latest version at https://github.com/bioturing/signac" />
+<link rel="canonical" href="http://localhost:4000/Use-Venice-to-find-marker-genes/" />
+<meta property="og:url" content="http://localhost:4000/Use-Venice-to-find-marker-genes/" />
+<meta property="og:site_name" content="Signac package" />
+<meta property="og:image" content="http://localhost:4000/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-06-27T00:00:00+07:00" />
+<script type="application/ld+json">
+{"datePublished":"2019-06-27T00:00:00+07:00","dateModified":"2019-06-27T00:00:00+07:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/Use-Venice-to-find-marker-genes/"},"url":"http://localhost:4000/Use-Venice-to-find-marker-genes/","image":"http://localhost:4000/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png","author":{"@type":"Person","name":"C.S. Rhymes"},"description":"In this vignette, we will find marker genes for every cluster in the PBMC3k dataset. For convenience, we use the pre-processed R object from Seurat.v3 tutorial (Guided Clustering) to find markers for the annotated clusters. You can download the object here. This vignette requires Signac and Seurat.v3 has been installed. If you have not installed Signac, please install the latest version at https://github.com/bioturing/signac","@type":"BlogPosting","headline":"Tutorial 1: Use Venice to find marker genes","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<!-- head scripts --></head>
+  <body>
+    
+<nav class="navbar is-primary" >
+    <div class="container">
+        <div class="navbar-brand">
+            <a href="https://bioturing.com" class="navbar-item">
+				BioTuring
+            </a>
+            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navMenu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-menu" id="navMenu">
+            <div class="navbar-start">
+                <a href="/" class="navbar-item ">Home</a>
+                
+                
+                    
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a href="" class="navbar-link ">Getting Started</a>
+                        <div class="navbar-dropdown">
+                            
+                            <a href="/Use-Venice-to-find-marker-genes/" class="navbar-item is-active">Use Venice to find marker genes</a>
+                            
+                        </div>
+                    </div>
+                    
+                
+                
+            </div>
+        </div>
+    </div>
+</nav>
+
+    <section class="hero  is-normal  is-bold is-primary" >
+    <div class="hero-body">
+        <div class="container">
+            <p class="title is-2">Tutorial 1: Use Venice to find marker genes</p>
+            <p class="subtitle is-3">Simple usage to find marker genes for all clusters in a Single-cell data</p>
+        </div>
+		<div class="container hero-btn">
+		  <p class="buttons">
+			<a class="button" href=" https://github.com/bioturing/signac " target="_blank">
+			  <span class="icon">
+				<i class="fab fa-github"></i>
+			  </span>
+			  <span>GitHub</span>
+			</a>
+			<a class="button is-outline " href=" https://github.com/bioturing/signac/archive/master.zip " target="_blank">
+			  <span class="icon ">
+				<i class="fa fa-download"></i>
+			  </span>
+			  <span>Download</span>
+			</a>
+		  </p>
+		</div>
+    </div>
+</section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline">
+                
+                <div class="column">
+                    
+                    <div class="content">
+    <p>In this vignette, we will find marker genes for every cluster in the
+<strong>PBMC3k</strong> dataset. For convenience, we use the pre-processed R object
+from Seurat.v3 tutorial (<a href="https://satijalab.org/seurat/v3.0/pbmc3k_tutorial.html" class="uri">Guided Clustering</a>)
+to find markers for the annotated clusters. You can download the object
+<a href="https://www.dropbox.com/s/63gnlw45jf7cje8/pbmc3k_final.rds?dl=1">here</a>.
+This vignette requires Signac and Seurat.v3 has been installed. If you
+have not installed <strong>Signac</strong>, please install the latest version at
+<a href="https://github.com/bioturing/signac" class="uri">https://github.com/bioturing/signac</a></p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">suppressMessages</span><span class="p">(</span><span class="n">library</span><span class="p">(</span><span class="n">Signac</span><span class="p">))</span><span class="w">
+</span><span class="n">suppressMessages</span><span class="p">(</span><span class="n">library</span><span class="p">(</span><span class="n">Seurat</span><span class="p">))</span><span class="w">
+</span><span class="n">suppressMessages</span><span class="p">(</span><span class="n">require</span><span class="p">(</span><span class="n">dplyr</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>First let take a look at the structure of the pre-processed object</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">pbmc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">readRDS</span><span class="p">(</span><span class="s2">"~/Downloads/pbmc3k_final.rds"</span><span class="p">)</span><span class="w">
+</span><span class="n">pbmc</span><span class="w">
+
+</span><span class="c1">## An object of class Seurat </span><span class="w">
+</span><span class="c1">## 13714 features across 2638 samples within 1 assay </span><span class="w">
+</span><span class="c1">## Active assay: RNA (13714 features)</span><span class="w">
+</span><span class="c1">##  2 dimensional reductions calculated: pca, umap</span><span class="w">
+
+</span><span class="n">table</span><span class="p">(</span><span class="n">Idents</span><span class="p">(</span><span class="n">pbmc</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">## </span><span class="w">
+</span><span class="c1">##  Naive CD4 T Memory CD4 T   CD14+ Mono            B        CD8 T </span><span class="w">
+</span><span class="c1">##          697          483          480          344          271 </span><span class="w">
+</span><span class="c1">## FCGR3A+ Mono           NK           DC           Mk </span><span class="w">
+</span><span class="c1">##          162          155           32           14</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Now we find marker genes for all annotated clusters using <code class="highlighter-rouge">VeniceAllMarkers</code> function in Signac.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">system.time</span><span class="p">(</span><span class="n">pbmc.markers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">VeniceAllMarkers</span><span class="p">(</span><span class="n">pbmc</span><span class="p">,</span><span class="w"> </span><span class="n">only.pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">logfc.threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.25</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">F</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">##    user  system elapsed </span><span class="w">
+</span><span class="c1">##   5.258   0.279   5.540</span><span class="w">
+
+</span><span class="n">pbmc.markers</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">group_by</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">top_n</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Log2.fold.change</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">## # A tibble: 18 x 8</span><span class="w">
+</span><span class="c1">## # Groups:   cluster [9]</span><span class="w">
+</span><span class="c1">##    Gene.Name Log2.fold.change Log10.adjusted.… Log10.p.value cluster</span><span class="w">
+</span><span class="c1">##    &lt;fct&gt;                &lt;dbl&gt;            &lt;dbl&gt;         &lt;dbl&gt; &lt;fct&gt;  </span><span class="w">
+</span><span class="c1">##  1 CD3D                 0.631           -55.6          -58.0 Naive …</span><span class="w">
+</span><span class="c1">##  2 CCR7                 0.639           -26.9          -28.9 Naive …</span><span class="w">
+</span><span class="c1">##  3 IL32                 0.738           -83.7          -87.9 Memory…</span><span class="w">
+</span><span class="c1">##  4 IL7R                 0.666           -35.0          -37.6 Memory…</span><span class="w">
+</span><span class="c1">##  5 S100A9               1.95           -288.          -292.  CD14+ …</span><span class="w">
+</span><span class="c1">##  6 S100A8               2.00           -281.          -285.  CD14+ …</span><span class="w">
+</span><span class="c1">##  7 CD79A                1.83           -210.          -213.  B      </span><span class="w">
+</span><span class="c1">##  8 CD79B                1.54           -178.          -181.  B      </span><span class="w">
+</span><span class="c1">##  9 CCL5                 1.57           -140.          -144.  CD8 T  </span><span class="w">
+</span><span class="c1">## 10 NKG7                 1.50           -137.          -141.  CD8 T  </span><span class="w">
+</span><span class="c1">## 11 LST1                 1.43            -94.0          -98.2 FCGR3A…</span><span class="w">
+</span><span class="c1">## 12 FCGR3A               1.59            -82.8          -86.2 FCGR3A…</span><span class="w">
+</span><span class="c1">## 13 GZMB                 2.00           -103.          -107.  NK     </span><span class="w">
+</span><span class="c1">## 14 GNLY                 2.06           -103.          -107.  NK     </span><span class="w">
+</span><span class="c1">## 15 HLA-DQA1             1.40            -12.4          -16.5 DC     </span><span class="w">
+</span><span class="c1">## 16 FCER1A               1.60            -11.6          -15.2 DC     </span><span class="w">
+</span><span class="c1">## 17 PPBP                 2.72             -9.11         -13.2 Mk     </span><span class="w">
+</span><span class="c1">## 18 PF4                  2.54             -9.11         -13.2 Mk     </span><span class="w">
+</span><span class="c1">## # … with 3 more variables: Dissimilarity &lt;dbl&gt;, Bin.count &lt;dbl&gt;,</span><span class="w">
+</span><span class="c1">## #   Up.Down.score &lt;dbl&gt;</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Compare with <code class="highlighter-rouge">Seurat::FindAllMarkers</code> results</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">system.time</span><span class="p">(</span><span class="n">pbmc.markers.seurat</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">FindAllMarkers</span><span class="p">(</span><span class="n">pbmc</span><span class="p">,</span><span class="w"> </span><span class="n">only.pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">logfc.threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.25</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">F</span><span class="p">,</span><span class="w"> </span><span class="n">min.cells.feature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">##    user  system elapsed </span><span class="w">
+</span><span class="c1">## 114.057   1.416 115.483</span><span class="w">
+
+</span><span class="n">pbmc.markers.seurat</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">group_by</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">top_n</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">avg_logFC</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">## # A tibble: 18 x 7</span><span class="w">
+</span><span class="c1">## # Groups:   cluster [9]</span><span class="w">
+</span><span class="c1">##        p_val avg_logFC pct.1 pct.2 p_val_adj cluster      gene    </span><span class="w">
+</span><span class="c1">##        &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt; &lt;fct&gt;        &lt;chr&gt;   </span><span class="w">
+</span><span class="c1">##  1 1.61e- 82     0.922 0.436 0.11  2.20e- 78 Naive CD4 T  CCR7    </span><span class="w">
+</span><span class="c1">##  2 7.37e- 30     0.764 0.245 0.084 1.01e- 25 Naive CD4 T  LDLRAP1 </span><span class="w">
+</span><span class="c1">##  3 7.95e- 89     0.892 0.981 0.642 1.09e- 84 Memory CD4 T LTB     </span><span class="w">
+</span><span class="c1">##  4 1.85e- 60     0.859 0.422 0.11  2.54e- 56 Memory CD4 T AQP3    </span><span class="w">
+</span><span class="c1">##  5 0.            3.86  0.996 0.215 0.        CD14+ Mono   S100A9  </span><span class="w">
+</span><span class="c1">##  6 0.            3.80  0.975 0.121 0.        CD14+ Mono   S100A8  </span><span class="w">
+</span><span class="c1">##  7 0.            2.99  0.936 0.041 0.        B            CD79A   </span><span class="w">
+</span><span class="c1">##  8 9.48e-271     2.49  0.622 0.022 1.30e-266 B            TCL1A   </span><span class="w">
+</span><span class="c1">##  9 2.96e-189     2.12  0.985 0.24  4.06e-185 CD8 T        CCL5    </span><span class="w">
+</span><span class="c1">## 10 2.57e-158     2.05  0.587 0.059 3.52e-154 CD8 T        GZMK    </span><span class="w">
+</span><span class="c1">## 11 3.51e-184     2.30  0.975 0.134 4.82e-180 FCGR3A+ Mono FCGR3A  </span><span class="w">
+</span><span class="c1">## 12 2.03e-125     2.14  1     0.315 2.78e-121 FCGR3A+ Mono LST1    </span><span class="w">
+</span><span class="c1">## 13 7.95e-269     3.35  0.961 0.068 1.09e-264 NK           GZMB    </span><span class="w">
+</span><span class="c1">## 14 3.13e-191     3.69  0.961 0.131 4.30e-187 NK           GNLY    </span><span class="w">
+</span><span class="c1">## 15 1.48e-220     2.68  0.812 0.011 2.03e-216 DC           FCER1A  </span><span class="w">
+</span><span class="c1">## 16 1.67e- 21     1.99  1     0.513 2.28e- 17 DC           HLA-DPB1</span><span class="w">
+</span><span class="c1">## 17 7.73e-200     5.02  1     0.01  1.06e-195 Mk           PF4     </span><span class="w">
+</span><span class="c1">## 18 3.68e-110     5.94  1     0.024 5.05e-106 Mk           PPBP</span><span class="w">
+
+</span></code></pre></div></div>
+
+<p>Finally, we use <code class="highlighter-rouge">DoHeatmap</code> function from <strong>Seurat</strong> package to draw two
+heatmaps of expression of the marker genes found by two method: Seurat
+default and Harmony to see the distinct expression pattern of each cell
+type (cluster). We only plot top 20 features (all features if less than
+20).</p>
+
+<h3 id="heatmap-of-marker-genes-found-by-venice">Heatmap of marker genes found by Venice</h3>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">top10</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pbmc.markers</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">group_by</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">top_n</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">Log10.adjusted.p.value</span><span class="p">)</span><span class="w">
+</span><span class="n">DoHeatmap</span><span class="p">(</span><span class="n">pbmc</span><span class="p">,</span><span class="w"> </span><span class="n">features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">top10</span><span class="o">$</span><span class="n">Gene.Name</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">NoLegend</span><span class="p">()</span><span class="w">
+</span></code></pre></div></div>
+<p><img src="/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-6-1.png" alt="Marker genes found by Venice" /></p>
+
+<h3 id="heatmap-of-marker-genes-found-by-seurat-default-method">Heatmap of marker genes found by Seurat default method</h3>
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">top10</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pbmc.markers.seurat</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">group_by</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">top_n</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">p_val_adj</span><span class="p">)</span><span class="w">
+</span><span class="n">DoHeatmap</span><span class="p">(</span><span class="n">pbmc</span><span class="p">,</span><span class="w"> </span><span class="n">features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">top10</span><span class="o">$</span><span class="n">gene</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">NoLegend</span><span class="p">()</span><span class="w">
+</span></code></pre></div></div>
+<p><img src="/assets/images/Tutorial_1__Use_Venice_to_find_marker_genes_files/figure-markdown_strict/unnamed-chunk-7-1.png" alt="Marker genes found by Seurat default method" /></p>
+
+<p>To perform the Differential expression (DE) test on two individual
+clusters, one can use the function <code class="highlighter-rouge">VeniceFindMarkers</code>. We designed the
+user interface that is similar to Seurat R package (Butler et al.,
+Nature Biotechnology 2018). Please specify two cluster names <code class="highlighter-rouge">ident.1</code>,
+<code class="highlighter-rouge">ident.2</code> as the parameters.</p>
+
+<h3 id="find-de-genes-between-cd14-mono-and-fcgr3a-mono-using-venice-algorithm">Find DE genes between CD14+ Mono and FCGR3A+ Mono using Venice algorithm</h3>
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">head</span><span class="p">(</span><span class="n">Signac</span><span class="o">::</span><span class="n">VeniceFindMarkers</span><span class="p">(</span><span class="n">pbmc</span><span class="p">,</span><span class="w"> </span><span class="n">ident.1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"CD14+ Mono"</span><span class="p">,</span><span class="w"> </span><span class="n">ident.2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"FCGR3A+ Mono"</span><span class="p">,</span><span class="w"> </span><span class="n">logfc.threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="m">2</span><span class="p">)))</span><span class="w">
+
+</span><span class="c1">##   Gene.Name Log2.fold.change Log10.adjusted.p.value Log10.p.value</span><span class="w">
+</span><span class="c1">## 2    FCGR3A       -1.6631222              -71.17833     -75.01446</span><span class="w">
+</span><span class="c1">## 3    S100A8        1.2752262              -62.41254     -66.07258</span><span class="w">
+</span><span class="c1">## 4    S100A9        0.7930380              -61.23949     -64.77459</span><span class="w">
+</span><span class="c1">## 5    IFITM2       -0.8010430              -56.30591     -59.74410</span><span class="w">
+</span><span class="c1">## 6    LGALS2        1.2904962              -49.87441     -53.23342</span><span class="w">
+</span><span class="c1">## 7      GPX1        0.7329328              -39.49077     -42.78284</span><span class="w">
+</span><span class="c1">##   Dissimilarity Bin.count Up.Down.score</span><span class="w">
+</span><span class="c1">## 2     0.7303167         3            -1</span><span class="w">
+</span><span class="c1">## 3     0.6406856         5             1</span><span class="w">
+</span><span class="c1">## 4     0.6282687         5             1</span><span class="w">
+</span><span class="c1">## 5     0.5724071         4            -1</span><span class="w">
+</span><span class="c1">## 6     0.5219134         3             1</span><span class="w">
+</span><span class="c1">## 7     0.4105139         4             1</span><span class="w">
+</span></code></pre></div></div>
+<h3 id="find-de-genes-between-cd14-mono-and-fcgr3a-mono-using-seurat-default-algorithm">Find DE genes between CD14+ Mono and FCGR3A+ Mono using Seurat default algorithm</h3>
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">    </span><span class="n">head</span><span class="p">(</span><span class="n">FindMarkers</span><span class="p">(</span><span class="n">pbmc</span><span class="p">,</span><span class="w"> </span><span class="n">ident.1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"CD14+ Mono"</span><span class="p">,</span><span class="w"> </span><span class="n">ident.2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"FCGR3A+ Mono"</span><span class="p">,</span><span class="w"> </span><span class="n">logfc.threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="m">2</span><span class="p">)))</span><span class="w">
+
+    </span><span class="c1">##                p_val avg_logFC pct.1 pct.2    p_val_adj</span><span class="w">
+    </span><span class="c1">## FCGR3A 1.193617e-101 -2.617707 0.131 0.975 1.636926e-97</span><span class="w">
+    </span><span class="c1">## LYZ     8.134552e-75  1.812078 1.000 0.988 1.115572e-70</span><span class="w">
+    </span><span class="c1">## RHOC    4.479768e-68 -1.611576 0.162 0.864 6.143554e-64</span><span class="w">
+    </span><span class="c1">## S100A8  7.471811e-65  2.610696 0.975 0.500 1.024684e-60</span><span class="w">
+    </span><span class="c1">## S100A9  1.318422e-64  2.286734 0.996 0.870 1.808084e-60</span><span class="w">
+    </span><span class="c1">## IFITM2  4.821669e-64 -1.445772 0.677 1.000 6.612437e-60</span><span class="w">
+</span></code></pre></div></div>
+
+</div>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+    
+        <footer class="footer">
+    <div class="container">
+        
+        
+        <div class="columns is-multiline">
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="/" class="link">Home</a>
+                </div>
+            </div>
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="https://blog.bioturing.com" class="link">Blog</a>
+                </div>
+            </div>
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="https://bioturing.com/product/bbrowser" class="link">BioTuring Browser</a>
+                </div>
+            </div>
+            
+            <div class="column has-text-centered">
+                <div>
+                    <a href="https://bioturing.com/contact" class="link">Contact Us</a>
+                </div>
+            </div>
+            
+        </div>
+        
+
+        <div class="content is-small has-text-centered">
+            <p class="">BioTuring INC. All rights reserved</p>
+        </div>
+    </div>
+</footer>
+
+    
+    <script src="/assets/js/app.js" type="text/javascript"></script>
+    <script src="/assets/js/prism.js" type="text/javascript"></script><!-- footer scripts --></body>
+</html>
+
