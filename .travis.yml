@@ -1,16 +1,11 @@
+if: branch = master
+
 language: r
 sudo: false
 cache: packages
 
-env:
-  - TRAVIS_R_VERSION="3.5.1"
 after_success:
   - Rscript -e 'utils::packageVersion("Signac")'
-
-before_script:
-  - Rscript -e 'install.packages("BiocManager")'
-  - Rscript -e 'BiocManager::install("Rhdf5lib")'
-
 os:
   - windows
   - linux
