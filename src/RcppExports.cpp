@@ -40,33 +40,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// VeniceMarker
-DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold, int perm);
-RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
-    Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
-    Rcpp::traits::input_parameter< int >::type perm(permSEXP);
-    rcpp_result_gen = Rcpp::wrap(VeniceMarker(S4_mtx, cluster, threshold, perm));
-    return rcpp_result_gen;
-END_RCPP
-}
-// VeniceMarkerH5
-DataFrame VeniceMarkerH5(const std::string& hdf5Path, const Rcpp::NumericVector& cluster, int threshold);
-RcppExport SEXP _Signac_VeniceMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP, SEXP thresholdSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type hdf5Path(hdf5PathSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
-    Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
-    rcpp_result_gen = Rcpp::wrap(VeniceMarkerH5(hdf5Path, cluster, threshold));
-    return rcpp_result_gen;
-END_RCPP
-}
 // WriteSpMtAsSpMat
 void WriteSpMtAsSpMat(const std::string& filePath, const std::string& groupName, const arma::sp_mat& mat);
 RcppExport SEXP _Signac_WriteSpMtAsSpMat(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
@@ -675,13 +648,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// VeniceMarker
+DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold, int perm, bool verbose);
+RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
+    Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
+    Rcpp::traits::input_parameter< int >::type perm(permSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(VeniceMarker(S4_mtx, cluster, threshold, perm, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// VeniceMarkerH5
+DataFrame VeniceMarkerH5(const std::string& hdf5Path, const Rcpp::NumericVector& cluster, int threshold);
+RcppExport SEXP _Signac_VeniceMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP, SEXP thresholdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type hdf5Path(hdf5PathSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
+    Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
+    rcpp_result_gen = Rcpp::wrap(VeniceMarkerH5(hdf5Path, cluster, threshold));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetCurrentDate", (DL_FUNC) &_Signac_FastGetCurrentDate, 0},
     {"_Signac_FastDiffVector", (DL_FUNC) &_Signac_FastDiffVector, 2},
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
-    {"_Signac_VeniceMarker", (DL_FUNC) &_Signac_VeniceMarker, 4},
-    {"_Signac_VeniceMarkerH5", (DL_FUNC) &_Signac_VeniceMarkerH5, 3},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsSpMatFromS4", (DL_FUNC) &_Signac_WriteSpMtAsSpMatFromS4, 3},
     {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
@@ -733,6 +732,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
+    {"_Signac_VeniceMarker", (DL_FUNC) &_Signac_VeniceMarker, 5},
+    {"_Signac_VeniceMarkerH5", (DL_FUNC) &_Signac_VeniceMarkerH5, 3},
     {NULL, NULL, 0}
 };
 

@@ -31,28 +31,6 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
-#' VeniceMarker
-#'
-#' Find gene marker for a cluster in sparse matrix
-#'
-#' @param S4_mtx A sparse matrix
-#' @param cluster A numeric vector
-#' @export
-VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L) {
-    .Call(`_Signac_VeniceMarker`, S4_mtx, cluster, threshold, perm)
-}
-
-#' VeniceMarkerH5
-#'
-#' Find gene marker for a cluster in H5 file
-#'
-#' @param hdf5Path A string path
-#' @param cluster A numeric vector
-#' @export
-VeniceMarkerH5 <- function(hdf5Path, cluster, threshold = 0L) {
-    .Call(`_Signac_VeniceMarkerH5`, hdf5Path, cluster, threshold)
-}
-
 #' WriteSpMtAsSpMat
 #'
 #' This function is used to write a sparse ARMA matrix
@@ -603,3 +581,24 @@ FastGetMedianSparseMatByAllCols <- function(mat) {
     .Call(`_Signac_FastGetMedianSparseMatByAllCols`, mat)
 }
 
+#' VeniceMarker
+#'
+#' Find gene marker for a cluster in sparse matrix
+#'
+#' @param S4_mtx A sparse matrix
+#' @param cluster A numeric vector
+#' @export
+VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L, verbose = FALSE) {
+    .Call(`_Signac_VeniceMarker`, S4_mtx, cluster, threshold, perm, verbose)
+}
+
+#' VeniceMarkerH5
+#'
+#' Find gene marker for a cluster in H5 file
+#'
+#' @param hdf5Path A string path
+#' @param cluster A numeric vector
+#' @export
+VeniceMarkerH5 <- function(hdf5Path, cluster, threshold = 0L) {
+    .Call(`_Signac_VeniceMarkerH5`, hdf5Path, cluster, threshold)
+}
