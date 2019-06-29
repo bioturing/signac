@@ -12,7 +12,7 @@ permalink: pretty
 paginate: 5
 paginate_path: "/blog/page:num"
 
-include: ['.htaccess']
+include: ['.htaccess', 'googled7de22dd85a14c6d.html']
 
 github_repo: https://github.com/bioturing/signac
 download_package: https://github.com/bioturing/signac/archive/master.zip
