@@ -1,0 +1,11 @@
+RewriteEngine On
+RewriteBase /
+
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP_HOST} ^signac.bioturing\.com$ [OR]
+RewriteCond %{HTTP_HOST} ^www\.signac.bioturing.com\.com$
+RewriteRule .* https://signac.bioturing.com%{REQUEST_URI} [R=301,L]
+
+RewriteCond %{HTTPS} =on
+RewriteCond %{HTTP_HOST} ^www\.signac.bioturing\.com$
+RewriteRule .* https://signac.bioturing.com%{REQUEST_URI} [R=301,L]
