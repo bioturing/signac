@@ -2,9 +2,8 @@ language: r
 sudo: false
 cache: packages
 
-r_github_packages:
-  - jimhester/covr
-
+env:
+  - TRAVIS_R_VERSION="3.5.1"
 after_success:
   - Rscript -e 'utils::packageVersion("Signac")'
 
