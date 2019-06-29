@@ -8,6 +8,11 @@ r_github_packages:
 after_success:
   - Rscript -e 'utils::packageVersion("Signac")'
 
+os:
+  - windows
+  - linux
+  - osx
+
 notifications:
   email:
     on_success: change
