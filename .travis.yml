@@ -8,6 +8,10 @@ r_github_packages:
 after_success:
   - Rscript -e 'utils::packageVersion("Signac")'
 
+before_script:
+  - Rscript -e 'install.packages("BiocManager")'
+  - Rscript -e 'BiocManager::install("Rhdf5lib")'
+
 os:
   - windows
   - linux
