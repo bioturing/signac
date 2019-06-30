@@ -12,8 +12,4 @@ CheckFileExist(path)
 \description{
 Check whether a file is exists, then stop with a message
 }
-\examples{
-path2yourfile <- "./example.txt"
-CheckFileExist(path2yourfile)
 
-}
