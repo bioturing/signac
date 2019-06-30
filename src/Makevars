@@ -4,13 +4,13 @@ CFLAGS = -Wall -Wextra -pedantic -std=c11 -DDEBUG=0
 USER_INCLUDE = ${R_PACKAGE_DIR}/include
 USER_LIB_DIR = ${R_PACKAGE_DIR}/lib${R_ARCH}
 
-PKG_CXXFLAGS = -DH5_USE_BOOST -DH5_USE_CXX11 $(SHLIB_OPENMP_CXXFLAGS) -I${ZLIB_HOME}/include -L${ZLIB_HOME}/lib -I"../inst/" -I"."
+PKG_CXXFLAGS = -DH5_USE_BOOST -DH5_USE_CXX11 -I${ZLIB_HOME}/include -L${ZLIB_HOME}/lib -I"../inst/" -I"."
 has_hdf5_hl := $(shell (echo "${RHDF5LIB_LIBS}" | grep hdf5_hl > /dev/null) && echo "1")
 ifeq (${has_hdf5_hl},1)
 	PKG_CXXFLAGS=$(PKG_CXXFLAGS) -DHAS_HDF5_HL
 endif
 
 HDF5_LIB = `echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")' | "${R_HOME}/bin/R" --vanilla --slave`
-PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) ${HDF5_LIB}
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) ${HDF5_LIB}
 PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
 #PKG_LIBS += -lboost_system -lboost_filesystem
