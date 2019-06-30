@@ -220,7 +220,7 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
   }
   infile <- hdf5r::H5File$new(filename = filename, mode = 'r')
   output <- list()
-  genomes <- Signac::Read10XH5Content(filename, use.names, unique.features)
+  genomes <- Read10XH5Content(filename, use.names, unique.features)
   genomes_name <- names(genomes)
 
   for (matrix_name in genomes_name) {
@@ -264,7 +264,6 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
 #' Read sparse matrix from HDF5 file
 #' @param h5.path Path to HDF5 file
 #' @param group.name Group name in dataset. Default is "bioturing"
-#' @param auto.update Auto sync if missing V2 data. Default is FALSE
 #'
 #' @useDynLib Signac, .registration = TRUE
 #' @importFrom Rcpp evalCpp
@@ -273,16 +272,11 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
 #' @export
 #'
 #' @examples
+#' \dontrun
 #' spMat <- ReadSpMt(h5.path = path2hdf5, group.name = "bioturing")
 #' spMat
 #'
-ReadSpMt <- function(h5.path, group.name = "bioturing", auto.update = FALSE) {
-    mat <- Signac::ReadSpMtAsSPMat(h5.path, group.name)
-    if (length(mat) == 0) {
-        mat <- Signac::ReadSpMtAsS4(h5.path, group.name)
-        if(auto.update) {
-            Signac::WriteSpMtAsSPMat(h5.path, group.name, mat);
-        }
-    }
-    return(mat)
+ReadSpMt <- function(h5.path, group.name = "bioturing") {
+  mat <- ReadSpMtAsS4(h5.path, group.name)
+  return(mat)
 }
