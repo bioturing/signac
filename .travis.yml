@@ -7,7 +7,6 @@ cache: packages
 after_success:
   - Rscript -e 'utils::packageVersion("Signac")'
 os:
-  - windows
   - linux
   - osx
 
