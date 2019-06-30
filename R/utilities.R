@@ -2,9 +2,6 @@
 #' @param path path to  a file on your system
 #'
 #' @examples
-#' path2yourfile <- "./example.txt"
-#' CheckFileExist(path2yourfile)
-#'
 CheckFileExist <- function(path) {
   if (!file.exists(path)) {
     stop(paste("File", path, "does not exists!"))

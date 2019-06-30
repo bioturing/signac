@@ -16,8 +16,7 @@ ReadSpMt(h5.path, group.name = "bioturing", auto.update = FALSE)
 \description{
 Read sparse matrix from HDF5 file
 }
-\examples{
+\dontrun{
 spMat <- ReadSpMt(h5.path = path2hdf5, group.name = "bioturing")
 spMat
-
 }

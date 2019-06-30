@@ -36,7 +36,7 @@ test_that("FastCreateFromTriplet", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     SM <- sparseMatrix(i, j, x = x)
-    MAT <- Signac::FastCreateFromTriplet(i, j, x)
+    MAT <- FastCreateFromTriplet(i, j, x)
     expect_equal(length(MAT), 110)
 })
 
@@ -45,7 +45,7 @@ test_that("FastStatsOfSparseMat", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     SM <- sparseMatrix(i, j, x = x)
-    List <- Signac::FastStatsOfSparseMat(SM)
+    List <- FastStatsOfSparseMat(SM)
     expect_equal(List[[1]], 9)
 })
 
@@ -54,7 +54,7 @@ test_that("FastSparseMatTranspose", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     MAT <- sparseMatrix(i, j, x = x)
-    TMAT <- Signac::FastSparseMatTranspose(MAT)
+    TMAT <- FastSparseMatTranspose(MAT)
     expect_equal(length(TMAT), length(MAT))
 })
 
@@ -63,7 +63,7 @@ test_that("FastSparseMatSqrt", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     MAT <- sparseMatrix(i, j, x = x)
-    sqrtMAT <- Signac::FastSparseMatSqrt(MAT)
+    sqrtMAT <- FastSparseMatSqrt(MAT)
     expect_equal(length(sqrtMAT), length(MAT))
 })
 
@@ -79,7 +79,7 @@ test_that("FastSparseMatMult", {
                   length(v2), length(v2), sparse = F)
     MAT2 <- Matrix(m2, sparse = T)
 
-    FinalMAT <- Signac::FastSparseMatMult(MAT1, MAT2)
+    FinalMAT <- FastSparseMatMult(MAT1, MAT2)
     expect_equal(length(FinalMAT), length(MAT1))
 })
 
@@ -88,7 +88,7 @@ test_that("FastSparseMatSymmatl", {
                x = c(10, 1, 3, 10, 1, 10, 1, 10, 10),
                i = c(0L, 2L, 4L, 1L, 3L,2L, 4L, 3L, 4L),
                p = c(0L, 3L, 5L, 7:9))
-    SMAT <- Signac::FastSparseMatSymmatl(MAT)
+    SMAT <- FastSparseMatSymmatl(MAT)
     expect_equal(length(SMAT), length(MAT))
 })
 
@@ -104,7 +104,7 @@ test_that("FastSparseMatAddition", {
                   length(v2), length(v2), sparse = F)
     MAT2 <- Matrix(m2, sparse = T)
 
-    FinalMAT <- Signac::FastSparseMatAddition(MAT1, MAT2)
+    FinalMAT <- FastSparseMatAddition(MAT1, MAT2)
     expect_equal(length(FinalMAT), length(MAT1))
 })
 
@@ -116,7 +116,7 @@ test_that("FastSparseMatMultWithNum", {
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
 
-    FinalMAT <- Signac::FastSparseMatMultWithNum(MAT1, 2)
+    FinalMAT <- FastSparseMatMultWithNum(MAT1, 2)
     expect_equal(length(FinalMAT), length(MAT1))
 })
 
@@ -125,7 +125,7 @@ test_that("FastSparseMatTrimatu", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     MAT <- sparseMatrix(i, j, x = x, symmetric = TRUE)
-    TMAT <- Signac::FastSparseMatTrimatu(MAT)
+    TMAT <- FastSparseMatTrimatu(MAT)
     expect_equal(length(TMAT), length(MAT))
 })
 
@@ -134,9 +134,9 @@ test_that("FastSparseMatTrace - sum of diagonal elements", {
                i = c(1L,1L,0L,3L,3L),
                j = c(2L,2L,4L,0L,0L),
                x=10*1:5, Dim=4:5)
-    dgT_t <- Signac::FastSparseMatTranspose(dgT)
-    MAT <- Signac::FastSparseMatMult(dgT, dgT_t)
-    iNum <- Signac::FastSparseMatTrace(MAT)
+    dgT_t <- FastSparseMatTranspose(dgT)
+    MAT <- FastSparseMatMult(dgT, dgT_t)
+    iNum <- FastSparseMatTrace(MAT)
     expect_equal(iNum, 9900)
 })
 
@@ -145,7 +145,7 @@ test_that("FastConvertToDiagonalSparseMat", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     MAT <- sparseMatrix(i, j, x = x)
-    TMAT <- Signac::FastConvertToDiagonalSparseMat(MAT)
+    TMAT <- FastConvertToDiagonalSparseMat(MAT)
     expect_equal(length(TMAT), length(MAT))
 })
 
@@ -154,21 +154,21 @@ test_that("FastSparseMatSquare", {
     j <- c(2,9,6:10)
     x <- 7 * (1:7)
     MAT <- sparseMatrix(i, j, x = x)
-    TMAT <- Signac::FastSparseMatSquare(MAT)
+    TMAT <- FastSparseMatSquare(MAT)
     expect_equal(length(TMAT), length(MAT))
 })
 
 test_that("FastSparseMatRepmat", {
     MAT <- new("dtRMatrix", Dim = c(2L,2L),
                x = c(5, 1:2), p = c(0L,2:3), j= c(0:1,1L))
-    TMAT <- Signac::FastSparseMatRepmat(MAT, 2, 2)
+    TMAT <- FastSparseMatRepmat(MAT, 2, 2)
     expect_equal(length(TMAT), 4 * length(MAT))
 })
 
 test_that("FastSparseMatSign", {
     MAT <- new("dsRMatrix", Dim = c(2L,2L),
                x = c(-3,1), j = c(1L,1L), p = 0:2)
-    TMAT <- Signac::FastSparseMatSign(MAT)
+    TMAT <- FastSparseMatSign(MAT)
     expect_equal(length(TMAT), length(MAT))
 })
 
@@ -183,7 +183,7 @@ test_that("FastSparseMatMultSD", {
     m2 <- rsparsematrix(n, n, 0.11, rand.x=function(n) rpois(n, 1) + 1)
     MAT2 <- as.matrix(m2)
 
-    FinalMAT <- Signac::FastSparseMatMultSD(MAT1, MAT2)
+    FinalMAT <- FastSparseMatMultSD(MAT1, MAT2)
     expect_equal(length(FinalMAT), 2500)
 })
 
@@ -197,7 +197,7 @@ test_that("FastSparseMatMultDD", {
     MAT1 <- as.matrix(a)
     MAT2 <- as.matrix(b)
 
-    FinalMAT <- Signac::FastSparseMatMultDD(MAT1, MAT2)
+    FinalMAT <- FastSparseMatMultDD(MAT1, MAT2)
     expect_equal(length(FinalMAT), length(MAT1))
 })
 
@@ -205,7 +205,7 @@ test_that("FastGetRowOfSparseMat", {
     MAT <- new("dsRMatrix", Dim = c(2L,2L),
                x = c(-3,1), j = c(1L,1L), p = 0:2)
     row <- 1
-    TMAT <- Signac::FastGetRowOfSparseMat(MAT, row)
+    TMAT <- FastGetRowOfSparseMat(MAT, row)
     expect_equal(length(TMAT), 2)
 })
 
@@ -213,7 +213,7 @@ test_that("FastGetColOfSparseMat", {
     MAT <- new("dsRMatrix", Dim = c(2L,2L),
                x = c(-3,1), j = c(1L,1L), p = 0:2)
     col <- 2
-    TMAT <- Signac::FastGetColOfSparseMat(MAT, col)
+    TMAT <- FastGetColOfSparseMat(MAT, col)
     expect_equal(length(TMAT), col)
 })
 
@@ -223,7 +223,7 @@ test_that("FastGetSubSparseMat", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    FinalMAT <- Signac::FastGetSubSparseMat(MAT1, c(3,4), c(2,5,7), TRUE, TRUE)
+    FinalMAT <- FastGetSubSparseMat(MAT1, c(3,4), c(2,5,7), TRUE, TRUE)
     expect_equal(length(FinalMAT), 6)
 })
 
@@ -233,7 +233,7 @@ test_that("FastGetSubSparseMatByRows", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    FinalMAT <- Signac::FastGetSubSparseMatByRows(MAT1, c(4,9))
+    FinalMAT <- FastGetSubSparseMatByRows(MAT1, c(4,9))
     expect_equal(length(FinalMAT), 20)
 })
 
@@ -243,7 +243,7 @@ test_that("FastGetSubSparseMatByCols", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    FinalMAT <- Signac::FastGetSubSparseMatByCols(MAT1, c(2,4))
+    FinalMAT <- FastGetSubSparseMatByCols(MAT1, c(2,4))
     expect_equal(length(FinalMAT), 20)
 })
 
@@ -253,7 +253,7 @@ test_that("FastGetSumSparseMatByRows", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    ListSum <- Signac::FastGetSumSparseMatByRows(MAT1, c(4,9))
+    ListSum <- FastGetSumSparseMatByRows(MAT1, c(4,9))
     expect_equal(length(ListSum), 2)
 })
 
@@ -263,7 +263,7 @@ test_that("FastGetSumSparseMatByAllRows", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    ListSum <- Signac::FastGetSumSparseMatByAllRows(MAT1)
+    ListSum <- FastGetSumSparseMatByAllRows(MAT1)
     expect_equal(length(ListSum), 1000)
 })
 
@@ -273,6 +273,6 @@ test_that("FastGetSumSparseMatByAllCols", {
     m1  <- Matrix(sample(c(0, 1), length(v1) ^ 2, T, c(.89, .01)),
                   length(v1), length(v1), sparse = F)
     MAT1 <- Matrix(m1, sparse = T)
-    ListSum <- Signac::FastGetSumSparseMatByAllCols(MAT1)
+    ListSum <- FastGetSumSparseMatByAllCols(MAT1)
     expect_equal(length(ListSum), 1000)
 })
