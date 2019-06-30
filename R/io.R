@@ -218,7 +218,6 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
   if (!file.exists(filename)) {
     stop("File not found")
   }
-  infile <- hdf5r::H5File$new(filename = filename, mode = 'r')
   output <- list()
   genomes <- Read10XH5Content(filename, use.names, unique.features)
   genomes_name <- names(genomes)
