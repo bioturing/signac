@@ -22,7 +22,7 @@ Load in data from 10X
 \details{
 Enables easy loading of sparse data matrices provided by 10X genomics.
 }
-\examples{
+
 \dontrun{
 data_dir <- 'path/to/data/directory'
 list.files(data_dir) # Should show barcodes.tsv, genes.tsv, and matrix.mtx
@@ -30,4 +30,3 @@ expression_matrix <- Read10X(data.dir = data_dir)
 signac_object = CreateSignacObject(raw.data = expression_matrix)
 }
 
-}

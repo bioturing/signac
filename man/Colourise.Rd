@@ -25,7 +25,7 @@ Allowed colours are: black, blue, brown, cyan, dark gray, green, light
 blue, light cyan, light gray, light green, light purple, light red,
 purple, red, white, yellow
 }
-\examples{
+\dontrun{
 print(Colourise("Red", "red"))
 cat(Colourise("Red", "red"), "\\n")
 cat(Colourise("White on red", "white", "red"), "\\n")
