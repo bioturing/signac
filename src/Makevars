@@ -12,5 +12,5 @@ endif
 
 HDF5_LIB = `echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")' | "${R_HOME}/bin/R" --vanilla --slave`
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) ${HDF5_LIB}
-PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
+#PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
 #PKG_LIBS += -lboost_system -lboost_filesystem
