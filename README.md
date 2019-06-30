@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/bioturing/signac.svg?branch=master)](https://travis-ci.com/bioturing/signac)
+
 # Signac - A versatile package for Single-cell RNA-Seq analysis
 
 We introduce **Signac**, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database ([know more about BioTuring Browser](https://bioturing.com/product/bbrowser)), etc. For users with a limited computational resource, we provide the helper functions to exercise all analyses for the large-scale datasets from disk. Because of its speed and flexibility, it can be adapted to any existing R analysis pipeline to help explore single-cell data more efficient.
