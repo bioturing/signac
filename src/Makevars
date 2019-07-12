@@ -1,5 +1,5 @@
 CXX_STD = CXX11
-CFLAGS = -Wall -Wextra -pedantic -std=c11
+CFLAGS = -Wall -Wextra -pedantic -std=c11 -DDEBUG=0
 
 USER_INCLUDE = ${R_PACKAGE_DIR}/include
 USER_LIB_DIR = ${R_PACKAGE_DIR}/lib${R_ARCH}
