@@ -161,3 +161,58 @@ AskForChoices <- function(choices) {
   }
   return(choices[as.numeric(select)])
 }
+
+
+#' Write10XFolder
+#'
+#' @param object
+#' @param dir.name
+#' @param specie
+#'
+#' @return
+#'
+#' @examples
+Write10XFolder <- function(object, dir.name , specie = "human") {
+  dir.create(dir.name)
+  write.table(data.frame(bx = colnames(object@raw.data)), file = file.path(dir.name, "barcodes.tsv"),
+              quote = F, col.names = F, row.names = F)
+  if (grepl("ENS", rownames(object@raw.data))) {
+    genes_df <- GetGenesDf(rownames(object@raw.data), specie, "SYMBOL", "ENSEMBL")
+  } else{
+    genes_df <- GetGenesDf(rownames(object@raw.data), specie)
+  }
+  write.table(genes_df, file = file.path(dir.name, "genes.tsv"),
+              quote = F, col.names = F, row.names = F)
+  Matrix::writeMM(object@raw.data, file.path(dir.name, "matrix.mtx"))
+}
+
+#' GetGenesDf
+#'
+#' @param genes
+#' @param specie
+#' @param column
+#' @param keytype
+#'
+#' @return
+#'
+#' @examples
+GetGenesDf <- function(genes, specie = "human", column = "ENSEMBL", keytype = "SYMBOL") {
+  require("AnnotationDbi")
+  require("org.Hs.eg.db")
+  require("org.Mm.eg.db")
+
+  db <- switch(specie,
+               `human` = org.Hs.eg.db,
+               `mouse` = org.Mm.eg.db)
+  geneSymbols <- mapIds(db, keys=genes, column=column, keytype=keytype, multiVals="first")
+  if (column == "ENSEMBL") {
+    genes_df <- data.frame(id = as.character(geneSymbols), name = names(geneSymbols))
+  } else{
+    genes_df <- data.frame(id = names(geneSymbols), name = as.character(geneSymbols))
+  }
+
+  genes_df[["id"]] <- as.character(genes_df[["id"]])
+  genes_df[["name"]] <- as.character(genes_df[["name"]])
+  genes_df[["id"]][is.na(genes_df[["id"]])] <- genes_df[["name"]][is.na(genes_df[["id"]])]
+  return(genes_df)
+}
