@@ -182,7 +182,7 @@ Write10XFolder <- function(object, dir.name , specie = "human") {
     genes_df <- GetGenesDf(rownames(object@raw.data), specie)
   }
   write.table(genes_df, file = file.path(dir.name, "genes.tsv"),
-              quote = F, col.names = F, row.names = F)
+              quote = F, col.names = F, row.names = F, sep = '\t')
   Matrix::writeMM(object@raw.data, file.path(dir.name, "matrix.mtx"))
 }
 
