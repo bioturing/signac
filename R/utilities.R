@@ -214,5 +214,6 @@ GetGenesDf <- function(genes, specie = "human", column = "ENSEMBL", keytype = "S
   genes_df[["id"]] <- as.character(genes_df[["id"]])
   genes_df[["name"]] <- as.character(genes_df[["name"]])
   genes_df[["id"]][is.na(genes_df[["id"]])] <- genes_df[["name"]][is.na(genes_df[["id"]])]
+  genes_df[["name"]][is.na(genes_df[["name"]])] <- genes_df[["id"]][is.na(genes_df[["name"]])]
   return(genes_df)
 }
