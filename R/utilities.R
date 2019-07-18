@@ -218,3 +218,54 @@ GetGenesDf <- function(genes, specie = "human", column = "ENSEMBL", keytype = "S
   genes_df[["name"]][is.na(genes_df[["name"]])] <- genes_df[["id"]][is.na(genes_df[["name"]])]
   return(genes_df)
 }
+
+#' MergeMatrices
+#' Merge a list of matrices to one matrix with the union gene names
+MergeMatrices <- function(lst.mat) {
+  n <- length(lst.mat)
+  col.names <- unlist(sapply(seq(1, n), function(i) {
+    paste(i, colnames(lst.mat[[i]]), sep = "_")
+  }))
+  lst.mat <- lapply(lst.mat, function(m) m <- m[Matrix::rowSums(m) > 0, ])
+  master.m <- lst.mat[[1]]
+  for (f in seq(2, length(lst.mat))){
+    lst.mat[[f]] <- lst.mat[[f]]
+	master.m <- mergeAB(master.m, lst.mat[[f]])
+  }
+  colnames(master.m) <- col.names
+  return(master.m)
+}
+
+#' mergeAB
+#'
+#' @param A
+#' @param B
+#'
+#' @return
+#'
+#' @examples
+mergeAB <- function(A, B){
+  getJ <- function(mtx) j <- findInterval(seq(mtx@x) - 1, mtx@p[-1]) + 1
+  A_B <- setdiff(rownames(A), rownames(B))
+  B_A <- setdiff(rownames(B), rownames(A))
+
+  idx_A_B <- match(rownames(A), rownames(B))
+  isna_A_B <- which(is.na(idx_A_B))
+  idx <- idx_A_B[!is.na(idx_A_B)]
+  refactor.idx_B <- c(idx, match(B_A, rownames(B)))
+  B <- B[refactor.idx_B, ]
+  A <- A[c(which(!is.na(idx_A_B)), which(is.na(idx_A_B))), ]
+
+  x <- c(A@x, B@x)
+  j <- c(getJ(A), getJ(B) + ncol(A))
+  i <- c(A@i+1, B@i+1 + (B@i+1 > length(idx))*length(isna_A_B))
+
+  mat <- Matrix::sparseMatrix(i=i, j=j, x=x, giveCsparse = T)
+
+  print(dim(A))
+  print(dim(B))
+  print(dim(mat))
+
+  rownames(mat) <- c(rownames(A), B_A)
+  return(mat)
+}
