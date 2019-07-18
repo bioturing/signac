@@ -5,6 +5,4 @@
 tmp
 
 .vscode
-src/RcppExports.cpp
-R/RcppExports.R
 docs/rsconnect
