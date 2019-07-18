@@ -228,7 +228,9 @@ MergeMatrices <- function(lst.mat) {
   }))
   lst.mat <- lapply(lst.mat, function(m) m <- m[Matrix::rowSums(m) > 0, ])
   master.m <- lst.mat[[1]]
+  rownames(master.m) <- make.unique(rownames(master.m))
   for (f in seq(2, length(lst.mat))){
+	message(paste("Merge matrix", f, "/", length(lst.mat), "...")) 
     lst.mat[[f]] <- lst.mat[[f]]
 	master.m <- mergeAB(master.m, lst.mat[[f]])
   }
@@ -245,6 +247,7 @@ MergeMatrices <- function(lst.mat) {
 #'
 #' @examples
 mergeAB <- function(A, B){
+  rownames(B) <- make.unique(rownames(B))
   getJ <- function(mtx) j <- findInterval(seq(mtx@x) - 1, mtx@p[-1]) + 1
   A_B <- setdiff(rownames(A), rownames(B))
   B_A <- setdiff(rownames(B), rownames(A))
@@ -262,10 +265,6 @@ mergeAB <- function(A, B){
 
   mat <- Matrix::sparseMatrix(i=i, j=j, x=x, giveCsparse = T)
 
-  print(dim(A))
-  print(dim(B))
-  print(dim(mat))
-
-  rownames(mat) <- c(rownames(A), B_A)
+  rownames(mat) <- make.unique(c(rownames(A), B_A))
   return(mat)
 }
