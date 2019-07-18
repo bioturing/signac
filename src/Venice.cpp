@@ -48,6 +48,7 @@ struct GeneResult {
     std::string gene_name;
 
     double d_score; //dissimilarity score
+    double d_bias; //correction for d_score bias
     double b_cnt;
 
     double log_p_value;
@@ -63,20 +64,20 @@ inline double HarmonicMean(double a, double b)
     return 2 / (1 / a + 1 / b);
 }
 
-inline double Score(int x, int y, int n1, int n2)
+inline std::pair<double, double> Score(int x, int y, int n1, int n2)
 {
     if (x == 0 && y == 0)
-        return 0;
+        return std::make_pair(0.0, 0.0);
 
     double a = (double)x / n1;
     double b = (double)y / n2;
 
-    double result = pow(a-b,2)/(2*(a+b));
-    //correction
-    double correction = 2 * a * b * (x * (1 - b) + y *(1 - a))
+    double result = pow(a - b, 2) / (2 * (a + b));
+    //bias correction
+    double correction = 2 * a * b * (x * (1 - b) + y * (1 - a))
                         / (n1 * n2 * pow(a + b, 3));
 
-    return result - correction;
+    return std::make_pair(result, correction);
 }
 
 inline double LogPvalue(double score, int n1, int n2, int b_cnt)
@@ -85,7 +86,7 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
         throw std::domain_error("Bin count should be positive");
 
     int Dof = b_cnt - 1;
-    double x = 2 * score * HarmonicMean(n1, n2) + b_cnt - 1;
+    double x = 2 * score * HarmonicMean(n1, n2);
 
     return R::pchisq(x, Dof, false, true);
 }
@@ -191,11 +192,12 @@ void Resample(
 }
 
 // Bins is the group count for each UMI value after sorted
-double ComputeSimilarity(
+std::pair<double, double> ComputeSimilarity(
         const std::vector<std::array<int, 2>> &bins,
         const std::array<int, 2> &cnt)
 {
     double d_score = 0;
+    double d_bias = 0;
 
     int n1 = cnt[0];
     int n2 = cnt[1];
@@ -208,10 +210,13 @@ double ComputeSimilarity(
         int b1 = bins[i][0];
         int b2 = bins[i][1];
 
-        d_score += Score(b1, b2, n1, n2);
+        std::pair<double, double> s = Score(b1, b2, n1, n2);
+
+        d_score += s.first;
+        d_bias += s.second;
     }
 
-    return d_score;
+    return std::make_pair(d_score, d_bias);
 }
 
 double ComputeLogFC(
@@ -331,7 +336,7 @@ double PermPvalue(
     int count = 0;
     for(int i = 0; i < perm; ++i) {
         Resample(bins, cnt);
-        double score = ComputeSimilarity(bins, cnt);
+        double score = ComputeSimilarity(bins, cnt).first;
         count += score >= d_score;
     }
 
@@ -353,7 +358,11 @@ void ProcessGene(
     res.ud_score = ComputeUd_score(bins, cnt);
 
     Grouping(bins, thres);
-    res.d_score = ComputeSimilarity(bins, cnt);
+
+    std::pair<double, double> score = ComputeSimilarity(bins, cnt);
+    res.d_score = score.first;
+    res.d_bias = score.second;
+
     res.b_cnt = bins.size();
     res.log_p_value = LogPvalue(res.d_score, cnt[0], cnt[1], bins.size());
     res.perm_p_value = PermPvalue(std::move(bins), cnt, res.d_score, perm);
@@ -432,7 +441,8 @@ std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
-        int threshold)
+        int threshold,
+        int perm)
 {
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
@@ -482,7 +492,7 @@ std::vector<struct GeneResult> VeniceTest(
             total_cnt,
             zero_cnt,
             thres,
-            0,
+            perm,
             res[i]
         );
     }
@@ -492,7 +502,8 @@ std::vector<struct GeneResult> VeniceTest(
 
 DataFrame PostProcess(
         std::vector<struct GeneResult> &res,
-        std::vector<std::string> &rownames)
+        std::vector<std::string> &rownames,
+        bool correct = true)
 {
     int n_gene = res.size();
     std::vector<std::pair<double,int>> order(n_gene);
@@ -528,7 +539,12 @@ DataFrame PostProcess(
 
         g_names[i]  = rownames[k];
         g_id[i]     = res[k].gene_id;
-        d_score[i]  = res[k].d_score;
+
+        if (correct)
+            d_score[i] = res[k].d_score - res[k].d_bias;
+        else
+            d_score[i] = res[k].d_score;
+        
         b_cnt[i]    = res[k].b_cnt;
         log10_pv[i] = res[k].log_p_value * M_LOG10E;
         perm_pv[i]  = res[k].perm_p_value;
@@ -564,6 +580,7 @@ DataFrame VeniceMarker(
         const Rcpp::NumericVector &cluster,
         int threshold = 0,
         int perm = 0,
+        bool correct = true,
         bool verbose = false)
 {
 #ifdef DEBUG
@@ -580,7 +597,7 @@ DataFrame VeniceMarker(
 #endif
     Rcpp::List dim_names = Rcpp::List(S4_mtx.attr("Dimnames"));
     std::vector<std::string> rownames = dim_names[0];
-    return PostProcess(res, rownames);
+    return PostProcess(res, rownames, correct);
 }
 
 //' VeniceMarkerH5
@@ -593,13 +610,16 @@ DataFrame VeniceMarker(
 // [[Rcpp::export]]
 DataFrame VeniceMarkerH5(
     const std::string &hdf5Path,
-    const Rcpp::NumericVector &cluster, int threshold = 0)
+    const Rcpp::NumericVector &cluster,
+    int threshold = 0,
+    int perm = 0,
+    bool correct = true)
 {
     com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
     HighFive::File *file = oHdf5Util.Open(1);
 
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, threshold);
+        = VeniceTest(oHdf5Util, file, cluster, threshold, perm);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
@@ -609,5 +629,5 @@ DataFrame VeniceMarkerH5(
                                             "barcodes", rownames);
     oHdf5Util.Close(file);
 
-    return PostProcess(res, rownames);
+    return PostProcess(res, rownames, correct);
 }
