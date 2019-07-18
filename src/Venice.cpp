@@ -85,7 +85,7 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
         throw std::domain_error("Bin count should be positive");
 
     int Dof = b_cnt - 1;
-    double x = 2 * score * (HarmonicMean(n1, n2) - 1);
+    double x = 2 * score * HarmonicMean(n1, n2);
 
     return R::pchisq(x, Dof, false, true);
 }
@@ -440,7 +440,8 @@ std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
         const Rcpp::NumericVector &cluster,
-        int threshold)
+        int threshold,
+        int perm)
 {
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
@@ -617,7 +618,7 @@ DataFrame VeniceMarkerH5(
     HighFive::File *file = oHdf5Util.Open(1);
 
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, threshold);
+        = VeniceTest(oHdf5Util, file, cluster, threshold, perm);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
