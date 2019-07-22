@@ -176,7 +176,7 @@ Write10XFolder <- function(object, dir.name , specie = "human") {
   dir.create(dir.name)
   write.table(data.frame(bx = colnames(object@raw.data)), file = file.path(dir.name, "barcodes.tsv"),
               quote = F, col.names = F, row.names = F)
-  if (grepl("ENS", rownames(object@raw.data))) {
+  if (sum(grepl("ENS", rownames(object@raw.data))) > 100) {
     genes_df <- GetGenesDf(rownames(object@raw.data), specie, "SYMBOL", "ENSEMBL")
   } else{
     genes_df <- GetGenesDf(rownames(object@raw.data), specie)
