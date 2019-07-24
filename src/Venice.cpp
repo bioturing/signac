@@ -49,7 +49,7 @@ struct GeneResult {
 
     double d_score; //dissimilarity score
     double d_bias; //correction for d_score bias
-    double b_cnt;
+    int b_cnt;
 
     double log_p_value;
     double perm_p_value;
@@ -86,7 +86,7 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
         throw std::domain_error("Bin count should be positive");
 
     int Dof = b_cnt - 1;
-    double x = 2 * score * HarmonicMean(n1, n2);
+    double x = 2 * score * (HarmonicMean(n1, n2) - 1);
 
     return R::pchisq(x, Dof, false, true);
 }
@@ -518,7 +518,7 @@ DataFrame PostProcess(
 
     std::vector<double> d_score(n_gene), ud_score(n_gene), log2_fc(n_gene);
     std::vector<double> log10_pv(n_gene), perm_pv(n_gene), log10_adj_pv(n_gene);
-    std::vector<double> b_cnt(n_gene);
+    std::vector<int> b_cnt(n_gene);
 
     //Adjust p value
     double prev = -std::numeric_limits<double>::infinity();
