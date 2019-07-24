@@ -85,7 +85,7 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
         throw std::domain_error("Bin count should be positive");
 
     int Dof = b_cnt - 1;
-    double x = 2 * score * HarmonicMean(n1, n2);
+    double x = 2 * score * (HarmonicMean(n1, n2) - 1);
 
     return R::pchisq(x, Dof, false, true);
 }
