@@ -249,10 +249,10 @@ GetCellsIndices <- function(data.use, object, ident.1, ident.2) {
       ident.2 <- Seurat:::WhichCells(object = object, idents = ident.2)
     }
   }
-  ### Label the cells before finding marker genes: 1: Ident.1,  2: Ident2, 3:Other
-  clusters <- rep(0, ncol(data.use))
+  ### Label the cells before finding marker genes: 1: Ident.1,  0: Ident2, >1:Other
+  clusters <- rep(2, ncol(data.use))
   clusters[match(ident.1, colnames(x = data.use))] <- 1
-  clusters[match(ident.2, colnames(x = data.use))] <- 2
+  clusters[match(ident.2, colnames(x = data.use))] <- 0
   if (sum(is.na(clusters)) > 0) {
     stop("Couldn't match some cell names with the colname of data.use")
   }
