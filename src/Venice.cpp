@@ -234,6 +234,12 @@ double ComputeLogFC(
     return log2(m[0] + 1) - log2(m[1] + 1);
 }
 
+struct rightshift {
+  inline long long operator()(const std::pair<double, int> &x, const unsigned offset) const {
+    return boost::sort::spreadsort::float_mem_cast<double, long long>(x.first) >> offset;
+  }
+};
+
 std::vector<std::array<int, 2>> Binning(
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &zero_cnt)
@@ -245,7 +251,7 @@ std::vector<std::array<int, 2>> Binning(
         return result;
     }
 
-    std::sort(exp.begin(), exp.end());
+    boost::sort::spreadsort::float_sort(exp.begin(), exp.end(), rightshift());
 
     double p_exp = -std::numeric_limits<double>::infinity();
 
