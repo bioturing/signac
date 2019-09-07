@@ -10,6 +10,7 @@
 #define C_INSIDE 1
 #define C_OUTSIDE 0
 
+#include <boost/sort/spreadsort/spreadsort.hpp>
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
 #include <Rmath.h>
@@ -233,6 +234,12 @@ double ComputeLogFC(
     return log(m[0] + 1) - log(m[1] + 1);
 }
 
+struct rightshift {
+  inline long long operator()(const std::pair<double, int> &x, const unsigned offset) const {
+    return boost::sort::spreadsort::float_mem_cast<double, long long>(x.first) >> offset;
+  }
+};
+
 std::vector<std::array<int, 2>> Binning(
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &zero_cnt)
@@ -244,7 +251,7 @@ std::vector<std::array<int, 2>> Binning(
         return result;
     }
 
-    std::sort(exp.begin(), exp.end());
+    boost::sort::spreadsort::float_sort(exp.begin(), exp.end(), rightshift());
 
     double p_exp = -std::numeric_limits<double>::infinity();
 
@@ -343,14 +350,15 @@ double PermPvalue(
     return (double)count/perm;
 }
 
-void ProcessGene(
+struct GeneResult ProcessGene(
         std::vector<std::pair<double, int>> exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
-        int perm,
-        struct GeneResult &res)
+        int perm)
 {
+    struct GeneResult res;
+
     res.log_fc = ComputeLogFC(exp, cnt);
 
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
@@ -366,34 +374,52 @@ void ProcessGene(
     res.b_cnt = bins.size();
     res.log_p_value = LogPvalue(res.d_score, cnt[0], cnt[1], bins.size());
     res.perm_p_value = PermPvalue(std::move(bins), cnt, res.d_score, perm);
+
+    return res;
 }
 
 std::vector<struct GeneResult> VeniceTest(
-        const arma::sp_mat &mtx,
+        const Rcpp::S4 &mtx,
         const Rcpp::NumericVector &cluster,
         int threshold,
         int perm,
         bool display_progress = true)
 {
+    if (!mtx.is("dgTMatrix"))
+        throw std::runtime_error("The input expression matrix "
+                                 "must be a dgTMatrix");
+
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
-    int n_genes = mtx.n_rows;
+
+    const Rcpp::IntegerVector &dim = mtx.attr("Dim");
+    int n_genes = dim[0];
+    int n_cells = dim[1];
+
     Progress p(n_genes, display_progress);
 
-    if (cluster.size() != mtx.n_cols)
+    if (cluster.size() != n_cells)
         throw std::domain_error("The length of cluster vector is not equal "
                                 "to the number of columns in the matrix");
 
     std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
 
     std::vector<struct GeneResult> res(n_genes);
-    arma::sp_mat::const_col_iterator c_it;
 
-    std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
+    std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);    
 
-    for (int i = 0; i < mtx.n_cols; ++i) {
+    const Rcpp::IntegerVector &row_id = mtx.attr("i");
+    const Rcpp::IntegerVector &col_id = mtx.attr("j");
+    const Rcpp::NumericVector &raw_exp = mtx.attr("x");
+
+    uint64_t n_exp = raw_exp.size();
+    uint64_t j = 0;
+
+    Rcout << "Hic hic" << std::endl;
+
+    for (int i = 0; i < n_cells; ++i) {
         if (Progress::check_abort())
             return {};
 
@@ -407,32 +433,36 @@ std::vector<struct GeneResult> VeniceTest(
         else
             continue;
 
-        for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
-            int r = c_it.row();
+        for (; j < n_exp && col_id[j] == i; ++j) {
+            int r = row_id[j];
+            double x = raw_exp[j];
 
-            exp[r].push_back({*c_it, cid});
+            exp[r].push_back({x, cid});
             --zero_cnt[r][cid];
         }
     }
 
+    Rcout << "build" << std::endl;
 
     for (int i = 0; i < n_genes; ++i) {
-        res[i].gene_id = i + 1;
 
         if (Progress::check_abort())
             return {};
 
-        ProcessGene(
-            std::move(exp[i]),
-            total_cnt,
-            std::move(zero_cnt[i]),
-            thres,
-            perm,
-            res[i]
-        );
+        res[i] = ProcessGene(
+                    std::move(exp[i]),
+                    total_cnt,
+                    std::move(zero_cnt[i]),
+                    thres,
+                    perm
+                );
+
+        res[i].gene_id = i + 1;
 
         p.increment();
     }
+
+    Rcout << "run" << std::endl;
 
     return res;
 }
@@ -487,14 +517,15 @@ std::vector<struct GeneResult> VeniceTest(
             --zero_cnt[cid];
         }
 
-        ProcessGene(
-            std::move(exp),
-            total_cnt,
-            zero_cnt,
-            thres,
-            perm,
-            res[i]
-        );
+        res[i] = ProcessGene(
+                    std::move(exp),
+                    total_cnt,
+                    zero_cnt,
+                    thres,
+                    perm
+                );
+        
+        res[i].gene_id = i + 1;
     }
 
     return res;
@@ -583,15 +614,8 @@ DataFrame VeniceMarker(
         bool correct = true,
         bool verbose = false)
 {
-#ifdef DEBUG
-    Rcout << "Enter" << std::endl;
-#endif
 
-    const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
-#ifdef DEBUG
-    Rcout << "Done parse" << std::endl;
-#endif
-    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, threshold, perm, verbose);
+    std::vector<struct GeneResult> res = VeniceTest(S4_mtx, cluster, threshold, perm, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
