@@ -246,9 +246,9 @@ std::vector<std::array<int, 2>> Binning(
 
     std::sort(exp.begin(), exp.end());
 
-    double p_exp = exp[0].first;
+    double p_exp = -std::numeric_limits<double>::infinity();
 
-    int i = 0, j = 0;
+    int i = 0, j = -1;
     for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
@@ -275,10 +275,11 @@ std::vector<std::array<int, 2>> Binning(
     for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
-        if (abs(c_exp - p_exp) >= VENICE_EPS) {
+        if (std::abs(c_exp - p_exp) >= VENICE_EPS) {
             ++j;
             p_exp = c_exp;
         }
+
         ++result[j][exp[i].second];
     }
 
