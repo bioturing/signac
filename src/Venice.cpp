@@ -417,8 +417,6 @@ std::vector<struct GeneResult> VeniceTest(
     uint64_t n_exp = raw_exp.size();
     uint64_t j = 0;
 
-    Rcout << "Hic hic" << std::endl;
-
     for (int i = 0; i < n_cells; ++i) {
         if (Progress::check_abort())
             return {};
@@ -442,8 +440,6 @@ std::vector<struct GeneResult> VeniceTest(
         }
     }
 
-    Rcout << "build" << std::endl;
-
     for (int i = 0; i < n_genes; ++i) {
 
         if (Progress::check_abort())
@@ -461,9 +457,6 @@ std::vector<struct GeneResult> VeniceTest(
 
         p.increment();
     }
-
-    Rcout << "run" << std::endl;
-
     return res;
 }
 
