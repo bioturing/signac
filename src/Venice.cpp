@@ -378,6 +378,13 @@ struct GeneResult ProcessGene(
     return res;
 }
 
+int find_col(const Rcpp::IntegerVector &col_id, int i, int j) {
+    while (col_id[j] < i)
+        ++j;
+
+    return j;
+}
+
 std::vector<struct GeneResult> VeniceTest(
         const Rcpp::S4 &mtx,
         const Rcpp::NumericVector &cluster,
@@ -430,6 +437,8 @@ std::vector<struct GeneResult> VeniceTest(
             cid = 1;
         else
             continue;
+        
+        j = find_col(col_id, i, j);
 
         for (; j < n_exp && col_id[j] == i; ++j) {
             int r = row_id[j];
