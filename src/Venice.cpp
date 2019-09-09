@@ -45,7 +45,6 @@ using namespace std::placeholders;
 
 struct GeneResult {
     int gene_id;
-    std::string gene_name;
 
     double d_score; //dissimilarity score
     double d_bias; //correction for d_score bias
@@ -92,7 +91,7 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
 }
 
 void GetTotalCount(
-    const Rcpp::NumericVector &cluster,
+    const Rcpp::IntegerVector &cluster,
     std::array<int, 2> &total_cnt)
 {
     total_cnt[0] = total_cnt[1] = 0;
@@ -220,7 +219,7 @@ std::pair<double, double> ComputeSimilarity(
 }
 
 double ComputeLogFC(
-            const std::vector<std::pair<double, int>> & exp,
+            const std::vector<std::pair<double, bool>> & exp,
             const std::array<int, 2> &cnt)
 {
     double m[2];
@@ -241,7 +240,7 @@ struct rightshift {
 };
 
 std::vector<std::array<int, 2>> Binning(
-        std::vector<std::pair<double, int>> exp,
+        std::vector<std::pair<double, bool>> exp,
         const std::array<int, 2> &zero_cnt)
 {
     std::vector<std::array<int, 2>> result(exp.size() + 1);    //+1 for zero
@@ -351,7 +350,7 @@ double PermPvalue(
 }
 
 struct GeneResult ProcessGene(
-        std::vector<std::pair<double, int>> exp,
+        std::vector<std::pair<double, bool>> exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
@@ -378,81 +377,147 @@ struct GeneResult ProcessGene(
     return res;
 }
 
-int find_col(const Rcpp::IntegerVector &col_id, int i, int j) {
-    while (col_id[j] < i)
-        ++j;
-
-    return j;
-}
-
-std::vector<struct GeneResult> VeniceTest(
-        const Rcpp::S4 &mtx,
-        const Rcpp::NumericVector &cluster,
-        int threshold,
-        int perm,
-        bool display_progress = true)
+void BuildExpDgT(
+        const Rcpp::S4 &mtx, 
+        const Rcpp::IntegerVector &cluster,
+        const std::array<int, 2> &total_cnt,
+        std::vector<std::vector<std::pair<double, bool>>> &exp,
+        std::vector<std::array<int, 2>> &zero_cnt)
 {
     if (!mtx.is("dgTMatrix"))
-        throw std::runtime_error("The input expression matrix "
-                                 "must be a dgTMatrix");
-
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
-
-    int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
+        throw std::runtime_error("wrong format (should be dgTMatrix)");
 
     const Rcpp::IntegerVector &dim = mtx.attr("Dim");
-    int n_genes = dim[0];
-    int n_cells = dim[1];
 
-    Progress p(n_genes, display_progress);
+    const int n_genes = dim[0];
+    const int n_cells = dim[1];
 
     if (cluster.size() != n_cells)
         throw std::domain_error("The length of cluster vector is not equal "
                                 "to the number of columns in the matrix");
 
-    std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
-
-    std::vector<struct GeneResult> res(n_genes);
-
-    std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);    
+    exp.resize(n_genes);    
+    zero_cnt.resize(n_genes, total_cnt);    
 
     const Rcpp::IntegerVector &row_id = mtx.attr("i");
     const Rcpp::IntegerVector &col_id = mtx.attr("j");
     const Rcpp::NumericVector &raw_exp = mtx.attr("x");
 
     uint64_t n_exp = raw_exp.size();
-    uint64_t j = 0;
 
-    for (int i = 0; i < n_cells; ++i) {
-        if (Progress::check_abort())
-            return {};
+    for (uint64_t i = 0; i < n_exp; ++i) {
+        int col = col_id[i];
 
-        int c = (int)cluster[i];
-        int cid;
+        bool cid;
 
-        if (c == C_INSIDE)
-            cid = 0;
-        else if (c == C_OUTSIDE)
-            cid = 1;
-        else
-            continue;
-        
-        j = find_col(col_id, i, j);
+        switch (cluster[col]) {
+            case C_INSIDE:
+                cid = 0;
+                break;
+            case C_OUTSIDE:
+                cid = 1;
+                break;
+            default:
+                continue;
+        }
 
-        for (; j < n_exp && col_id[j] == i; ++j) {
-            int r = row_id[j];
-            double x = raw_exp[j];
+        int row = row_id[i];
+        double x = raw_exp[i];
 
-            exp[r].push_back({x, cid});
-            --zero_cnt[r][cid];
+        exp[row].push_back({x, cid});
+        --zero_cnt[row][cid];
+    }
+}
+
+void BuildExpDgC(
+        const Rcpp::S4 &mtx, 
+        const Rcpp::IntegerVector &cluster,
+        const std::array<int, 2> &total_cnt,
+        std::vector<std::vector<std::pair<double, bool>>> &exp,
+        std::vector<std::array<int, 2>> &zero_cnt)
+{
+    if (!mtx.is("dgCMatrix"))
+        throw std::runtime_error("wrong format (should be dgCMatrix)");
+
+    const Rcpp::IntegerVector &dim = mtx.attr("Dim");
+
+    const int n_genes = dim[0];
+    const int n_cells = dim[1];
+
+    if (cluster.size() != n_cells)
+        throw std::domain_error("The length of cluster vector is not equal "
+                                "to the number of columns in the matrix");
+
+    exp.resize(n_genes);    
+    zero_cnt.resize(n_genes, total_cnt);    
+
+    const Rcpp::IntegerVector &row_id = mtx.attr("i");
+    const Rcpp::IntegerVector &pt = mtx.attr("p");
+    const Rcpp::NumericVector &raw_exp = mtx.attr("x");
+
+
+    for (int col = 0; col < n_cells; ++col) {
+        bool cid;
+
+        switch (cluster[col]) {
+            case C_INSIDE:
+                cid = 0;
+                break;
+            case C_OUTSIDE:
+                cid = 1;
+                break;
+            default:
+                continue;
+        }
+
+        for (uint64_t i = pt[col]; i < pt[col + 1]; ++i) {
+            int row = row_id[i];
+            double x = raw_exp[i];
+            exp[row].push_back({x, cid});
+            --zero_cnt[row][cid];
         }
     }
+}
+
+
+std::vector<struct GeneResult> VeniceTest(
+        const Rcpp::S4 &mtx,
+        const Rcpp::IntegerVector &cluster,
+        int threshold,
+        int perm,
+        bool display_progress = true)
+{
+    if (!mtx.is("sparseMatrix"))
+        throw std::runtime_error("The input expression matrix "
+                                 "must be a sparseMatrix");
+
+    std::array<int, 2> total_cnt;
+    GetTotalCount(cluster, total_cnt);
+
+    int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
+
+    std::vector<std::vector<std::pair<double, bool>>> exp;
+    std::vector<std::array<int, 2>> zero_cnt;
+
+    const int n_genes = ((Rcpp::IntegerVector)mtx.attr("Dim"))[0];
+
+    Progress p(n_genes, display_progress);
+
+    if(mtx.is("dgTMatrix"))
+        BuildExpDgT(mtx, cluster, total_cnt, exp, zero_cnt);
+    else if (mtx.is("dgCMatrix"))
+        BuildExpDgC(mtx, cluster, total_cnt, exp, zero_cnt);
+    else
+        throw std::runtime_error("this matrix format is not support. Please convert to dgTMatrix/dgCMatrix");
+
+    std::vector<struct GeneResult> res(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
 
-        if (Progress::check_abort())
-            return {};
+        if (Progress::check_abort()) {
+            res.resize(i);
+            return res;
+        }
 
         res[i] = ProcessGene(
                     std::move(exp[i]),
@@ -472,7 +537,7 @@ std::vector<struct GeneResult> VeniceTest(
 std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
-        const Rcpp::NumericVector &cluster,
+        const Rcpp::IntegerVector &cluster,
         int threshold,
         int perm)
 {
@@ -501,7 +566,7 @@ std::vector<struct GeneResult> VeniceTest(
         std::vector<double> g_exp;
         oHdf5Util.ReadGeneExpH5(file, GROUP_NAME, i, col_idx,  g_exp);
 
-        std::vector<std::pair<double, int>> exp(col_idx.size());
+        std::vector<std::pair<double, bool>> exp(col_idx.size());
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
 
         for (int k = 0; k < col_idx.size(); ++k) {
@@ -610,7 +675,7 @@ DataFrame PostProcess(
 // [[Rcpp::export]]
 DataFrame VeniceMarker(
         const Rcpp::S4 &S4_mtx,
-        const Rcpp::NumericVector &cluster,
+        const Rcpp::IntegerVector &cluster,
         int threshold = 0,
         int perm = 0,
         bool correct = true,
@@ -636,7 +701,7 @@ DataFrame VeniceMarker(
 // [[Rcpp::export]]
 DataFrame VeniceMarkerH5(
     const std::string &hdf5Path,
-    const Rcpp::NumericVector &cluster,
+    const Rcpp::IntegerVector &cluster,
     int threshold = 0,
     int perm = 0,
     bool correct = true)
