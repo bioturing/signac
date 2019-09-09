@@ -649,13 +649,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarker
-DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::NumericVector& cluster, int threshold, int perm, bool correct, bool verbose);
+DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
 RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type perm(permSEXP);
     Rcpp::traits::input_parameter< bool >::type correct(correctSEXP);
@@ -665,13 +665,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarkerH5
-DataFrame VeniceMarkerH5(const std::string& hdf5Path, const Rcpp::NumericVector& cluster, int threshold, int perm, bool correct);
+DataFrame VeniceMarkerH5(const std::string& hdf5Path, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct);
 RcppExport SEXP _Signac_VeniceMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type hdf5Path(hdf5PathSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type cluster(clusterSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type perm(permSEXP);
     Rcpp::traits::input_parameter< bool >::type correct(correctSEXP);
