@@ -230,7 +230,7 @@ double ComputeLogFC(
     m[0] /= cnt[0];
     m[1] /= cnt[1];
 
-    return log(m[0] + 1) - log(m[1] + 1);
+    return log2(m[0] + 1) - log2(m[1] + 1);
 }
 
 std::vector<std::array<int, 2>> Binning(
