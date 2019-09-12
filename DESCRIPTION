@@ -24,6 +24,9 @@ RoxygenNote: 6.1.1
 Suggests: 
     testthat
 Depends: 
+    AnnotationDbi,
+    org.Hs.eg.db,
+    org.Mm.eg.db,
     RcppParallel,
     Matrix,
     readr,
