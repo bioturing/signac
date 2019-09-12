@@ -161,3 +161,110 @@ AskForChoices <- function(choices) {
   }
   return(choices[as.numeric(select)])
 }
+
+
+#' Write10XFolder
+#'
+#' @param object
+#' @param dir.name
+#' @param specie
+#'
+#' @return
+#'
+#' @examples
+Write10XFolder <- function(object, dir.name , specie = "human") {
+  dir.create(dir.name)
+  write.table(data.frame(bx = colnames(object@raw.data)), file = file.path(dir.name, "barcodes.tsv"),
+              quote = F, col.names = F, row.names = F)
+  if (sum(grepl("ENS", rownames(object@raw.data))) > 100) {
+    genes_df <- GetGenesDf(rownames(object@raw.data), specie, "SYMBOL", "ENSEMBL")
+  } else{
+    genes_df <- GetGenesDf(rownames(object@raw.data), specie)
+  }
+  genes_df[["id"]] <- make.unique(genes_df[["id"]])
+  write.table(genes_df, file = file.path(dir.name, "genes.tsv"),
+              quote = F, col.names = F, row.names = F, sep = '\t')
+  Matrix::writeMM(object@raw.data, file.path(dir.name, "matrix.mtx"))
+}
+
+#' GetGenesDf
+#'
+#' @param genes
+#' @param specie
+#' @param column
+#' @param keytype
+#'
+#' @return
+#'
+#' @examples
+GetGenesDf <- function(genes, specie = "human", column = "ENSEMBL", keytype = "SYMBOL") {
+  require("AnnotationDbi")
+  require("org.Hs.eg.db")
+  require("org.Mm.eg.db")
+
+  db <- switch(specie,
+               `human` = org.Hs.eg.db,
+               `mouse` = org.Mm.eg.db)
+  geneSymbols <- mapIds(db, keys=genes, column=column, keytype=keytype, multiVals="first")
+  if (column == "ENSEMBL") {
+    genes_df <- data.frame(id = as.character(geneSymbols), name = names(geneSymbols))
+  } else{
+    genes_df <- data.frame(id = names(geneSymbols), name = as.character(geneSymbols))
+  }
+
+  genes_df[["id"]] <- as.character(genes_df[["id"]])
+  genes_df[["name"]] <- as.character(genes_df[["name"]])
+  genes_df[["id"]][is.na(genes_df[["id"]])] <- genes_df[["name"]][is.na(genes_df[["id"]])]
+  genes_df[["name"]][is.na(genes_df[["name"]])] <- genes_df[["id"]][is.na(genes_df[["name"]])]
+  return(genes_df)
+}
+
+#' MergeMatrices
+#' Merge a list of matrices to one matrix with the union gene names
+MergeMatrices <- function(lst.mat) {
+  n <- length(lst.mat)
+  col.names <- unlist(sapply(seq(1, n), function(i) {
+    paste(i, colnames(lst.mat[[i]]), sep = "_")
+  }))
+  lst.mat <- lapply(lst.mat, function(m) m <- m[Matrix::rowSums(m) > 0, ])
+  master.m <- lst.mat[[1]]
+  rownames(master.m) <- make.unique(rownames(master.m))
+  for (f in seq(2, length(lst.mat))){
+	message(paste("Merge matrix", f, "/", length(lst.mat), "...")) 
+    lst.mat[[f]] <- lst.mat[[f]]
+	master.m <- mergeAB(master.m, lst.mat[[f]])
+  }
+  colnames(master.m) <- col.names
+  return(master.m)
+}
+
+#' mergeAB
+#'
+#' @param A
+#' @param B
+#'
+#' @return
+#'
+#' @examples
+mergeAB <- function(A, B){
+  rownames(B) <- make.unique(rownames(B))
+  getJ <- function(mtx) j <- findInterval(seq(mtx@x) - 1, mtx@p[-1]) + 1
+  A_B <- setdiff(rownames(A), rownames(B))
+  B_A <- setdiff(rownames(B), rownames(A))
+
+  idx_A_B <- match(rownames(A), rownames(B))
+  isna_A_B <- which(is.na(idx_A_B))
+  idx <- idx_A_B[!is.na(idx_A_B)]
+  refactor.idx_B <- c(idx, match(B_A, rownames(B)))
+  B <- B[refactor.idx_B, ]
+  A <- A[c(which(!is.na(idx_A_B)), which(is.na(idx_A_B))), ]
+
+  x <- c(A@x, B@x)
+  j <- c(getJ(A), getJ(B) + ncol(A))
+  i <- c(A@i+1, B@i+1 + (B@i+1 > length(idx))*length(isna_A_B))
+
+  mat <- Matrix::sparseMatrix(i=i, j=j, x=x, giveCsparse = T)
+
+  rownames(mat) <- make.unique(c(rownames(A), B_A))
+  return(mat)
+}
