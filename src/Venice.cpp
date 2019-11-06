@@ -10,6 +10,7 @@
 #define C_INSIDE 1
 #define C_OUTSIDE 0
 
+#include <boost/sort/spreadsort/spreadsort.hpp>
 #include <RcppArmadillo.h>
 #include <RcppParallel.h>
 #include <Rmath.h>
@@ -44,7 +45,6 @@ using namespace std::placeholders;
 
 struct GeneResult {
     int gene_id;
-    std::string gene_name;
 
     double d_score; //dissimilarity score
     double d_bias; //correction for d_score bias
@@ -91,7 +91,7 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
 }
 
 void GetTotalCount(
-    const Rcpp::NumericVector &cluster,
+    const Rcpp::IntegerVector &cluster,
     std::array<int, 2> &total_cnt)
 {
     total_cnt[0] = total_cnt[1] = 0;
@@ -219,7 +219,7 @@ std::pair<double, double> ComputeSimilarity(
 }
 
 double ComputeLogFC(
-            const std::vector<std::pair<double, int>> & exp,
+            const std::vector<std::pair<double, bool>> & exp,
             const std::array<int, 2> &cnt)
 {
     double m[2];
@@ -233,8 +233,14 @@ double ComputeLogFC(
     return log2(m[0] + 1) - log2(m[1] + 1);
 }
 
+struct rightshift {
+  inline long long operator()(const std::pair<double, int> &x, const unsigned offset) const {
+    return boost::sort::spreadsort::float_mem_cast<double, long long>(x.first) >> offset;
+  }
+};
+
 std::vector<std::array<int, 2>> Binning(
-        std::vector<std::pair<double, int>> exp,
+        std::vector<std::pair<double, bool>> exp,
         const std::array<int, 2> &zero_cnt)
 {
     std::vector<std::array<int, 2>> result(exp.size() + 1);    //+1 for zero
@@ -244,11 +250,11 @@ std::vector<std::array<int, 2>> Binning(
         return result;
     }
 
-    std::sort(exp.begin(), exp.end());
+    boost::sort::spreadsort::float_sort(exp.begin(), exp.end(), rightshift());
 
-    double p_exp = exp[0].first;
+    double p_exp = -std::numeric_limits<double>::infinity();
 
-    int i = 0, j = 0;
+    int i = 0, j = -1;
     for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
@@ -275,10 +281,11 @@ std::vector<std::array<int, 2>> Binning(
     for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
-        if (abs(c_exp - p_exp) >= VENICE_EPS) {
+        if (std::abs(c_exp - p_exp) >= VENICE_EPS) {
             ++j;
             p_exp = c_exp;
         }
+
         ++result[j][exp[i].second];
     }
 
@@ -342,14 +349,15 @@ double PermPvalue(
     return (double)count/perm;
 }
 
-void ProcessGene(
-        std::vector<std::pair<double, int>> exp,
+struct GeneResult ProcessGene(
+        std::vector<std::pair<double, bool>> exp,
         const std::array<int, 2> &cnt,
         const std::array<int, 2> &zero_cnt,
         int thres,
-        int perm,
-        struct GeneResult &res)
+        int perm)
 {
+    struct GeneResult res;
+
     res.log_fc = ComputeLogFC(exp, cnt);
 
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
@@ -365,81 +373,171 @@ void ProcessGene(
     res.b_cnt = bins.size();
     res.log_p_value = LogPvalue(res.d_score, cnt[0], cnt[1], bins.size());
     res.perm_p_value = PermPvalue(std::move(bins), cnt, res.d_score, perm);
+
+    return res;
 }
 
+void BuildExpDgT(
+        const Rcpp::S4 &mtx, 
+        const Rcpp::IntegerVector &cluster,
+        const std::array<int, 2> &total_cnt,
+        std::vector<std::vector<std::pair<double, bool>>> &exp,
+        std::vector<std::array<int, 2>> &zero_cnt)
+{
+    if (!mtx.is("dgTMatrix"))
+        throw std::runtime_error("wrong format (should be dgTMatrix)");
+
+    const Rcpp::IntegerVector &dim = mtx.attr("Dim");
+
+    const int n_genes = dim[0];
+    const int n_cells = dim[1];
+
+    if (cluster.size() != n_cells)
+        throw std::domain_error("The length of cluster vector is not equal "
+                                "to the number of columns in the matrix");
+
+    exp.resize(n_genes);    
+    zero_cnt.resize(n_genes, total_cnt);    
+
+    const Rcpp::IntegerVector &row_id = mtx.attr("i");
+    const Rcpp::IntegerVector &col_id = mtx.attr("j");
+    const Rcpp::NumericVector &raw_exp = mtx.attr("x");
+
+    uint64_t n_exp = raw_exp.size();
+
+    for (uint64_t i = 0; i < n_exp; ++i) {
+        int col = col_id[i];
+
+        bool cid;
+
+        switch (cluster[col]) {
+            case C_INSIDE:
+                cid = 0;
+                break;
+            case C_OUTSIDE:
+                cid = 1;
+                break;
+            default:
+                continue;
+        }
+
+        int row = row_id[i];
+        double x = raw_exp[i];
+
+        exp[row].push_back({x, cid});
+        --zero_cnt[row][cid];
+    }
+}
+
+void BuildExpDgC(
+        const Rcpp::S4 &mtx, 
+        const Rcpp::IntegerVector &cluster,
+        const std::array<int, 2> &total_cnt,
+        std::vector<std::vector<std::pair<double, bool>>> &exp,
+        std::vector<std::array<int, 2>> &zero_cnt)
+{
+    if (!mtx.is("dgCMatrix"))
+        throw std::runtime_error("wrong format (should be dgCMatrix)");
+
+    const Rcpp::IntegerVector &dim = mtx.attr("Dim");
+
+    const int n_genes = dim[0];
+    const int n_cells = dim[1];
+
+    if (cluster.size() != n_cells)
+        throw std::domain_error("The length of cluster vector is not equal "
+                                "to the number of columns in the matrix");
+
+    exp.resize(n_genes);    
+    zero_cnt.resize(n_genes, total_cnt);    
+
+    const Rcpp::IntegerVector &row_id = mtx.attr("i");
+    const Rcpp::IntegerVector &pt = mtx.attr("p");
+    const Rcpp::NumericVector &raw_exp = mtx.attr("x");
+
+
+    for (int col = 0; col < n_cells; ++col) {
+        bool cid;
+
+        switch (cluster[col]) {
+            case C_INSIDE:
+                cid = 0;
+                break;
+            case C_OUTSIDE:
+                cid = 1;
+                break;
+            default:
+                continue;
+        }
+
+        for (uint64_t i = pt[col]; i < pt[col + 1]; ++i) {
+            int row = row_id[i];
+            double x = raw_exp[i];
+            exp[row].push_back({x, cid});
+            --zero_cnt[row][cid];
+        }
+    }
+}
+
+
 std::vector<struct GeneResult> VeniceTest(
-        const arma::sp_mat &mtx,
-        const Rcpp::NumericVector &cluster,
+        const Rcpp::S4 &mtx,
+        const Rcpp::IntegerVector &cluster,
         int threshold,
         int perm,
         bool display_progress = true)
 {
+    if (!mtx.is("sparseMatrix"))
+        throw std::runtime_error("The input expression matrix "
+                                 "must be a sparseMatrix");
+
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
 
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
-    int n_genes = mtx.n_rows;
+
+    std::vector<std::vector<std::pair<double, bool>>> exp;
+    std::vector<std::array<int, 2>> zero_cnt;
+
+    const int n_genes = ((Rcpp::IntegerVector)mtx.attr("Dim"))[0];
+
     Progress p(n_genes, display_progress);
 
-    if (cluster.size() != mtx.n_cols)
-        throw std::domain_error("The length of cluster vector is not equal "
-                                "to the number of columns in the matrix");
-
-    std::vector<std::vector<std::pair<double, int>>> exp(n_genes);
+    if(mtx.is("dgTMatrix"))
+        BuildExpDgT(mtx, cluster, total_cnt, exp, zero_cnt);
+    else if (mtx.is("dgCMatrix"))
+        BuildExpDgC(mtx, cluster, total_cnt, exp, zero_cnt);
+    else
+        throw std::runtime_error("this matrix format is not support. Please convert to dgTMatrix/dgCMatrix");
 
     std::vector<struct GeneResult> res(n_genes);
-    arma::sp_mat::const_col_iterator c_it;
-
-    std::vector<std::array<int, 2>> zero_cnt(n_genes, total_cnt);
-
-    for (int i = 0; i < mtx.n_cols; ++i) {
-        if (Progress::check_abort())
-            return {};
-
-        int c = (int)cluster[i];
-        int cid;
-
-        if (c == C_INSIDE)
-            cid = 0;
-        else if (c == C_OUTSIDE)
-            cid = 1;
-        else
-            continue;
-
-        for (c_it = mtx.begin_col(i); c_it != mtx.end_col(i); ++c_it) {
-            int r = c_it.row();
-
-            exp[r].push_back({*c_it, cid});
-            --zero_cnt[r][cid];
-        }
-    }
-
 
     for (int i = 0; i < n_genes; ++i) {
+
+        if (Progress::check_abort()) {
+            res.resize(i);
+            return res;
+        }
+
+        res[i] = ProcessGene(
+                    std::move(exp[i]),
+                    total_cnt,
+                    std::move(zero_cnt[i]),
+                    thres,
+                    perm
+                );
+
         res[i].gene_id = i + 1;
-
-        if (Progress::check_abort())
-            return {};
-
-        ProcessGene(
-            std::move(exp[i]),
-            total_cnt,
-            std::move(zero_cnt[i]),
-            thres,
-            perm,
-            res[i]
-        );
 
         p.increment();
     }
-
     return res;
 }
 
 std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
-        const Rcpp::NumericVector &cluster,
+        const Rcpp::IntegerVector &cluster,
         int threshold,
         int perm)
 {
@@ -468,7 +566,7 @@ std::vector<struct GeneResult> VeniceTest(
         std::vector<double> g_exp;
         oHdf5Util.ReadGeneExpH5(file, GROUP_NAME, i, col_idx,  g_exp);
 
-        std::vector<std::pair<double, int>> exp(col_idx.size());
+        std::vector<std::pair<double, bool>> exp(col_idx.size());
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
 
         for (int k = 0; k < col_idx.size(); ++k) {
@@ -486,14 +584,15 @@ std::vector<struct GeneResult> VeniceTest(
             --zero_cnt[cid];
         }
 
-        ProcessGene(
-            std::move(exp),
-            total_cnt,
-            zero_cnt,
-            thres,
-            perm,
-            res[i]
-        );
+        res[i] = ProcessGene(
+                    std::move(exp),
+                    total_cnt,
+                    zero_cnt,
+                    thres,
+                    perm
+                );
+        
+        res[i].gene_id = i + 1;
     }
 
     return res;
@@ -576,21 +675,14 @@ DataFrame PostProcess(
 // [[Rcpp::export]]
 DataFrame VeniceMarker(
         const Rcpp::S4 &S4_mtx,
-        const Rcpp::NumericVector &cluster,
+        const Rcpp::IntegerVector &cluster,
         int threshold = 0,
         int perm = 0,
         bool correct = true,
         bool verbose = false)
 {
-#ifdef DEBUG
-    Rcout << "Enter" << std::endl;
-#endif
 
-    const arma::sp_mat &mtx = Rcpp::as<arma::sp_mat>(S4_mtx);
-#ifdef DEBUG
-    Rcout << "Done parse" << std::endl;
-#endif
-    std::vector<struct GeneResult> res = VeniceTest(mtx, cluster, threshold, perm, verbose);
+    std::vector<struct GeneResult> res = VeniceTest(S4_mtx, cluster, threshold, perm, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
@@ -609,7 +701,7 @@ DataFrame VeniceMarker(
 // [[Rcpp::export]]
 DataFrame VeniceMarkerH5(
     const std::string &hdf5Path,
-    const Rcpp::NumericVector &cluster,
+    const Rcpp::IntegerVector &cluster,
     int threshold = 0,
     int perm = 0,
     bool correct = true)
