@@ -4,7 +4,7 @@
 \alias{VeniceMarkerH5}
 \title{VeniceMarkerH5}
 \usage{
-VeniceMarkerH5(hdf5Path, cluster, threshold = 0L)
+VeniceMarkerH5(hdf5Path, cluster, threshold = 0L, perm = 0L, correct = TRUE)
 }
 \arguments{
 \item{hdf5Path}{A string path}

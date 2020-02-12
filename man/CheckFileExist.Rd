@@ -12,4 +12,3 @@ CheckFileExist(path)
 \description{
 Check whether a file is exists, then stop with a message
 }
-

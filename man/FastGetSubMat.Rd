@@ -9,8 +9,6 @@ FastGetSubMat(mat, rvec, cvec)
 \arguments{
 \item{mat}{A matrix}
 
-\item{vec}{A row vector}
-
 \item{vec}{A col vector}
 }
 \description{

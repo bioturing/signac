@@ -1,7 +1,5 @@
 #' Check whether a file is exists, then stop with a message
 #' @param path path to  a file on your system
-#'
-#' @examples
 CheckFileExist <- function(path) {
   if (!file.exists(path)) {
     stop(paste("File", path, "does not exists!"))
@@ -33,14 +31,12 @@ ExtractField <- function(string, field = 1, delim = "_") {
   return(paste(strsplit(x = string, split = delim)[[1]][fields], collapse = delim))
 }
 
-#' This function was imported from testthat package
-#' https://github.com/r-lib/testthat
-#'
 #' Colourise text for display in the terminal.
-#'
+#' 
 #' If R is not currently running in a system that supports terminal colours
 #' the text will be returned unchanged.
-#'
+#' This function was imported from testthat package
+#' https://github.com/r-lib/testthat
 #' Allowed colours are: black, blue, brown, cyan, dark gray, green, light
 #' blue, light cyan, light gray, light green, light purple, light red,
 #' purple, red, white, yellow

@@ -21,7 +21,7 @@ A new string, that parses out the requested fields, and (if multiple), rejoins t
 \description{
 Parses a string (usually a cell name) and extracts fields based on a delimiter
 }
-\dontrun{
+\examples{
 ExtractField(string = 'Hello World', field = 1, delim = '_')
 
 }

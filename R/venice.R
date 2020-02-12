@@ -11,11 +11,7 @@
 #' @param node input a tree of clusters instead of a cluster name
 #' @param verbose display the progress bar or not
 #' @param only.pos filter the positive markers only
-#'
-#' @return
 #' @export
-#'
-#' @examples
 VeniceAllMarkers <- function(
   object,
   assay = "RNA",
@@ -145,7 +141,6 @@ VeniceAllMarkers <- function(
 #'
 #' @rdname VeniceFindMarkers
 #' @export
-#' @method VeniceFindMarkers
 #'
 VeniceFindMarkers <- function(
   object,

@@ -2,8 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{Colourise}
 \alias{Colourise}
-\title{This function was imported from testthat package
-https://github.com/r-lib/testthat}
+\title{Colourise text for display in the terminal.}
 \usage{
 Colourise(text, fg = "black", bg = NULL)
 }
@@ -15,18 +14,16 @@ Colourise(text, fg = "black", bg = NULL)
 \item{bg}{background colour, defaults to transparent}
 }
 \description{
-Colourise text for display in the terminal.
-}
-\details{
 If R is not currently running in a system that supports terminal colours
 the text will be returned unchanged.
-
+This function was imported from testthat package
+https://github.com/r-lib/testthat
 Allowed colours are: black, blue, brown, cyan, dark gray, green, light
 blue, light cyan, light gray, light green, light purple, light red,
 purple, red, white, yellow
 }
-\dontrun{
+\examples{
 print(Colourise("Red", "red"))
-cat(Colourise("Red", "red"), "\\n")
-cat(Colourise("White on red", "white", "red"), "\\n")
+cat(Colourise("Red", "red"), "\n")
+cat(Colourise("White on red", "white", "red"), "\n")
 }
