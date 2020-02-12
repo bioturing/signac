@@ -4,7 +4,14 @@
 \alias{VeniceMarker}
 \title{VeniceMarker}
 \usage{
-VeniceMarker(S4_mtx, cluster, threshold = 0L, perm = 0L)
+VeniceMarker(
+  S4_mtx,
+  cluster,
+  threshold = 0L,
+  perm = 0L,
+  correct = TRUE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{S4_mtx}{A sparse matrix}

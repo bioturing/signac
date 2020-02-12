@@ -4,8 +4,7 @@
 \alias{CreateSignacObject}
 \title{Initialize and setup the Signac object}
 \usage{
-CreateSignacObject(raw.data, type = "mtx", project = "UntitleProject",
-  ...)
+CreateSignacObject(raw.data, type = "mtx", project = "UntitleProject", ...)
 }
 \arguments{
 \item{raw.data}{Raw input data}
@@ -24,7 +23,7 @@ object@data, object@meta.data, object@ident, also initialized.
 \description{
 Initializes the Signac object and some optional filtering
 }
-\dontrun{
+\examples{
 pbmc_small <- CreateSignacObject(raw.data = path2pbmc, type = "mtx")
 pbmc_small
 

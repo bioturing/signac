@@ -146,7 +146,7 @@ Read10X <- function(data.dir = NULL){
 
 #' Read expresison matrix from CSV or TSV
 #' @param mat.path Path to expression matrix (can be zipped)
-#' @param sep Separator. Default is <code>,</code>
+#' @param sep Separator. Default is `,`
 #' @param sep Data has a header. Default is TRUE
 #' @importFrom Matrix readMM
 #' @importFrom Matrix Matrix
@@ -271,10 +271,10 @@ Read10XH5 <- function(filename, use.names = TRUE, unique.features = TRUE) {
 #' @export
 #'
 #' @examples
-#' \dontrun
+#' \dontrun{
 #' spMat <- ReadSpMt(h5.path = path2hdf5, group.name = "bioturing")
 #' spMat
-#'
+#' }
 ReadSpMt <- function(h5.path, group.name = "bioturing") {
   mat <- ReadSpMtAsS4(h5.path, group.name)
   return(mat)

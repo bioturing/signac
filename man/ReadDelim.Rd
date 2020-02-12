@@ -9,8 +9,6 @@ ReadDelim(mat.path, sep = ",", header = TRUE)
 \arguments{
 \item{mat.path}{Path to expression matrix (can be zipped)}
 
-\item{sep}{Separator. Default is <code>,</code>}
-
 \item{sep}{Data has a header. Default is TRUE}
 }
 \description{
