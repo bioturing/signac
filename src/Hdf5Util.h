@@ -698,14 +698,6 @@ public:
         }
 
         try {
-            if(file->exist(groupName) == true) {
-                std::stringstream ostr;
-                ostr << "Existing group :" << groupName;
-                ::Rf_error(ostr.str().c_str());
-                Close(file);
-                throw;
-            }
-
             Rcpp::IntegerVector dims = mat.slot("Dim");
             arma::urowvec i = Rcpp::as<arma::urowvec>(mat.slot("i"));
             arma::urowvec p = Rcpp::as<arma::urowvec>(mat.slot("p"));
