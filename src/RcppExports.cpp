@@ -664,18 +664,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// VeniceMarkerH5
-DataFrame VeniceMarkerH5(const std::string& hdf5Path, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct);
-RcppExport SEXP _Signac_VeniceMarkerH5(SEXP hdf5PathSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP) {
+// VeniceMarkerTransposedH5
+DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
+RcppExport SEXP _Signac_VeniceMarkerTransposedH5(SEXP hdf5PathSEXP, SEXP group_nameSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const std::string& >::type hdf5Path(hdf5PathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type group_name(group_nameSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type perm(permSEXP);
     Rcpp::traits::input_parameter< bool >::type correct(correctSEXP);
-    rcpp_result_gen = Rcpp::wrap(VeniceMarkerH5(hdf5Path, cluster, threshold, perm, correct));
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(VeniceMarkerTransposedH5(hdf5Path, group_name, cluster, threshold, perm, correct, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -736,7 +738,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
     {"_Signac_VeniceMarker", (DL_FUNC) &_Signac_VeniceMarker, 6},
-    {"_Signac_VeniceMarkerH5", (DL_FUNC) &_Signac_VeniceMarkerH5, 5},
+    {"_Signac_VeniceMarkerTransposedH5", (DL_FUNC) &_Signac_VeniceMarkerTransposedH5, 7},
     {NULL, NULL, 0}
 };
 

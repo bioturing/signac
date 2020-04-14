@@ -5,7 +5,6 @@
 #define MINIMAL_SAMPLE 10
 #define MINIMAL_BIN 2
 #define GROUPING_RATE 0.6
-#define GROUP_NAME "bioturing"
 
 #define C_INSIDE 1
 #define C_OUTSIDE 0
@@ -534,12 +533,16 @@ std::vector<struct GeneResult> VeniceTest(
     return res;
 }
 
+// Venice test for transposed matrix
 std::vector<struct GeneResult> VeniceTest(
         com::bioturing::Hdf5Util &oHdf5Util,
         HighFive::File *file,
+        const std::string &group_name,
         const Rcpp::IntegerVector &cluster,
         int threshold,
-        int perm)
+        int perm,
+        bool correct,
+        bool display_progress = true)
 {
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
@@ -551,7 +554,7 @@ std::vector<struct GeneResult> VeniceTest(
             "Maybe the number of cells in one cluster is too small");
 
     std::vector<int> shape;
-    oHdf5Util.ReadDatasetVector<int>(file, GROUP_NAME, "shape", shape);
+    oHdf5Util.ReadDatasetVector<int>(file, group_name, "shape", shape);
 
     int n_genes = shape[1];
 
@@ -559,15 +562,26 @@ std::vector<struct GeneResult> VeniceTest(
         throw std::domain_error("Input cluster size is not equal to "
                                 "the number of columns in matrix");
 
+    Progress p(n_genes, display_progress);
+
     std::vector<struct GeneResult> res(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
+        if (Progress::check_abort()) {
+            res.resize(i);
+            return res;
+        }
+
         std::vector<int> col_idx;
         std::vector<double> g_exp;
-        oHdf5Util.ReadGeneExpH5(file, GROUP_NAME, i, col_idx,  g_exp);
+        oHdf5Util.ReadGeneExpH5(file, group_name, i, col_idx,  g_exp);
 
         std::vector<std::pair<double, bool>> exp(col_idx.size());
         std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
+
+        
+        std::vector<int> vec;
+        // ReadDatasetVector<int>(file, groupName, "indptr", vec);
 
         for (int k = 0; k < col_idx.size(); ++k) {
             int c = (int)cluster[col_idx[k]];
@@ -593,6 +607,8 @@ std::vector<struct GeneResult> VeniceTest(
                 );
         
         res[i].gene_id = i + 1;
+
+        p.increment();
     }
 
     return res;
@@ -600,7 +616,7 @@ std::vector<struct GeneResult> VeniceTest(
 
 DataFrame PostProcess(
         std::vector<struct GeneResult> &res,
-        std::vector<std::string> &rownames,
+        std::vector<std::string> &gene_names,
         bool correct = true)
 {
     int n_gene = res.size();
@@ -635,7 +651,7 @@ DataFrame PostProcess(
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i].second;
 
-        g_names[i]  = rownames[k];
+        g_names[i]  = gene_names[k];
         g_id[i]     = res[k].gene_id;
 
         if (correct)
@@ -691,32 +707,34 @@ DataFrame VeniceMarker(
     return PostProcess(res, rownames, correct);
 }
 
-//' VeniceMarkerH5
+//' VeniceMarkerTransposedH5
 //'
-//' Find gene marker for a cluster in H5 file
+//' Find gene marker for a cluster in tranposed H5 file
 //'
 //' @param hdf5Path A string path
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame VeniceMarkerH5(
+DataFrame VeniceMarkerTransposedH5(
     const std::string &hdf5Path,
+    const std::string &group_name,
     const Rcpp::IntegerVector &cluster,
     int threshold = 0,
     int perm = 0,
-    bool correct = true)
+    bool correct = true,
+    bool verbose = false)
 {
     com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
     HighFive::File *file = oHdf5Util.Open(1);
 
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, threshold, perm);
+        = VeniceTest(oHdf5Util, file, group_name, cluster, threshold, perm, correct, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
     std::vector<std::string> rownames;
     // Read the barcode slot since this is the transposed matrix
-    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME,
+    oHdf5Util.ReadDatasetVector<std::string>(file, group_name,
                                             "barcodes", rownames);
     oHdf5Util.Close(file);
 

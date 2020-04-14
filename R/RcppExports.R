@@ -592,14 +592,14 @@ VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L, correct = T
     .Call(`_Signac_VeniceMarker`, S4_mtx, cluster, threshold, perm, correct, verbose)
 }
 
-#' VeniceMarkerH5
+#' VeniceMarkerTransposedH5
 #'
-#' Find gene marker for a cluster in H5 file
+#' Find gene marker for a cluster in tranposed H5 file
 #'
 #' @param hdf5Path A string path
 #' @param cluster A numeric vector
 #' @export
-VeniceMarkerH5 <- function(hdf5Path, cluster, threshold = 0L, perm = 0L, correct = TRUE) {
-    .Call(`_Signac_VeniceMarkerH5`, hdf5Path, cluster, threshold, perm, correct)
+VeniceMarkerTransposedH5 <- function(hdf5Path, group_name, cluster, threshold = 0L, perm = 0L, correct = TRUE, verbose = FALSE) {
+    .Call(`_Signac_VeniceMarkerTransposedH5`, hdf5Path, group_name, cluster, threshold, perm, correct, verbose)
 }
 
