@@ -51,21 +51,45 @@ private:
     HighFive::DataSet indices;
     HighFive::DataSet data;
     
+    uint64_t cache_size;
+
+    uint64_t start = 0;
+    uint64_t end = 0;
     std::vector<int> indices_v;
     std::vector<double> data_v;
+
+    void read(uint64_t start) {
+        assert(start < ptr.size());
+        uint64_t l = this->ptr[start];
+        uint64_t end = start + 1;
+        while (end < this->ptr.size() && this->ptr[end + 1] - l <= this->cache_size)
+            ++end;
+
+        uint64_t r = this->ptr[end];
+        uint64_t len = r - l;
+
+        if (len > this->indices_v.size()) {
+            this->indices_v.resize(len);
+            this->data_v.resize(len);
+        }
+
+        this->start = start;
+        this->end = end;
+        this->indices.select({l}, {len}).read(this->indices_v);
+        this->data.select({l}, {len}).read(this->data_v);
+    }
 public:
-    MatrixReader(const std::string &file_name, const std::string &group_name) : 
+    MatrixReader(const std::string &file_name, const std::string &group_name, uint64_t cache_size = 1000000): 
             file(file_name, HighFive::File::ReadOnly),
             group_name(group_name),
             indices {this->file.getDataSet(group_name + "/indices")},
-            data {this->file.getDataSet(group_name + "/data")} {
+            data {this->file.getDataSet(group_name + "/data")},
+            cache_size(cache_size) {
         if(!this->file.exist(group_name))
             Rcpp::stop("Group " + group_name + "doesn't exist in " + this->file.getName());
 
         // Read index pointer
         if (!this->file.exist(group_name + "/indptr") ||
-            !this->file.exist(group_name + "/indices") ||
-            !this->file.exist(group_name + "/data") || 
             !this->file.exist(group_name + "/barcodes") ||
             !this->file.exist(group_name + "/shape"))  {
                 
@@ -75,22 +99,28 @@ public:
         this->file.getDataSet(group_name + "/indptr").read(this->ptr);
         this->file.getDataSet(group_name + "/shape").read(this->shape);
 
-        this->indices_v.resize(this->shape[1]);
-        this->data_v.resize(this->shape[1]);
+        if (cache_size < shape[1])
+            Rcpp::warning("Cache size maybe too small for this data, venice will use more memory when needed");
+
+        this->indices_v.resize(cache_size);
+        this->data_v.resize(cache_size);
     }
+
 
     void get_expression(int gene_id, const Rcpp::IntegerVector &cluster, 
                         std::vector<std::pair<double, bool>> &result) {
-        const uint64_t l = this->ptr[gene_id];
-        const uint64_t r = this->ptr[gene_id + 1];
-        const uint64_t len = r - l;
-        this->indices.select({l}, {len}).read(this->indices_v);
-        this->data.select({l}, {len}).read(this->data_v);
-        int i = 0;
-        int j = 0;
         
-        result.resize(len);
-        for (uint64_t i = 0; i < len; ++i) {
+        assert(gene_id >= start);
+        if (gene_id >= end)
+            read(gene_id);
+
+        uint64_t l = this->ptr[gene_id] - this->ptr[start];
+        uint64_t r = this->ptr[gene_id + 1] - this->ptr[start];
+        uint64_t len = r - l;
+
+        result.clear();
+        result.reserve(len);
+        for (uint64_t i = l; i < r; ++i) {
             int c_id = -1;
             switch (cluster[this->indices_v[i]]) {
                 case C_INSIDE:
@@ -102,9 +132,8 @@ public:
                 default:
                     continue;
             }
-            result[j++] = {this->data_v[i], c_id};
+            result.push_back({this->data_v[i], c_id});
         }
-        result.resize(j);
     }
 
     std::vector<std::string> get_names() {
