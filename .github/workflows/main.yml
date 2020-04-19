@@ -14,4 +14,4 @@ jobs:
         r-version: '3.5.3' # The R version to download (if necessary) and use.
     - run: |
         sudo apt-get -y install libcurl4-openssl-dev libxml2-dev libssl-dev
-        Rscript -e 'install.packages("devtools"); devtools::local_install("Signac")' 
+        Rscript -e 'install.packages("devtools"); devtools::install_local("Signac")' 
