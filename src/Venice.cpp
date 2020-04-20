@@ -5,43 +5,27 @@
 #define MINIMAL_SAMPLE 10
 #define MINIMAL_BIN 2
 #define GROUPING_RATE 0.6
-#define GROUP_NAME "bioturing"
 
 #define C_INSIDE 1
 #define C_OUTSIDE 0
 
 #include <boost/sort/spreadsort/spreadsort.hpp>
-#include <RcppArmadillo.h>
-#include <RcppParallel.h>
 #include <Rmath.h>
 
 #include <progress.hpp>
 #include <progress_bar.hpp>
 
 #include <string>
-#include <fstream>
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <limits>
 #include <cmath>
-#include <algorithm>
-#include <functional>
+#include <H5Cpp.h>
+#include <highfive/H5File.hpp>
+#include <highfive/H5Group.hpp>
 
-#include "CommonUtil.h"
-#include "SparseMatrixUtil.h"
-#include "Hdf5Util.h"
-
-using namespace Rcpp;
-using namespace arma;
-using namespace RcppParallel;
-using namespace std::placeholders;
-
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(Rhdf5lib)]]
 // [[Rcpp::depends(RcppProgress)]]
-
 
 struct GeneResult {
     int gene_id;
@@ -56,6 +40,111 @@ struct GeneResult {
     double ud_score; //up-down score
 
     double log_fc;
+};
+
+class MatrixReader {
+private:
+    HighFive::File file;
+    std::string group_name;
+    std::array<int, 2> shape;
+    std::vector<uint64_t> ptr;
+    HighFive::DataSet indices;
+    HighFive::DataSet data;
+    
+    uint64_t cache_size;
+
+    uint64_t start = 0;
+    uint64_t end = 0;
+    std::vector<int> indices_v;
+    std::vector<double> data_v;
+
+    void read(uint64_t start) {
+        assert(start < ptr.size());
+        uint64_t l = this->ptr[start];
+        uint64_t end = start + 1;
+        while (end < this->ptr.size() && this->ptr[end + 1] - l <= this->cache_size)
+            ++end;
+
+        uint64_t r = this->ptr[end];
+        uint64_t len = r - l;
+
+        if (len > this->indices_v.size()) {
+            this->indices_v.resize(len);
+            this->data_v.resize(len);
+        }
+
+        this->start = start;
+        this->end = end;
+        this->indices.select({l}, {len}).read(this->indices_v);
+        this->data.select({l}, {len}).read(this->data_v);
+    }
+public:
+    MatrixReader(const std::string &file_name, const std::string &group_name, uint64_t cache_size = 1000000): 
+            file(file_name, HighFive::File::ReadOnly),
+            group_name(group_name),
+            indices {this->file.getDataSet(group_name + "/indices")},
+            data {this->file.getDataSet(group_name + "/data")},
+            cache_size(cache_size) {
+        if(!this->file.exist(group_name))
+            Rcpp::stop("Group " + group_name + "doesn't exist in " + this->file.getName());
+
+        // Read index pointer
+        if (!this->file.exist(group_name + "/indptr") ||
+            !this->file.exist(group_name + "/barcodes") ||
+            !this->file.exist(group_name + "/shape"))  {
+                
+            Rcpp::stop("Group " + group_name + " in file " + this->file.getName() + " doesn't have a correct matrix format");
+        }
+
+        this->file.getDataSet(group_name + "/indptr").read(this->ptr);
+        this->file.getDataSet(group_name + "/shape").read(this->shape);
+
+        if (cache_size < shape[1])
+            Rcpp::warning("Cache size maybe too small for this data, venice will use more memory when needed");
+
+        this->indices_v.resize(cache_size);
+        this->data_v.resize(cache_size);
+    }
+
+
+    void get_expression(int gene_id, const Rcpp::IntegerVector &cluster, 
+                        std::vector<std::pair<double, bool>> &result) {
+        
+        assert(gene_id >= start);
+        if (gene_id >= end)
+            read(gene_id);
+
+        uint64_t l = this->ptr[gene_id] - this->ptr[start];
+        uint64_t r = this->ptr[gene_id + 1] - this->ptr[start];
+        uint64_t len = r - l;
+
+        result.clear();
+        result.reserve(len);
+        for (uint64_t i = l; i < r; ++i) {
+            int c_id = -1;
+            switch (cluster[this->indices_v[i]]) {
+                case C_INSIDE:
+                    c_id = 0;
+                    break;
+                case C_OUTSIDE:
+                    c_id = 1;
+                    break;
+                default:
+                    continue;
+            }
+            result.push_back({this->data_v[i], c_id});
+        }
+    }
+
+    std::vector<std::string> get_names() {
+        std::vector<std::string> gene;
+        this->file.getDataSet(group_name + "/barcodes").read(gene);
+        return gene;
+    }
+
+    std::array<int, 2> get_shape() {
+        return this->shape;
+    }
 };
 
 inline double HarmonicMean(double a, double b)
@@ -239,17 +328,25 @@ struct rightshift {
   }
 };
 
+std::array<int, 2> count_missing(const std::vector<std::pair<double, bool>> &exp, const std::array<int, 2> &total_cnt) {
+    std::array<int, 2> zero_cnt = total_cnt;
+    for (const std::pair<double, bool> &e : exp)
+        --zero_cnt[e.second];
+    return zero_cnt;
+}
+
 std::vector<std::array<int, 2>> Binning(
         std::vector<std::pair<double, bool>> exp,
-        const std::array<int, 2> &zero_cnt)
+        const std::array<int, 2> &total_cnt)
 {
     std::vector<std::array<int, 2>> result(exp.size() + 1);    //+1 for zero
 
     if (exp.size() == 0) {
-        result[0] = zero_cnt;
+        result[0] = total_cnt;
         return result;
     }
 
+    std::array<int, 2> zero_cnt = count_missing(exp, total_cnt);
     boost::sort::spreadsort::float_sort(exp.begin(), exp.end(), rightshift());
 
     double p_exp = -std::numeric_limits<double>::infinity();
@@ -352,7 +449,6 @@ double PermPvalue(
 struct GeneResult ProcessGene(
         std::vector<std::pair<double, bool>> exp,
         const std::array<int, 2> &cnt,
-        const std::array<int, 2> &zero_cnt,
         int thres,
         int perm)
 {
@@ -360,7 +456,7 @@ struct GeneResult ProcessGene(
 
     res.log_fc = ComputeLogFC(exp, cnt);
 
-    std::vector<std::array<int, 2>> bins = Binning(std::move(exp), zero_cnt);
+    std::vector<std::array<int, 2>> bins = Binning(std::move(exp), cnt);
 
     res.ud_score = ComputeUd_score(bins, cnt);
 
@@ -381,8 +477,7 @@ void BuildExpDgT(
         const Rcpp::S4 &mtx, 
         const Rcpp::IntegerVector &cluster,
         const std::array<int, 2> &total_cnt,
-        std::vector<std::vector<std::pair<double, bool>>> &exp,
-        std::vector<std::array<int, 2>> &zero_cnt)
+        std::vector<std::vector<std::pair<double, bool>>> &exp)
 {
     if (!mtx.is("dgTMatrix"))
         throw std::runtime_error("wrong format (should be dgTMatrix)");
@@ -397,7 +492,6 @@ void BuildExpDgT(
                                 "to the number of columns in the matrix");
 
     exp.resize(n_genes);    
-    zero_cnt.resize(n_genes, total_cnt);    
 
     const Rcpp::IntegerVector &row_id = mtx.attr("i");
     const Rcpp::IntegerVector &col_id = mtx.attr("j");
@@ -425,7 +519,6 @@ void BuildExpDgT(
         double x = raw_exp[i];
 
         exp[row].push_back({x, cid});
-        --zero_cnt[row][cid];
     }
 }
 
@@ -433,8 +526,7 @@ void BuildExpDgC(
         const Rcpp::S4 &mtx, 
         const Rcpp::IntegerVector &cluster,
         const std::array<int, 2> &total_cnt,
-        std::vector<std::vector<std::pair<double, bool>>> &exp,
-        std::vector<std::array<int, 2>> &zero_cnt)
+        std::vector<std::vector<std::pair<double, bool>>> &exp)
 {
     if (!mtx.is("dgCMatrix"))
         throw std::runtime_error("wrong format (should be dgCMatrix)");
@@ -448,8 +540,7 @@ void BuildExpDgC(
         throw std::domain_error("The length of cluster vector is not equal "
                                 "to the number of columns in the matrix");
 
-    exp.resize(n_genes);    
-    zero_cnt.resize(n_genes, total_cnt);    
+    exp.resize(n_genes);
 
     const Rcpp::IntegerVector &row_id = mtx.attr("i");
     const Rcpp::IntegerVector &pt = mtx.attr("p");
@@ -474,7 +565,6 @@ void BuildExpDgC(
             int row = row_id[i];
             double x = raw_exp[i];
             exp[row].push_back({x, cid});
-            --zero_cnt[row][cid];
         }
     }
 }
@@ -497,16 +587,15 @@ std::vector<struct GeneResult> VeniceTest(
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
 
     std::vector<std::vector<std::pair<double, bool>>> exp;
-    std::vector<std::array<int, 2>> zero_cnt;
 
     const int n_genes = ((Rcpp::IntegerVector)mtx.attr("Dim"))[0];
 
     Progress p(n_genes, display_progress);
 
     if(mtx.is("dgTMatrix"))
-        BuildExpDgT(mtx, cluster, total_cnt, exp, zero_cnt);
+        BuildExpDgT(mtx, cluster, total_cnt, exp);
     else if (mtx.is("dgCMatrix"))
-        BuildExpDgC(mtx, cluster, total_cnt, exp, zero_cnt);
+        BuildExpDgC(mtx, cluster, total_cnt, exp);
     else
         throw std::runtime_error("this matrix format is not support. Please convert to dgTMatrix/dgCMatrix");
 
@@ -522,7 +611,6 @@ std::vector<struct GeneResult> VeniceTest(
         res[i] = ProcessGene(
                     std::move(exp[i]),
                     total_cnt,
-                    std::move(zero_cnt[i]),
                     thres,
                     perm
                 );
@@ -534,12 +622,14 @@ std::vector<struct GeneResult> VeniceTest(
     return res;
 }
 
+// Venice test for transposed matrix
 std::vector<struct GeneResult> VeniceTest(
-        com::bioturing::Hdf5Util &oHdf5Util,
-        HighFive::File *file,
+        MatrixReader &matrix,
         const Rcpp::IntegerVector &cluster,
         int threshold,
-        int perm)
+        int perm,
+        bool correct,
+        bool display_progress = true)
 {
     std::array<int, 2> total_cnt;
     GetTotalCount(cluster, total_cnt);
@@ -550,57 +640,43 @@ std::vector<struct GeneResult> VeniceTest(
         throw std::runtime_error("Threshold is too small."
             "Maybe the number of cells in one cluster is too small");
 
-    std::vector<int> shape;
-    oHdf5Util.ReadDatasetVector<int>(file, GROUP_NAME, "shape", shape);
+    std::array<int, 2> shape = matrix.get_shape();
 
     int n_genes = shape[1];
-
     if (cluster.size() != shape[0])
         throw std::domain_error("Input cluster size is not equal to "
                                 "the number of columns in matrix");
 
+    Progress p(n_genes, display_progress);
+
     std::vector<struct GeneResult> res(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
-        std::vector<int> col_idx;
-        std::vector<double> g_exp;
-        oHdf5Util.ReadGeneExpH5(file, GROUP_NAME, i, col_idx,  g_exp);
-
-        std::vector<std::pair<double, bool>> exp(col_idx.size());
-        std::array<int, 2> zero_cnt = {total_cnt[0], total_cnt[1]};
-
-        for (int k = 0; k < col_idx.size(); ++k) {
-            int c = (int)cluster[col_idx[k]];
-            int cid;
-
-            if (c == C_INSIDE)
-                cid = 0;
-            else if (c == C_OUTSIDE)
-                cid = 1;
-            else
-                continue;
-             
-            exp[k] = {g_exp[k], cid};
-            --zero_cnt[cid];
+        if (Progress::check_abort()) {
+            res.resize(i);
+            return res;
         }
+
+        std::vector<std::pair<double,bool>> exp;
+        matrix.get_expression(i, cluster, exp);
 
         res[i] = ProcessGene(
                     std::move(exp),
                     total_cnt,
-                    zero_cnt,
                     thres,
                     perm
                 );
         
         res[i].gene_id = i + 1;
+        p.increment();
     }
 
     return res;
 }
 
-DataFrame PostProcess(
-        std::vector<struct GeneResult> &res,
-        std::vector<std::string> &rownames,
+Rcpp::DataFrame PostProcess(
+        const std::vector<struct GeneResult> &res,
+        const std::vector<std::string> &gene_names,
         bool correct = true)
 {
     int n_gene = res.size();
@@ -635,7 +711,7 @@ DataFrame PostProcess(
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i].second;
 
-        g_names[i]  = rownames[k];
+        g_names[i]  = gene_names[k];
         g_id[i]     = res[k].gene_id;
 
         if (correct)
@@ -652,16 +728,16 @@ DataFrame PostProcess(
 #ifdef DEBUG
     Rcout << "Done!" << std::endl;
 #endif
-    return DataFrame::create(
-                    Named("Gene ID")                = wrap(g_id),
-                    Named("Gene Name")              = wrap(g_names),
-                    Named("Dissimilarity")          = wrap(d_score),
-                    Named("Bin count")              = wrap(b_cnt),
-                    Named("Log10 p value")          = wrap(log10_pv),
-                    Named("Perm p value")           = wrap(perm_pv),
-                    Named("Log10 adjusted p value") = wrap(log10_adj_pv),
-                    Named("Up-Down score")          = wrap(ud_score),
-                    Named("Log2 fold change")       = wrap(log2_fc)
+    return Rcpp::DataFrame::create(
+                    Rcpp::Named("Gene ID")                = Rcpp::wrap(g_id),
+                    Rcpp::Named("Gene Name")              = Rcpp::wrap(g_names),
+                    Rcpp::Named("Dissimilarity")          = Rcpp::wrap(d_score),
+                    Rcpp::Named("Bin count")              = Rcpp::wrap(b_cnt),
+                    Rcpp::Named("Log10 p value")          = Rcpp::wrap(log10_pv),
+                    Rcpp::Named("Perm p value")           = Rcpp::wrap(perm_pv),
+                    Rcpp::Named("Log10 adjusted p value") = Rcpp::wrap(log10_adj_pv),
+                    Rcpp::Named("Up-Down score")          = Rcpp::wrap(ud_score),
+                    Rcpp::Named("Log2 fold change")       = Rcpp::wrap(log2_fc)
             );
 }
 
@@ -673,7 +749,7 @@ DataFrame PostProcess(
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame VeniceMarker(
+Rcpp::DataFrame VeniceMarker(
         const Rcpp::S4 &S4_mtx,
         const Rcpp::IntegerVector &cluster,
         int threshold = 0,
@@ -691,34 +767,29 @@ DataFrame VeniceMarker(
     return PostProcess(res, rownames, correct);
 }
 
-//' VeniceMarkerH5
+//' VeniceMarkerTransposedH5
 //'
-//' Find gene marker for a cluster in H5 file
+//' Find gene marker for a cluster in tranposed H5 file
 //'
 //' @param hdf5Path A string path
 //' @param cluster A numeric vector
 //' @export
 // [[Rcpp::export]]
-DataFrame VeniceMarkerH5(
+Rcpp::DataFrame VeniceMarkerTransposedH5(
     const std::string &hdf5Path,
+    const std::string &group_name,
     const Rcpp::IntegerVector &cluster,
     int threshold = 0,
     int perm = 0,
-    bool correct = true)
+    bool correct = true,
+    bool verbose = false)
 {
-    com::bioturing::Hdf5Util oHdf5Util(hdf5Path);
-    HighFive::File *file = oHdf5Util.Open(1);
+    MatrixReader matrix(hdf5Path, group_name);
 
     std::vector<struct GeneResult> res
-        = VeniceTest(oHdf5Util, file, cluster, threshold, perm);
+        = VeniceTest(matrix, cluster, threshold, perm, correct, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
-    std::vector<std::string> rownames;
-    // Read the barcode slot since this is the transposed matrix
-    oHdf5Util.ReadDatasetVector<std::string>(file, GROUP_NAME,
-                                            "barcodes", rownames);
-    oHdf5Util.Close(file);
-
-    return PostProcess(res, rownames, correct);
+    return PostProcess(res, matrix.get_names(), correct);
 }
