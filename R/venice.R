@@ -1,4 +1,4 @@
-#' VeniceAllMarkers
+  #' VeniceAllMarkers
 #'
 #' This function helps to find marker genes for all clusters in a Seurat v3 object.
 #' We adapted some utilities functions in Seurat v3 package (Butler et al., Nature Biotechnology 2018) to handle the annotation of an
