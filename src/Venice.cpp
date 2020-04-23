@@ -138,7 +138,7 @@ public:
 
     std::vector<std::string> get_names() {
         std::vector<std::string> gene;
-        HighFive::DataSet datasetVec = this->file.getDataSet("bioturing/features");
+        HighFive::DataSet datasetVec = this->file.getDataSet(group_name + "/barcodes");
         HighFive::DataSpace dataSpace = datasetVec.getSpace();
         std::vector<size_t> dims = dataSpace.getDimensions();
         HighFive::DataType dataType = datasetVec.getDataType();
