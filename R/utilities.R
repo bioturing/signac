@@ -161,8 +161,11 @@ AskForChoices <- function(choices) {
 #' Write Sparse Matrix using rhdf5 api
 #'
 #' @export
-#' 
-WriteSptMtAs4 <- function(filePath, groupName, mat) {
+#'
+WriteSpMtAsS4 <- function(filePath, groupName, mat) {
+  if (!file.exists(filePath)) {
+    rhdf5::h5createFile(filePath)
+  }
   rhdf5::h5createGroup(filePath, groupName)
   rhdf5::h5createDataset(filePath, paste0(groupName, "/indices"), storage.mode = "integer",
                          dims = length(mat@i), chunk=min(10000, length(mat@i)), level=1)
