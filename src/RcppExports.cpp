@@ -637,7 +637,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarker
-DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
+Rcpp::DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
 RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -653,7 +653,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarkerTransposedH5
-DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
+Rcpp::DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
 RcppExport SEXP _Signac_VeniceMarkerTransposedH5(SEXP hdf5PathSEXP, SEXP group_nameSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
