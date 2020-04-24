@@ -32,7 +32,7 @@ ExtractField <- function(string, field = 1, delim = "_") {
 }
 
 #' Colourise text for display in the terminal.
-#' 
+#'
 #' If R is not currently running in a system that supports terminal colours
 #' the text will be returned unchanged.
 #' This function was imported from testthat package
@@ -156,4 +156,25 @@ AskForChoices <- function(choices) {
     select <- readline(choices.txt)
   }
   return(choices[as.numeric(select)])
+}
+
+#' Write Sparse Matrix using rhdf5 api
+#'
+#' @export
+#'
+WriteSpMtAsS4 <- function(filePath, groupName, mat) {
+  if (!file.exists(filePath)) {
+    rhdf5::h5createFile(filePath)
+  }
+  rhdf5::h5createGroup(filePath, groupName)
+  rhdf5::h5createDataset(filePath, paste0(groupName, "/indices"), storage.mode = "integer",
+                         dims = length(mat@i), chunk=min(10000, length(mat@i)), level=1)
+  rhdf5::h5write(mat@i, filePath, paste0(groupName, "/indices"))
+  rhdf5::h5createDataset(filePath, paste0(groupName, "/data"), storage.mode = "double",
+                         dims = length(mat@x), chunk=min(10000, length(mat@x)), level=1)
+  rhdf5::h5write(mat@x, filePath, paste0(groupName, "/data"))
+  rhdf5::h5write(mat@p, filePath, paste0(groupName, "/indptr"))
+  rhdf5::h5write(rownames(mat), filePath, paste0(groupName, "/features"))
+  rhdf5::h5write(colnames(mat), filePath, paste0(groupName, "/barcodes"))
+  rhdf5::h5write(dim(mat), filePath, paste0(groupName, "/shape"))
 }

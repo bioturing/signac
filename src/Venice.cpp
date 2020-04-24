@@ -138,7 +138,19 @@ public:
 
     std::vector<std::string> get_names() {
         std::vector<std::string> gene;
-        this->file.getDataSet(group_name + "/barcodes").read(gene);
+        HighFive::DataSet datasetVec = this->file.getDataSet(group_name + "/barcodes");
+        HighFive::DataSpace dataSpace = datasetVec.getSpace();
+        std::vector<size_t> dims = dataSpace.getDimensions();
+        HighFive::DataType dataType = datasetVec.getDataType();
+        size_t str_size = H5Tget_size(dataType.getId());
+        H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
+        H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
+
+        if((str_pad == H5T_STR_NULLTERM) && (str_cset == H5T_CSET_UTF8))
+            datasetVec.read(gene);
+        else
+            datasetVec.read(gene, str_size, str_pad, str_cset, dims[0]);
+
         return gene;
     }
 
@@ -488,8 +500,8 @@ void BuildExpDgT(
     const int n_cells = dim[1];
 
     if (cluster.size() != n_cells)
-        throw std::domain_error("The length of cluster vector is not equal "
-                                "to the number of columns in the matrix");
+        throw std::domain_error("The length of cluster vector (" + std::to_string(cluster.size()) + ") is not equal "
+                                "to the number of cells (" + std::to_string(n_cells) + ") in the matrix");
 
     exp.resize(n_genes);    
 
@@ -537,8 +549,8 @@ void BuildExpDgC(
     const int n_cells = dim[1];
 
     if (cluster.size() != n_cells)
-        throw std::domain_error("The length of cluster vector is not equal "
-                                "to the number of columns in the matrix");
+        throw std::domain_error("The length of cluster vector (" + std::to_string(cluster.size()) + ") is not equal "
+                                "to the number of cells (" + std::to_string(n_cells) + ") in the matrix");
 
     exp.resize(n_genes);
 
@@ -599,7 +611,8 @@ std::vector<struct GeneResult> VeniceTest(
     else
         throw std::runtime_error("this matrix format is not support. Please convert to dgTMatrix/dgCMatrix");
 
-    std::vector<struct GeneResult> res(n_genes);
+    std::vector<struct GeneResult> res;
+    res.reserve(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
 
@@ -608,14 +621,14 @@ std::vector<struct GeneResult> VeniceTest(
             return res;
         }
 
-        res[i] = ProcessGene(
+        res.push_back(ProcessGene(
                     std::move(exp[i]),
                     total_cnt,
                     thres,
-                    perm
-                );
+                    perm)
+        );
 
-        res[i].gene_id = i + 1;
+        res.back().gene_id = i + 1;
 
         p.increment();
     }
@@ -649,7 +662,8 @@ std::vector<struct GeneResult> VeniceTest(
 
     Progress p(n_genes, display_progress);
 
-    std::vector<struct GeneResult> res(n_genes);
+    std::vector<struct GeneResult> res;
+    res.reserve(n_genes);
 
     for (int i = 0; i < n_genes; ++i) {
         if (Progress::check_abort()) {
@@ -660,14 +674,14 @@ std::vector<struct GeneResult> VeniceTest(
         std::vector<std::pair<double,bool>> exp;
         matrix.get_expression(i, cluster, exp);
 
-        res[i] = ProcessGene(
+        res.push_back(ProcessGene(
                     std::move(exp),
                     total_cnt,
                     thres,
-                    perm
-                );
+                    perm)
+        );
         
-        res[i].gene_id = i + 1;
+        res.back().gene_id = i + 1;
         p.increment();
     }
 

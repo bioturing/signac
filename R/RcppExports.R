@@ -31,6 +31,15 @@ FastRandVector <- function(num) {
     .Call(`_Signac_FastRandVector`, num)
 }
 
+#' WriteSpMtAsS4
+#'
+#' This function is used to write a sparse S4 matrix
+#'
+#' @param filePath A string (HDF5 path)
+#' @param groupName A string (HDF5 dataset)
+#' @param mat A sparse matrix
+NULL
+
 #' WriteSpMtAsSpMat
 #'
 #' This function is used to write a sparse ARMA matrix
@@ -53,18 +62,6 @@ WriteSpMtAsSpMat <- function(filePath, groupName, mat) {
 #' @export
 WriteSpMtAsSpMatFromS4 <- function(filePath, groupName, mat) {
     invisible(.Call(`_Signac_WriteSpMtAsSpMatFromS4`, filePath, groupName, mat))
-}
-
-#' WriteSpMtAsS4
-#'
-#' This function is used to write a sparse S4 matrix
-#'
-#' @param filePath A string (HDF5 path)
-#' @param groupName A string (HDF5 dataset)
-#' @param mat A sparse matrix
-#' @export
-WriteSpMtAsS4 <- function(filePath, groupName, mat) {
-    invisible(.Call(`_Signac_WriteSpMtAsS4`, filePath, groupName, mat))
 }
 
 #' ReadSpMtAsSPMat

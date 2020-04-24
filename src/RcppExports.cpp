@@ -64,18 +64,6 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
-// WriteSpMtAsS4
-void WriteSpMtAsS4(const std::string& filePath, const std::string& groupName, const Rcpp::S4& mat);
-RcppExport SEXP _Signac_WriteSpMtAsS4(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP matSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
-    Rcpp::traits::input_parameter< const std::string& >::type groupName(groupNameSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::S4& >::type mat(matSEXP);
-    WriteSpMtAsS4(filePath, groupName, mat);
-    return R_NilValue;
-END_RCPP
-}
 // ReadSpMtAsSPMat
 arma::sp_mat ReadSpMtAsSPMat(const std::string& filePath, const std::string& groupName);
 RcppExport SEXP _Signac_ReadSpMtAsSPMat(SEXP filePathSEXP, SEXP groupNameSEXP) {
@@ -649,7 +637,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarker
-DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
+Rcpp::DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
 RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -665,7 +653,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarkerTransposedH5
-DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
+Rcpp::DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
 RcppExport SEXP _Signac_VeniceMarkerTransposedH5(SEXP hdf5PathSEXP, SEXP group_nameSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -688,7 +676,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastRandVector", (DL_FUNC) &_Signac_FastRandVector, 1},
     {"_Signac_WriteSpMtAsSpMat", (DL_FUNC) &_Signac_WriteSpMtAsSpMat, 3},
     {"_Signac_WriteSpMtAsSpMatFromS4", (DL_FUNC) &_Signac_WriteSpMtAsSpMatFromS4, 3},
-    {"_Signac_WriteSpMtAsS4", (DL_FUNC) &_Signac_WriteSpMtAsS4, 3},
     {"_Signac_ReadSpMtAsSPMat", (DL_FUNC) &_Signac_ReadSpMtAsSPMat, 2},
     {"_Signac_ReadSpMtAsS4", (DL_FUNC) &_Signac_ReadSpMtAsS4, 2},
     {"_Signac_ReadRowSumSpMt", (DL_FUNC) &_Signac_ReadRowSumSpMt, 2},

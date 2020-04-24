@@ -46,8 +46,6 @@ void WriteSpMtAsSpMatFromS4(const std::string &filePath, const std::string &grou
 //' @param filePath A string (HDF5 path)
 //' @param groupName A string (HDF5 dataset)
 //' @param mat A sparse matrix
-//' @export
-// [[Rcpp::export]]
 void WriteSpMtAsS4(const std::string &filePath, const std::string &groupName, const Rcpp::S4 &mat) {
     com::bioturing::Hdf5Util oHdf5Util(filePath);
     HighFive::File *file = oHdf5Util.Open(-1);
