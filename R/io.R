@@ -152,7 +152,7 @@ Read10X <- function(data.dir = NULL){
 #' @importFrom Matrix Matrix
 #' @importFrom readr read_lines read_delim
 #'
-ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
+ReadDelim <- function(mat.path, sep = ",", header = TRUE, to.sparse = TRUE) {
 
   # Get header. Handle a case when the 1st element is missing
   getHeader <- function(mat.path, sep) {
@@ -193,7 +193,9 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE) {
     col_names = header.arr,
     progress = FALSE
   ))
-  mat <- convertTibbleToSparseMatrix(mat)
+  if (to.sparse) {
+    mat <- convertTibbleToSparseMatrix(mat)
+  }
   return(mat)
 }
 
