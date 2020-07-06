@@ -161,7 +161,8 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE, to.sparse = TRUE) {
     if (length(lines[[1]]) == length(lines[[2]])) {
       lines[[1]] <- lines[[1]][-1]
     }
-    lines[[1]] <- c('gene', lines[[1]])
+    lines[[1]] <- c("gene", lines[[1]])
+    lines[[1]] <- gsub("\"", "", lines[[1]])
     return(lines[[1]])
   }
 

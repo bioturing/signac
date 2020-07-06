@@ -1,6 +1,6 @@
 Package: Signac
 Title: An analytics package for Single-cell data 
-Version: 0.0.6
+Version: 0.0.7
 Author: BioTuring INC.
 Maintainer: BioTuring <support@bioturing.com>
 Description: We introduce Signac, a versatile R package to facilitate the analysis workflow for single-cell data. It helps to find marker genes faster and more accurate, search for cells with similar expression profiles, integrate multiple datasets in the BioTuring Browser database (know more about BioTuring Browser), etc. For users with a limited computational resource, we provide the helper functions to exercise all analyses for the large-scale datasets from disk. Because of its speed and flexibility, it can be adapted to any existing R analysis pipeline to help explore single-cell data more efficient.

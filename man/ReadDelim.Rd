@@ -4,7 +4,7 @@
 \alias{ReadDelim}
 \title{Read expresison matrix from CSV or TSV}
 \usage{
-ReadDelim(mat.path, sep = ",", header = TRUE, toSparse = TRUE)
+ReadDelim(mat.path, sep = ",", header = TRUE, to.sparse = TRUE)
 }
 \arguments{
 \item{mat.path}{Path to expression matrix (can be zipped)}
