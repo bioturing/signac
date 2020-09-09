@@ -8,6 +8,7 @@ VeniceMarker(
   S4_mtx,
   cluster,
   threshold = 0L,
+  threshold_pct = 0,
   perm = 0L,
   correct = TRUE,
   verbose = FALSE
