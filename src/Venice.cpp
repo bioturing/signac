@@ -40,6 +40,9 @@ struct GeneResult {
     double ud_score; //up-down score
 
     double log_fc;
+
+    double pct1; // percent 
+    double pct2;
 };
 
 class MatrixReader {
@@ -458,14 +461,35 @@ double PermPvalue(
     return (double)count/perm;
 }
 
+int CountNumExpressClusterZero(const std::vector<std::pair<double, bool>> &exp) {
+  int count = 0;
+    for (int i = 0; i < exp.size(); ++i)
+        if (exp[i].second)
+            ++count;
+  return count;
+}
+
+bool IsValidPercent(const GeneResult &gene_result, double threshold_pct) {
+  if (gene_result.pct1 < threshold_pct && gene_result.pct2 < threshold_pct) 
+      return false;
+  return true;
+}
+
 struct GeneResult ProcessGene(
         std::vector<std::pair<double, bool>> exp,
         const std::array<int, 2> &cnt,
         int thres,
-        int perm)
+        int perm,
+        double threshold_pct)
 {
     struct GeneResult res;
-
+    
+    int count_cluster0 = CountNumExpressClusterZero(exp);
+    res.pct1 = 100.0 * (exp.size() - count_cluster0) / cnt[0];
+    res.pct2 = 100.0 * count_cluster0 / cnt[1];
+    if (!IsValidPercent(res, threshold_pct))
+      return res;
+    
     res.log_fc = ComputeLogFC(exp, cnt);
 
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), cnt);
@@ -586,6 +610,7 @@ std::vector<struct GeneResult> VeniceTest(
         const Rcpp::S4 &mtx,
         const Rcpp::IntegerVector &cluster,
         int threshold,
+        double threshold_pct,
         int perm,
         bool display_progress = true)
 {
@@ -621,16 +646,19 @@ std::vector<struct GeneResult> VeniceTest(
             return res;
         }
 
-        res.push_back(ProcessGene(
-                    std::move(exp[i]),
-                    total_cnt,
-                    thres,
-                    perm)
-        );
-
-        res.back().gene_id = i + 1;
-
-        p.increment();
+        GeneResult gene_result = ProcessGene(
+                                  std::move(exp[i]),
+                                  total_cnt,
+                                  thres,
+                                  perm,
+                                  threshold_pct);
+        
+        if (IsValidPercent(gene_result, threshold_pct)) {
+            res.push_back(gene_result);
+            res.back().gene_id = i + 1;
+        }
+        
+        p.increment();   
     }
     return res;
 }
@@ -640,6 +668,7 @@ std::vector<struct GeneResult> VeniceTest(
         MatrixReader &matrix,
         const Rcpp::IntegerVector &cluster,
         int threshold,
+        double threshold_pct,
         int perm,
         bool correct,
         bool display_progress = true)
@@ -674,14 +703,18 @@ std::vector<struct GeneResult> VeniceTest(
         std::vector<std::pair<double,bool>> exp;
         matrix.get_expression(i, cluster, exp);
 
-        res.push_back(ProcessGene(
-                    std::move(exp),
-                    total_cnt,
-                    thres,
-                    perm)
-        );
+        GeneResult gene_result = ProcessGene(
+                                  std::move(exp),
+                                  total_cnt,
+                                  thres,
+                                  perm,
+                                  threshold_pct);
         
-        res.back().gene_id = i + 1;
+        if (IsValidPercent(gene_result, threshold_pct)) {
+            res.push_back(gene_result);
+            res.back().gene_id = i + 1;    
+        }
+        
         p.increment();
     }
 
@@ -704,7 +737,7 @@ Rcpp::DataFrame PostProcess(
     std::vector<std::string> g_names(n_gene);
     std::vector<int> g_id(n_gene);
 
-    std::vector<double> d_score(n_gene), ud_score(n_gene), log2_fc(n_gene);
+    std::vector<double> d_score(n_gene), ud_score(n_gene), log2_fc(n_gene), pct1(n_gene), pct2(n_gene);
     std::vector<double> log10_pv(n_gene), perm_pv(n_gene), log10_adj_pv(n_gene);
     std::vector<int> b_cnt(n_gene);
 
@@ -725,7 +758,7 @@ Rcpp::DataFrame PostProcess(
     for(int i = 0; i < n_gene; ++i) {
         int k = order[i].second;
 
-        g_names[i]  = gene_names[k];
+        g_names[i]  = gene_names[res[k].gene_id - 1];
         g_id[i]     = res[k].gene_id;
 
         if (correct)
@@ -738,6 +771,8 @@ Rcpp::DataFrame PostProcess(
         perm_pv[i]  = res[k].perm_p_value;
         ud_score[i] = res[k].ud_score;
         log2_fc[i]  = res[k].log_fc * M_LOG2E;
+        pct1[i]     = res[k].pct1;
+        pct2[i]     = res[k].pct2;
     }
 #ifdef DEBUG
     Rcout << "Done!" << std::endl;
@@ -751,7 +786,9 @@ Rcpp::DataFrame PostProcess(
                     Rcpp::Named("Perm p value")           = Rcpp::wrap(perm_pv),
                     Rcpp::Named("Log10 adjusted p value") = Rcpp::wrap(log10_adj_pv),
                     Rcpp::Named("Up-Down score")          = Rcpp::wrap(ud_score),
-                    Rcpp::Named("Log2 fold change")       = Rcpp::wrap(log2_fc)
+                    Rcpp::Named("Log2 fold change")       = Rcpp::wrap(log2_fc),
+                    Rcpp::Named("pct1")                   = Rcpp::wrap(pct1),
+                    Rcpp::Named("pct2")                   = Rcpp::wrap(pct2)
             );
 }
 
@@ -767,12 +804,13 @@ Rcpp::DataFrame VeniceMarker(
         const Rcpp::S4 &S4_mtx,
         const Rcpp::IntegerVector &cluster,
         int threshold = 0,
+        double threshold_pct = 0,
         int perm = 0,
         bool correct = true,
         bool verbose = false)
 {
 
-    std::vector<struct GeneResult> res = VeniceTest(S4_mtx, cluster, threshold, perm, verbose);
+    std::vector<struct GeneResult> res = VeniceTest(S4_mtx, cluster, threshold, threshold_pct, perm, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif
@@ -794,6 +832,7 @@ Rcpp::DataFrame VeniceMarkerTransposedH5(
     const std::string &group_name,
     const Rcpp::IntegerVector &cluster,
     int threshold = 0,
+    double threshold_pct = 0,
     int perm = 0,
     bool correct = true,
     bool verbose = false)
@@ -801,7 +840,7 @@ Rcpp::DataFrame VeniceMarkerTransposedH5(
     MatrixReader matrix(hdf5Path, group_name);
 
     std::vector<struct GeneResult> res
-        = VeniceTest(matrix, cluster, threshold, perm, correct, verbose);
+        = VeniceTest(matrix, cluster, threshold, threshold_pct, perm, correct, verbose);
 #ifdef DEBUG
     Rcout << "Done calculate" << std::endl;
 #endif

@@ -637,24 +637,25 @@ BEGIN_RCPP
 END_RCPP
 }
 // VeniceMarker
-Rcpp::DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
-RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
+Rcpp::DataFrame VeniceMarker(const Rcpp::S4& S4_mtx, const Rcpp::IntegerVector& cluster, int threshold, double threshold_pct, int perm, bool correct, bool verbose);
+RcppExport SEXP _Signac_VeniceMarker(SEXP S4_mtxSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP threshold_pctSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::S4& >::type S4_mtx(S4_mtxSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
+    Rcpp::traits::input_parameter< double >::type threshold_pct(threshold_pctSEXP);
     Rcpp::traits::input_parameter< int >::type perm(permSEXP);
     Rcpp::traits::input_parameter< bool >::type correct(correctSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(VeniceMarker(S4_mtx, cluster, threshold, perm, correct, verbose));
+    rcpp_result_gen = Rcpp::wrap(VeniceMarker(S4_mtx, cluster, threshold, threshold_pct, perm, correct, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
 // VeniceMarkerTransposedH5
-Rcpp::DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, int perm, bool correct, bool verbose);
-RcppExport SEXP _Signac_VeniceMarkerTransposedH5(SEXP hdf5PathSEXP, SEXP group_nameSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
+Rcpp::DataFrame VeniceMarkerTransposedH5(const std::string& hdf5Path, const std::string& group_name, const Rcpp::IntegerVector& cluster, int threshold, double threshold_pct, int perm, bool correct, bool verbose);
+RcppExport SEXP _Signac_VeniceMarkerTransposedH5(SEXP hdf5PathSEXP, SEXP group_nameSEXP, SEXP clusterSEXP, SEXP thresholdSEXP, SEXP threshold_pctSEXP, SEXP permSEXP, SEXP correctSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -662,10 +663,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const std::string& >::type group_name(group_nameSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cluster(clusterSEXP);
     Rcpp::traits::input_parameter< int >::type threshold(thresholdSEXP);
+    Rcpp::traits::input_parameter< double >::type threshold_pct(threshold_pctSEXP);
     Rcpp::traits::input_parameter< int >::type perm(permSEXP);
     Rcpp::traits::input_parameter< bool >::type correct(correctSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(VeniceMarkerTransposedH5(hdf5Path, group_name, cluster, threshold, perm, correct, verbose));
+    rcpp_result_gen = Rcpp::wrap(VeniceMarkerTransposedH5(hdf5Path, group_name, cluster, threshold, threshold_pct, perm, correct, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -724,8 +726,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_FastGetSumSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetSumSparseMatByAllCols, 1},
     {"_Signac_FastGetMedianSparseMatByAllRows", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllRows, 1},
     {"_Signac_FastGetMedianSparseMatByAllCols", (DL_FUNC) &_Signac_FastGetMedianSparseMatByAllCols, 1},
-    {"_Signac_VeniceMarker", (DL_FUNC) &_Signac_VeniceMarker, 6},
-    {"_Signac_VeniceMarkerTransposedH5", (DL_FUNC) &_Signac_VeniceMarkerTransposedH5, 7},
+    {"_Signac_VeniceMarker", (DL_FUNC) &_Signac_VeniceMarker, 7},
+    {"_Signac_VeniceMarkerTransposedH5", (DL_FUNC) &_Signac_VeniceMarkerTransposedH5, 8},
     {NULL, NULL, 0}
 };
 

@@ -585,8 +585,8 @@ FastGetMedianSparseMatByAllCols <- function(mat) {
 #' @param S4_mtx A sparse matrix
 #' @param cluster A numeric vector
 #' @export
-VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L, correct = TRUE, verbose = FALSE) {
-    .Call(`_Signac_VeniceMarker`, S4_mtx, cluster, threshold, perm, correct, verbose)
+VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, threshold_pct = 0, perm = 0L, correct = TRUE, verbose = FALSE) {
+    .Call(`_Signac_VeniceMarker`, S4_mtx, cluster, threshold, threshold_pct, perm, correct, verbose)
 }
 
 #' VeniceMarkerTransposedH5
@@ -596,7 +596,7 @@ VeniceMarker <- function(S4_mtx, cluster, threshold = 0L, perm = 0L, correct = T
 #' @param hdf5Path A string path
 #' @param cluster A numeric vector
 #' @export
-VeniceMarkerTransposedH5 <- function(hdf5Path, group_name, cluster, threshold = 0L, perm = 0L, correct = TRUE, verbose = FALSE) {
-    .Call(`_Signac_VeniceMarkerTransposedH5`, hdf5Path, group_name, cluster, threshold, perm, correct, verbose)
+VeniceMarkerTransposedH5 <- function(hdf5Path, group_name, cluster, threshold = 0L, threshold_pct = 0, perm = 0L, correct = TRUE, verbose = FALSE) {
+    .Call(`_Signac_VeniceMarkerTransposedH5`, hdf5Path, group_name, cluster, threshold, threshold_pct, perm, correct, verbose)
 }
 
