@@ -65,7 +65,7 @@ private:
         assert(start < ptr.size());
         uint64_t l = this->ptr[start];
         uint64_t end = start + 1;
-        while (end < this->ptr.size() && this->ptr[end + 1] - l <= this->cache_size)
+        while (end < this->ptr.size() - 1 && this->ptr[end + 1] - l <= this->cache_size)
             ++end;
 
         uint64_t r = this->ptr[end];
