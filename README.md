@@ -8,11 +8,13 @@ This package can also be used as the reference for the computational methods use
 
 ### 24/06/2019
 
-Please visit [this blog](https://blog.bioturing.com/) to read about **Venice**, the fast and accurate method for finding marker genes, which is incorporated into Signac. Venice function can be accessed via `Signac::VeniceMarker`
+Please visit [this blog](https://blog.bioturing.com/2019/06/24/venice-a-non-parametric-test-for-finding-marker-genes-in-single-cell-rna-seq-data/) to read about **Venice**, a fast and accurate method for finding marker genes, which is incorporated into Signac. Venice function can be accessed via `Signac::VeniceMarker`
+
+You can also read the manuscript about Venice [here](https://bioturing.com/resources/Venice.pdf).
 
 Below is the benchmark when finding 4 types of DE genes in a simulated dataset (using scDD R package). Total 15 methods included Venice are tested. The dataset has 2000 DE genes that are even divided into 4 groups (DE, DP, DB, DM), and 18000 non-DE genes (EP and EE).
 
-  <img src="https://lh3.googleusercontent.com/_1GzN-XnIUNepbLaaJHFQjKMwAssfEOT4loEw-SARGu98qvgEWA1BslCNQb3daM6W6j1_Nn3pg6XqvQAxZOl4ACJuYQuUgPmlBb778_DDrgwIsH1VWtkqyJ-2h2S0vy_6NnWghEO_7TTMRp-YCpTQSTDC9gbQQJa6rGRGhbg8sJiqBXYPgPeyzTVDhe69sBjYB6HxHX6kCKI3HL9Vo9hPRENPtvsa9rGkFx0Ud0OgMxKoqSFArymODACMeZzkVjBX8hYDEcCkRga7JYNXREGCHVRsNSwZ9j-5Nc7yGU_VmxUo-PNTd-VFu7z0upcJyvkx4013gBtmH0BncB0dQfI6fVMks8OCBCQuxhojVVLZK0nV7FwqiPR645gdHk9Os8driY50jFgxJuwCtNabAR33UC_QzAB0Pc2ah7dYeAwNfX7dtfCiS-OsnVthNnJxBxaDL2uBBXRXLXXhUt7S1AC7iHw5cmr-4bW5XHUg_1aQKeAyNy0c_CtvUg7pt6lyGREAAKLtGKFDFfkQgL3bm_5dCVwX518kX4GmHgFq_kGMi5WWuGXE55yxWk1P_Q4TY01CbrpW7mZfaRcXRYtcuW32vIPhVqI20e3PMo55gRoA6O_2rjozK6w2fDI1JO7tjYvU72tJfrcoUprTb3lD4K0evDEXpOPV_Q=w1508-h953-no-tmp.jpg" width="800" style="text-align:center"/> 
+  <img src="https://blog.bioturing.com/wp-content/uploads/2019/06/figure4-1-1024x773.png" width="800" style="text-align:center"/> 
 
 ## Installation
 
