@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/bioturing/signac.svg?branch=master)](https://travis-ci.com/bioturing/signac)
+![CI](https://github.com/bioturing/signac/workflows/CI/badge.svg)
 
 # Signac - A versatile package for Single-cell RNA-Seq analysis
 
