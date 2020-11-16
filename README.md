@@ -25,20 +25,33 @@ devtools::install_github("bioturing/signac")
 ## Usage
 ### Find marker genes with ```Signac::VeniceMarker```
 ```R
-> class(pbmc.mat) 
-[1] "dgCMatrix"
-attr(,"package")
-[1] "Matrix" 
-> head(clusters) 
-[1] "Memory CD4 T" "B"            "Memory CD4 T" "CD14+ Mono"   "NK"           "Memory CD4 T" 
-### Find markers for "NK" cluster
-> markers <- Signac::VeniceMarker(pbmc.mat, cluster = (clusters != "NK") + 1)
-> head(markers) # Type 1: Up-regulated; -1: Down-regulated
- Gene.Name Similarity Log.P.value P.adjusted.value      Type
-1      NKG7  0.1366077   -552.6917    1.277099e-236 0.9870968
-2      GNLY  0.1575343   -520.4139    6.656220e-223 1.0000000
-3      GZMB  0.1730481   -502.0630    4.138385e-215 1.0000000
-4      PRF1  0.2285456   -418.0301    9.703964e-179 1.0000000
-5      CST7  0.2894125   -346.8274    6.500973e-148 1.0000000
-6      CTSW  0.2838700   -345.5459    1.951351e-147 0.9869281
+### The pbmc object created by following the tutorial: https://satijalab.org/seurat/v3.1/pbmc3k_tutorial.html
+> pbmc
+An object of class Seurat
+13714 features across 2638 samples within 1 assay
+Active assay: RNA (13714 features, 2000 variable features)
+ 1 dimensional reduction calculated: pca
+> head(Seurat::Idents(pbmc))
+AAACATACAACCAC-1 AAACATTGAGCTAC-1 AAACATTGATCAGC-1 AAACCGTGCTTCCG-1
+               1                3                1                2
+AAACCGTGTATGCG-1 AAACGCACTGGTAC-1
+               6                1
+Levels: 0 1 2 3 4 5 6 7 8
+
+> ### Find marker for NK cells (cluster 6)
+> VeniceMarker(pbmc@assays$RNA@counts, cluster=Idents(pbmc) == 6) %>% head
+  Gene.ID Gene.Name Dissimilarity Bin.count Log10.p.value Perm.p.value
+1    1804      GNLY     0.8129016         3    -102.95623          NaN
+2   13002      NKG7     0.8186809         4    -102.32274          NaN
+3    9294      GZMB     0.8004017         3    -101.14819          NaN
+4    7153      PRF1     0.7359742         3     -93.08173          NaN
+5   11880      CST7     0.6679871         3     -84.52626          NaN
+6    3202    FGFBP2     0.6670391         3     -84.37497          NaN
+  Log10.adjusted.p.value Up.Down.score Log2.fold.change      pct1      pct2
+1              -98.81906             1         4.016472  96.12903 13.129279
+2              -98.48661             1         3.424045 100.00000 25.493355
+3              -97.48815             1         3.174406  96.12903  6.806283
+4              -89.54662             1         2.502070  94.83871 10.672573
+5              -81.08807             1         2.038486  94.83871 14.941603
+6              -81.01596             1         2.362991  87.74194  6.202175
 ```
