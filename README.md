@@ -38,7 +38,7 @@ AAACCGTGTATGCG-1 AAACGCACTGGTAC-1
                6                1
 Levels: 0 1 2 3 4 5 6 7 8
 
-> ### Find marker for NK cells (cluster 6)
+> ### Find markers for NK cells (cluster 6)
 > VeniceMarker(pbmc@assays$RNA@counts, cluster=Idents(pbmc) == 6) %>% head
   Gene.ID Gene.Name Dissimilarity Bin.count Log10.p.value Perm.p.value
 1    1804      GNLY     0.8129016         3    -102.95623          NaN
