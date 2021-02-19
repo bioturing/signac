@@ -19,7 +19,6 @@
 #include <iostream>
 #include <vector>
 #include <limits>
-#include <cmath>
 #include <H5Cpp.h>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
@@ -194,11 +193,9 @@ inline double LogPvalue(double score, int n1, int n2, int b_cnt)
     return R::pchisq(x, Dof, false, true);
 }
 
-void GetTotalCount(
-    const Rcpp::IntegerVector &cluster,
-    std::array<int, 2> &total_cnt)
+std::array<int,2> GetTotalCount(const Rcpp::IntegerVector &cluster)
 {
-    total_cnt[0] = total_cnt[1] = 0;
+    std::array<int,2> total_cnt{};
 
     for (int i = 0; i < cluster.size(); ++i) {
         int c = (int)cluster[i];
@@ -207,6 +204,7 @@ void GetTotalCount(
         else if (c == C_OUTSIDE)
             ++total_cnt[1];
     }
+    return total_cnt;
 }
 
 int GetThreshold(const std::array<int,2> &cnt)
@@ -326,7 +324,7 @@ double ComputeLogFC(
             const std::vector<std::pair<double, bool>> & exp,
             const std::array<int, 2> &cnt)
 {
-    double m[2];
+    std::array<double,2> m{};
 
     for (int i = 0; i < exp.size(); ++i)
         m[exp[i].second] += exp[i].first;
@@ -364,16 +362,16 @@ std::vector<std::array<int, 2>> Binning(
     std::array<int, 2> zero_cnt = count_missing(exp, total_cnt);
     boost::sort::spreadsort::float_sort(exp.begin(), exp.end(), rightshift());
 
-    double p_exp = -std::numeric_limits<double>::infinity();
+    double p_exp = exp[0].first;
 
-    int i = 0, j = -1;
+    int i = 0, j = 0;
     for (; i < exp.size(); ++i) {
         double c_exp = exp[i].first;
 
         if (c_exp >= 0)
             break;
 
-        if (abs(c_exp - p_exp) >= VENICE_EPS) {
+        if (std::abs(c_exp - p_exp) >= VENICE_EPS) {
             ++j;
             p_exp = c_exp;
         }
@@ -618,8 +616,7 @@ std::vector<struct GeneResult> VeniceTest(
         throw std::runtime_error("The input expression matrix "
                                  "must be a sparseMatrix");
 
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
+    std::array<int, 2> total_cnt = GetTotalCount(cluster);
 
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
 
@@ -673,8 +670,7 @@ std::vector<struct GeneResult> VeniceTest(
         bool correct,
         bool display_progress = true)
 {
-    std::array<int, 2> total_cnt;
-    GetTotalCount(cluster, total_cnt);
+    std::array<int, 2> total_cnt = GetTotalCount(cluster);
 
     int thres = threshold == 0? GetThreshold(total_cnt) : threshold;
 
