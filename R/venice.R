@@ -232,7 +232,7 @@ GetCellsIndices <- function(data.use, object, ident.1, ident.2) {
   }
   # if NULL for ident.2, use all other cells
   if (length(x = as.vector(x = ident.2)) > 1 &&
-      any(as.character(x = ide5nt.2) %in% colnames(x = data.use))) {
+      any(as.character(x = ident.2) %in% colnames(x = data.use))) {
     bad.cells <- colnames(x = data.use)[which(!as.character(x = ident.2) %in% colnames(x = data.use))]
     if (length(x = bad.cells) > 0) {
       stop(paste0("The following cell names provided to ident.2 are not present in the object: ", paste(bad.cells, collapse = ", ")))
