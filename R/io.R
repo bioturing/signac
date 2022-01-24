@@ -153,7 +153,10 @@ Read10X <- function(data.dir = NULL){
 #' @importFrom readr read_lines read_delim
 #'
 ReadDelim <- function(mat.path, sep = ",", header = TRUE, to.sparse = TRUE) {
-
+  ReplaceNA <- function(x) {
+    x[is.na(x)] <- "NA"
+    return(make.unique(x))
+  }
   # Get header. Handle a case when the 1st element is missing
   getHeader <- function(mat.path, sep) {
     lines <- read_lines(mat.path, n_max = 2)
@@ -194,6 +197,7 @@ ReadDelim <- function(mat.path, sep = ",", header = TRUE, to.sparse = TRUE) {
     col_names = header.arr,
     progress = FALSE
   ))
+  mat$gene <- ReplaceNA(mat$gene)
   if (to.sparse) {
     mat <- convertTibbleToSparseMatrix(mat)
   }
