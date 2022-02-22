@@ -9,14 +9,12 @@
 #ifndef H5DATASPACE_MISC_HPP
 #define H5DATASPACE_MISC_HPP
 
-#include <vector>
 #include <array>
 #include <initializer_list>
+#include <vector>
+#include <numeric>
 
 #include <H5Spublic.h>
-
-#include "../H5DataSpace.hpp"
-#include "../H5Exception.hpp"
 
 #include "H5Utils.hpp"
 
@@ -25,13 +23,16 @@ namespace HighFive {
 inline DataSpace::DataSpace(const std::vector<size_t>& dims)
     : DataSpace(dims.begin(), dims.end()) {}
 
-inline DataSpace::DataSpace(std::initializer_list<size_t> items)
+template <size_t N>
+inline DataSpace::DataSpace(const std::array<size_t, N>& dims)
+    : DataSpace(dims.begin(), dims.end()) {}
+
+inline DataSpace::DataSpace(const std::initializer_list<size_t>& items)
     : DataSpace(std::vector<size_t>(items)) {}
 
 template<typename... Args>
     inline DataSpace::DataSpace(size_t dim1, Args... dims)
-    : DataSpace(std::vector<size_t>{static_cast<size_t>(dim1),
-                                    static_cast<size_t>(dims)...}){}
+    : DataSpace(std::vector<size_t>{dim1, static_cast<size_t>(dims)...}) {}
 
 template <class IT, typename>
 inline DataSpace::DataSpace(const IT begin, const IT end) {
@@ -66,23 +67,21 @@ inline DataSpace::DataSpace(const std::vector<size_t>& dims,
 inline DataSpace::DataSpace(DataSpace::DataspaceType dtype) {
     H5S_class_t h5_dataspace_type;
     switch (dtype) {
-    case DataSpace::datascape_scalar:
+    case DataSpace::dataspace_scalar:
         h5_dataspace_type = H5S_SCALAR;
         break;
-    case DataSpace::datascape_null:
+    case DataSpace::dataspace_null:
         h5_dataspace_type = H5S_NULL;
         break;
     default:
         throw DataSpaceException("Invalid dataspace type: should be "
-                                 "datascape_scalar or datascape_null");
+                                 "dataspace_scalar or dataspace_null");
     }
 
     if ((_hid = H5Screate(h5_dataspace_type)) < 0) {
         throw DataSpaceException("Unable to create dataspace");
     }
 }
-
-inline DataSpace::DataSpace() {}
 
 inline DataSpace DataSpace::clone() const {
     DataSpace res;
@@ -102,15 +101,20 @@ inline size_t DataSpace::getNumberDimensions() const {
 }
 
 inline std::vector<size_t> DataSpace::getDimensions() const {
-
     std::vector<hsize_t> dims(getNumberDimensions());
-    if (dims.size() > 0) {
+    if (!dims.empty()) {
         if (H5Sget_simple_extent_dims(_hid, dims.data(), NULL) < 0) {
             HDF5ErrMapper::ToException<DataSetException>(
                 "Unable to get dataspace dimensions");
         }
     }
     return details::to_vector_size_t(std::move(dims));
+}
+
+inline size_t DataSpace::getElementCount() const {
+    const std::vector<size_t>& dims = getDimensions();
+    return std::accumulate(dims.begin(), dims.end(), size_t{1u},
+                           std::multiplies<size_t>());
 }
 
 inline std::vector<size_t> DataSpace::getMaxDimensions() const {
@@ -120,70 +124,21 @@ inline std::vector<size_t> DataSpace::getMaxDimensions() const {
             "Unable to get dataspace dimensions");
     }
 
-    std::vector<size_t> res(maxdims.begin(), maxdims.end());
-    std::replace(maxdims.begin(), maxdims.end(),
-                 static_cast<size_t>(H5S_UNLIMITED), DataSpace::UNLIMITED);
-    return res;
+    std::replace(maxdims.begin(), maxdims.end(), H5S_UNLIMITED,
+                 static_cast<hsize_t>(DataSpace::UNLIMITED));
+    return details::to_vector_size_t(maxdims);
 }
 
-template <typename ScalarValue>
-inline DataSpace DataSpace::From(const ScalarValue& scalar) {
-    (void)scalar;
-#if H5_USE_CXX11
-    static_assert(
-        (std::is_arithmetic<ScalarValue>::value ||
-         std::is_enum<ScalarValue>::value ||
-         std::is_same<std::string, ScalarValue>::value),
-        "Only the following types are supported by DataSpace::From: \n"
-        "  signed_arithmetic_types = int |  long | float |  double \n"
-        "  unsigned_arithmetic_types = unsigned signed_arithmetic_types \n"
-        "  string_types = std::string \n"
-        "  all_basic_types = string_types | unsigned_arithmetic_types | "
-        "signed_arithmetic_types \n "
-        "  stl_container_types = std::vector<all_basic_types> "
-        "  boost_container_types = "
-        "boost::numeric::ublas::matrix<all_basic_types> | "
-        "boost::multi_array<all_basic_types> \n"
-        "  all_supported_types = all_basic_types | stl_container_types | "
-        "boost_container_types");
-#endif
-    return DataSpace(DataSpace::datascape_scalar);
-}
-
-template <typename Value>
-inline DataSpace DataSpace::From(const std::vector<Value>& container) {
-    return DataSpace(details::get_dim_vector<Value>(container));
-}
-
-/// Currently only supports 1D std::array
-template <typename Value, std::size_t N>
-inline DataSpace DataSpace::From(const std::array<Value, N>& ) {
-    std::vector<size_t> dims;
-    dims.push_back(N);
+template <typename T>
+inline DataSpace DataSpace::From(const T& value) {
+    auto dims = details::inspector<T>::getDimensions(value);
     return DataSpace(dims);
 }
 
-#ifdef H5_USE_BOOST
-template <typename Value, std::size_t Dims>
-inline DataSpace
-DataSpace::From(const boost::multi_array<Value, Dims>& container) {
-    std::vector<size_t> dims(Dims);
-    for (std::size_t i = 0; i < Dims; ++i) {
-        dims[i] = container.shape()[i];
-    }
-    return DataSpace(dims);
+template <std::size_t N, std::size_t Width>
+inline DataSpace DataSpace::FromCharArrayStrings(const char(&)[N][Width]) {
+    return DataSpace(N);
 }
-
-template <typename Value>
-inline DataSpace
-DataSpace::From(const boost::numeric::ublas::matrix<Value>& mat) {
-    std::vector<size_t> dims(2);
-    dims[0] = mat.size1();
-    dims[1] = mat.size2();
-    return DataSpace(dims);
-}
-
-#endif
 
 namespace details {
 
@@ -193,17 +148,15 @@ inline bool checkDimensions(const DataSpace& mem_space, size_t input_dims) {
     if (input_dims == dataset_dims)
         return true;
 
-    const std::vector<size_t> dims = mem_space.getDimensions();
-    for (std::vector<size_t>::const_reverse_iterator i = dims.rbegin();
-         i != --dims.rend() && *i == 1; ++i)
+    const std::vector<size_t>& dims = mem_space.getDimensions();
+    for (auto i = dims.crbegin(); i != --dims.crend() && *i == 1; ++i)
         --dataset_dims;
 
     if (input_dims == dataset_dims)
         return true;
 
     dataset_dims = dims.size();
-    for (std::vector<size_t>::const_iterator i = dims.begin();
-         i != --dims.end() && *i == 1; ++i)
+    for (auto i = dims.cbegin(); i != --dims.cend() && *i == 1; ++i)
         --dataset_dims;
 
     if (input_dims == dataset_dims)

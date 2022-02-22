@@ -11,8 +11,6 @@
 
 #include <H5Ppublic.h>
 
-#include "../H5PropertyList.hpp"
-
 namespace HighFive {
 
 namespace {
@@ -20,73 +18,48 @@ inline hid_t convert_plist_type(PropertyType propertyType) {
     // The HP5_XXX are macros with function calls so we can't assign
     // them as the enum values
     switch (propertyType) {
-    case PropertyType::OBJECT_CREATE_PROP:
+    case PropertyType::OBJECT_CREATE:
         return H5P_OBJECT_CREATE;
-    case PropertyType::FILE_CREATE_PROP:
+    case PropertyType::FILE_CREATE:
         return H5P_FILE_CREATE;
-    case PropertyType::FILE_ACCESS_PROP:
+    case PropertyType::FILE_ACCESS:
         return H5P_FILE_ACCESS;
-    case PropertyType::DATASET_CREATE_PROP:
+    case PropertyType::DATASET_CREATE:
         return H5P_DATASET_CREATE;
-    case PropertyType::DATASET_ACCESS_PROP:
+    case PropertyType::DATASET_ACCESS:
         return H5P_DATASET_ACCESS;
-    case PropertyType::DATASET_XFER_PROP:
+    case PropertyType::DATASET_XFER:
         return H5P_DATASET_XFER;
-    case PropertyType::GROUP_CREATE_PROP:
+    case PropertyType::GROUP_CREATE:
         return H5P_GROUP_CREATE;
-    case PropertyType::GROUP_ACCESS_PROP:
+    case PropertyType::GROUP_ACCESS:
         return H5P_GROUP_ACCESS;
-    case PropertyType::DATATYPE_CREATE_PROP:
+    case PropertyType::DATATYPE_CREATE:
         return H5P_DATATYPE_CREATE;
-    case PropertyType::DATATYPE_ACCESS_PROP:
+    case PropertyType::DATATYPE_ACCESS:
         return H5P_DATATYPE_ACCESS;
-    case PropertyType::STRING_CREATE_PROP:
+    case PropertyType::STRING_CREATE:
         return H5P_STRING_CREATE;
-    case PropertyType::ATTRIBUTE_CREATE_PROP:
+    case PropertyType::ATTRIBUTE_CREATE:
         return H5P_ATTRIBUTE_CREATE;
-    case PropertyType::OBJECT_COPY_PROP:
+    case PropertyType::OBJECT_COPY:
         return H5P_OBJECT_COPY;
-    case PropertyType::LINK_CREATE_PROP:
+    case PropertyType::LINK_CREATE:
         return H5P_LINK_CREATE;
-    case PropertyType::LINK_ACCESS_PROP:
+    case PropertyType::LINK_ACCESS:
         return H5P_LINK_ACCESS;
     default:
         HDF5ErrMapper::ToException<PropertyException>(
             "Unsupported property list type");
     }
-    return -1;
 }
 
 }  // namespace
 
-template <PropertyType T>
-inline PropertyList<T>::PropertyList()
-    : _hid(H5P_DEFAULT) {}
 
-#ifdef H5_USE_CXX11
-template <PropertyType T>
-inline PropertyList<T>::PropertyList(PropertyList<T>&& other)
-    : _hid(other._hid) {
-    other._hid = H5P_DEFAULT;
-}
+inline PropertyListBase::PropertyListBase() noexcept
+    : Object(H5P_DEFAULT) {}
 
-template <PropertyType T>
-inline PropertyList<T>& PropertyList<T>::operator=(PropertyList<T>&& other) {
-    // This code handles self-assigment without ifs
-    const auto hid = other._hid;
-    other._hid = H5P_DEFAULT;
-    _hid = hid;
-    return *this;
-}
-#endif
-
-template <PropertyType T>
-inline PropertyList<T>::~PropertyList() {
-    // H5P_DEFAULT and H5I_INVALID_HID are not the same Ensuring that ~Object
-    if (_hid != H5P_DEFAULT) {
-        H5Pclose(_hid);
-    }
-}
 
 template <PropertyType T>
 inline void PropertyList<T>::_initializeIfNeeded() {
@@ -116,6 +89,9 @@ inline void RawPropertyList<T>::add(const F& funct, const Args&... args) {
     }
 }
 
+
+// Specific options to be added to Property Lists
+
 inline void Chunking::apply(const hid_t hid) const {
     if (H5Pset_chunk(hid, static_cast<int>(_dims.size()), _dims.data()) < 0) {
         HDF5ErrMapper::ToException<PropertyException>(
@@ -124,14 +100,22 @@ inline void Chunking::apply(const hid_t hid) const {
 }
 
 inline void Deflate::apply(const hid_t hid) const {
-    if (!H5Zfilter_avail(H5Z_FILTER_DEFLATE)) {
+    if (!H5Zfilter_avail(H5Z_FILTER_DEFLATE) ||
+            H5Pset_deflate(hid, _level) < 0) {
         HDF5ErrMapper::ToException<PropertyException>(
             "Error setting deflate property");
     }
+}
 
-    if (H5Pset_deflate(hid, _level) < 0) {
+inline void Szip::apply(const hid_t hid) const {
+    if (!H5Zfilter_avail(H5Z_FILTER_SZIP)) {
         HDF5ErrMapper::ToException<PropertyException>(
-            "Error setting deflate property");
+            "Error setting szip property");
+    }
+
+    if (H5Pset_szip(hid, _options_mask, _pixels_per_block) < 0) {
+        HDF5ErrMapper::ToException<PropertyException>(
+            "Error setting szip property");
     }
 }
 
@@ -153,5 +137,14 @@ inline void Caching::apply(const hid_t hid) const {
             "Error setting dataset cache parameters");
     }
 }
+
+inline void CreateIntermediateGroup::apply(const hid_t hid) const {
+    if (H5Pset_create_intermediate_group(hid, _create ? 1 : 0) < 0) {
+        HDF5ErrMapper::ToException<PropertyException>(
+            "Error setting property for create intermediate groups");
+    }
+}
+
 }  // namespace HighFive
+
 #endif  // H5PROPERTY_LIST_HPP
