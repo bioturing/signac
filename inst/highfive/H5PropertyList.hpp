@@ -9,51 +9,64 @@
 #ifndef H5PROPERTY_LIST_HPP
 #define H5PROPERTY_LIST_HPP
 
-#include "H5Object.hpp"
+#include <vector>
 
 #include <H5Ppublic.h>
 
+#include "H5Exception.hpp"
+#include "H5Object.hpp"
+
 namespace HighFive {
 
-
+///
+/// \brief Types of property lists
+///
 enum class PropertyType : int {
-    OBJECT_CREATE_PROP,
-    FILE_CREATE_PROP,
-    FILE_ACCESS_PROP,
-    DATASET_CREATE_PROP,
-    DATASET_ACCESS_PROP,
-    DATASET_XFER_PROP,
-    GROUP_CREATE_PROP,
-    GROUP_ACCESS_PROP,
-    DATATYPE_CREATE_PROP,
-    DATATYPE_ACCESS_PROP,
-    STRING_CREATE_PROP,
-    ATTRIBUTE_CREATE_PROP,
-    OBJECT_COPY_PROP,
-    LINK_CREATE_PROP,
-    LINK_ACCESS_PROP,
+    OBJECT_CREATE,
+    FILE_CREATE,
+    FILE_ACCESS,
+    DATASET_CREATE,
+    DATASET_ACCESS,
+    DATASET_XFER,
+    GROUP_CREATE,
+    GROUP_ACCESS,
+    DATATYPE_CREATE,
+    DATATYPE_ACCESS,
+    STRING_CREATE,
+    ATTRIBUTE_CREATE,
+    OBJECT_COPY,
+    LINK_CREATE,
+    LINK_ACCESS,
 };
 
+
 ///
-/// \brief Base HDF5 property List
+/// \brief Base Class for Property lists, providing global default
+class PropertyListBase : public Object {
+
+  public:
+    PropertyListBase() noexcept;
+
+    static const PropertyListBase& Default() noexcept {
+        static const PropertyListBase plist{};
+        return plist;
+    }
+
+};
+
+
+///
+/// \brief HDF5 property Lists
 ///
 template <PropertyType T>
-class PropertyList {
+class PropertyList : public PropertyListBase {
   public:
-    ~PropertyList();
 
-#ifdef H5_USE_CXX11
-    PropertyList(PropertyList&& other);
-    PropertyList& operator=(PropertyList&& other);
-#endif
-    constexpr PropertyType getType() const { return T; }
-
-    hid_t getId() const { return _hid; }
-
-    PropertyList();
-
-    template <typename P>
-    PropertyList(std::initializer_list<P>);
+    ///
+    /// \brief return the type of this PropertyList
+    constexpr PropertyType getType() const noexcept {
+        return T;
+    }
 
     ///
     /// Add a property to this property list.
@@ -63,29 +76,35 @@ class PropertyList {
     template <typename P>
     void add(const P& property);
 
+    ///
+    /// Return the Default property type object
+    static const PropertyList<T>& Default() noexcept {
+        return static_cast<const PropertyList<T>&>(PropertyListBase::Default());
+    }
+
   protected:
     void _initializeIfNeeded();
 
-    hid_t _hid;
-
-  private:
-#ifdef H5_USE_CXX11
-    PropertyList(const PropertyList<T>&) = delete;
-    PropertyList& operator=(const PropertyList<T>&) = delete;
-#else
-    PropertyList(const PropertyList<T>&);
-    PropertyList& operator=(const PropertyList<T>&);
-#endif
 };
 
-typedef PropertyList<PropertyType::FILE_CREATE_PROP> FileCreateProps;
-typedef PropertyList<PropertyType::FILE_ACCESS_PROP> FileAccessProps ;
-typedef PropertyList<PropertyType::DATASET_CREATE_PROP> DataSetCreateProps;
-typedef PropertyList<PropertyType::DATASET_ACCESS_PROP> DataSetAccessProps;
-typedef PropertyList<PropertyType::DATASET_XFER_PROP> DataTransferProps;
+typedef PropertyList<PropertyType::OBJECT_CREATE> ObjectCreateProps;
+typedef PropertyList<PropertyType::FILE_CREATE> FileCreateProps;
+typedef PropertyList<PropertyType::FILE_ACCESS> FileAccessProps ;
+typedef PropertyList<PropertyType::DATASET_CREATE> DataSetCreateProps;
+typedef PropertyList<PropertyType::DATASET_ACCESS> DataSetAccessProps;
+typedef PropertyList<PropertyType::DATASET_XFER> DataTransferProps;
+typedef PropertyList<PropertyType::GROUP_CREATE> GroupCreateProps;
+typedef PropertyList<PropertyType::GROUP_ACCESS> GroupAccessProps;
+typedef PropertyList<PropertyType::DATATYPE_CREATE> DataTypeCreateProps;
+typedef PropertyList<PropertyType::DATATYPE_ACCESS> DataTypeAccessProps;
+typedef PropertyList<PropertyType::STRING_CREATE> StringCreateProps;
+typedef PropertyList<PropertyType::ATTRIBUTE_CREATE> AttributeCreateProps;
+typedef PropertyList<PropertyType::OBJECT_COPY> ObjectCopyProps;
+typedef PropertyList<PropertyType::LINK_CREATE> LinkCreateProps;
+typedef PropertyList<PropertyType::LINK_ACCESS> LinkAccessProps;
 
 ///
-/// RawPropertieLists are to be used when advanced H5 properties
+/// RawPropertyLists are to be used when advanced H5 properties
 /// are desired and are not part of the HighFive API.
 /// Therefore this class is mainly for internal use.
 template <PropertyType T>
@@ -98,17 +117,19 @@ class RawPropertyList : public PropertyList<T> {
 
 class Chunking {
   public:
-    Chunking(const std::vector<hsize_t>& dims)
+    explicit Chunking(const std::vector<hsize_t>& dims)
         : _dims(dims) {}
 
-    Chunking(std::initializer_list<hsize_t> items)
+    Chunking(const std::initializer_list<hsize_t>& items)
         : Chunking(std::vector<hsize_t>{items}) {}
 
     template <typename... Args>
-    Chunking(hsize_t item, Args... args)
+    explicit Chunking(hsize_t item, Args... args)
         : Chunking(std::vector<hsize_t>{item, static_cast<hsize_t>(args)...}) {}
 
-    const std::vector<hsize_t>& getDimensions() const { return _dims; }
+    const std::vector<hsize_t>& getDimensions() const noexcept {
+        return _dims;
+    }
 
   private:
     friend DataSetCreateProps;
@@ -118,7 +139,7 @@ class Chunking {
 
 class Deflate {
   public:
-    Deflate(unsigned level)
+    explicit Deflate(unsigned level)
         : _level(level) {}
 
   private:
@@ -127,9 +148,24 @@ class Deflate {
     const unsigned _level;
 };
 
+class Szip {
+  public:
+    explicit Szip(unsigned options_mask = H5_SZIP_EC_OPTION_MASK, 
+                  unsigned pixels_per_block = H5_SZIP_MAX_PIXELS_PER_BLOCK)
+        : _options_mask(options_mask)
+        , _pixels_per_block(pixels_per_block)
+    {}
+
+    private:
+      friend DataSetCreateProps;
+      void apply(hid_t hid) const;
+      const unsigned _options_mask;
+      const unsigned _pixels_per_block;
+};
+
 class Shuffle {
   public:
-    Shuffle() {}
+    Shuffle() = default;
 
   private:
     friend DataSetCreateProps;
@@ -155,6 +191,19 @@ class Caching {
     const size_t _numSlots;
     const size_t _cacheSize;
     const double _w0;
+};
+
+class CreateIntermediateGroup {
+  public:
+    explicit CreateIntermediateGroup(bool create=true)
+        : _create(create)
+    {}
+
+  private:
+    friend ObjectCreateProps;
+    friend LinkCreateProps;
+    void apply(hid_t hid) const;
+    const bool _create;
 };
 
 }  // namespace HighFive

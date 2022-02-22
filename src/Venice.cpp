@@ -22,6 +22,7 @@
 #include <H5Cpp.h>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
+#include <highfive/H5Easy.hpp>
 
 // [[Rcpp::depends(Rhdf5lib)]]
 // [[Rcpp::depends(RcppProgress)]]
@@ -40,7 +41,7 @@ struct GeneResult {
 
     double log_fc;
 
-    double pct1; // percent 
+    double pct1; // percent
     double pct2;
 };
 
@@ -52,7 +53,7 @@ private:
     std::vector<uint64_t> ptr;
     HighFive::DataSet indices;
     HighFive::DataSet data;
-    
+
     uint64_t cache_size;
 
     uint64_t start = 0;
@@ -81,7 +82,7 @@ private:
         this->data.select({l}, {len}).read(this->data_v);
     }
 public:
-    MatrixReader(const std::string &file_name, const std::string &group_name, uint64_t cache_size = 1000000): 
+    MatrixReader(const std::string &file_name, const std::string &group_name, uint64_t cache_size = 1000000):
             file(file_name, HighFive::File::ReadOnly),
             group_name(group_name),
             indices {this->file.getDataSet(group_name + "/indices")},
@@ -94,7 +95,7 @@ public:
         if (!this->file.exist(group_name + "/indptr") ||
             !this->file.exist(group_name + "/barcodes") ||
             !this->file.exist(group_name + "/shape"))  {
-                
+
             Rcpp::stop("Group " + group_name + " in file " + this->file.getName() + " doesn't have a correct matrix format");
         }
 
@@ -109,9 +110,9 @@ public:
     }
 
 
-    void get_expression(int gene_id, const Rcpp::IntegerVector &cluster, 
+    void get_expression(int gene_id, const Rcpp::IntegerVector &cluster,
                         std::vector<std::pair<double, bool>> &result) {
-        
+
         assert(gene_id >= start);
         if (gene_id >= end)
             read(gene_id);
@@ -139,20 +140,9 @@ public:
     }
 
     std::vector<std::string> get_names() {
-        std::vector<std::string> gene;
-        HighFive::DataSet datasetVec = this->file.getDataSet(group_name + "/barcodes");
-        HighFive::DataSpace dataSpace = datasetVec.getSpace();
-        std::vector<size_t> dims = dataSpace.getDimensions();
-        HighFive::DataType dataType = datasetVec.getDataType();
-        size_t str_size = H5Tget_size(dataType.getId());
-        H5T_str_t str_pad = H5Tget_strpad(dataType.getId());
-        H5T_cset_t str_cset = H5Tget_cset(dataType.getId());
-
-        if((str_pad == H5T_STR_NULLTERM) && (str_cset == H5T_CSET_UTF8))
-            datasetVec.read(gene);
-        else
-            datasetVec.read(gene, str_size, str_pad, str_cset, dims[0]);
-
+        std::vector<std::string> gene = H5Easy::load<std::vector<std::string>>(
+                                                                this->file,
+                                                                group_name + "/barcodes");
         return gene;
     }
 
@@ -328,7 +318,7 @@ double ComputeLogFC(
 
     for (int i = 0; i < exp.size(); ++i)
         m[exp[i].second] += exp[i].first;
-    
+
     m[0] /= cnt[0];
     m[1] /= cnt[1];
 
@@ -468,7 +458,7 @@ int CountNumExpressClusterZero(const std::vector<std::pair<double, bool>> &exp) 
 }
 
 bool IsValidPercent(const GeneResult &gene_result, double threshold_pct) {
-  if (gene_result.pct1 < threshold_pct && gene_result.pct2 < threshold_pct) 
+  if (gene_result.pct1 < threshold_pct && gene_result.pct2 < threshold_pct)
       return false;
   return true;
 }
@@ -481,13 +471,13 @@ struct GeneResult ProcessGene(
         double threshold_pct)
 {
     struct GeneResult res;
-    
+
     int count_cluster0 = CountNumExpressClusterZero(exp);
     res.pct1 = 100.0 * (exp.size() - count_cluster0) / cnt[0];
     res.pct2 = 100.0 * count_cluster0 / cnt[1];
     if (!IsValidPercent(res, threshold_pct))
       return res;
-    
+
     res.log_fc = ComputeLogFC(exp, cnt);
 
     std::vector<std::array<int, 2>> bins = Binning(std::move(exp), cnt);
@@ -508,7 +498,7 @@ struct GeneResult ProcessGene(
 }
 
 void BuildExpDgT(
-        const Rcpp::S4 &mtx, 
+        const Rcpp::S4 &mtx,
         const Rcpp::IntegerVector &cluster,
         const std::array<int, 2> &total_cnt,
         std::vector<std::vector<std::pair<double, bool>>> &exp)
@@ -525,7 +515,7 @@ void BuildExpDgT(
         throw std::domain_error("The length of cluster vector (" + std::to_string(cluster.size()) + ") is not equal "
                                 "to the number of cells (" + std::to_string(n_cells) + ") in the matrix");
 
-    exp.resize(n_genes);    
+    exp.resize(n_genes);
 
     const Rcpp::IntegerVector &row_id = mtx.attr("i");
     const Rcpp::IntegerVector &col_id = mtx.attr("j");
@@ -557,7 +547,7 @@ void BuildExpDgT(
 }
 
 void BuildExpDgC(
-        const Rcpp::S4 &mtx, 
+        const Rcpp::S4 &mtx,
         const Rcpp::IntegerVector &cluster,
         const std::array<int, 2> &total_cnt,
         std::vector<std::vector<std::pair<double, bool>>> &exp)
@@ -649,13 +639,13 @@ std::vector<struct GeneResult> VeniceTest(
                                   thres,
                                   perm,
                                   threshold_pct);
-        
+
         if (IsValidPercent(gene_result, threshold_pct)) {
             res.push_back(gene_result);
             res.back().gene_id = i + 1;
         }
-        
-        p.increment();   
+
+        p.increment();
     }
     return res;
 }
@@ -705,12 +695,12 @@ std::vector<struct GeneResult> VeniceTest(
                                   thres,
                                   perm,
                                   threshold_pct);
-        
+
         if (IsValidPercent(gene_result, threshold_pct)) {
             res.push_back(gene_result);
-            res.back().gene_id = i + 1;    
+            res.back().gene_id = i + 1;
         }
-        
+
         p.increment();
     }
 
@@ -761,7 +751,7 @@ Rcpp::DataFrame PostProcess(
             d_score[i] = res[k].d_score - res[k].d_bias;
         else
             d_score[i] = res[k].d_score;
-        
+
         b_cnt[i]    = res[k].b_cnt;
         log10_pv[i] = res[k].log_p_value * M_LOG10E;
         perm_pv[i]  = res[k].perm_p_value;
