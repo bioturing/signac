@@ -19,7 +19,6 @@
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 #include <H5Cpp.h>
-#include <highfive/H5Easy.hpp>
 
 using namespace H5;
 using namespace Rcpp;
@@ -149,6 +148,7 @@ public:
         }
     }
 
+    template<size_t MAX_LEN>
     void ReadDatasetVector(HighFive::File *file, const std::string &groupName, const std::string &datasetName, std::vector<std::string> &vvec) {
         if(file == nullptr) {
             std::stringstream ostr;
@@ -179,8 +179,25 @@ public:
             ostr << "Read dataset (STRING) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
             ::Rf_warning(ostr.str().c_str());
 #endif
-
-            vvec = H5Easy::load<std::vector<std::string>>(*file, groupName + "/" + datasetName);
+            HighFive::DataSet dset = file->getDataSet(groupName + "/" + datasetName);
+            if (dset.getDataType().isFixedLenStr()) {
+                if (dset.getDataType().getSize() > MAX_LEN) {
+                    ::Rf_error("Dataset length exceeds the specified maxiumum length");
+                    Close(file);
+                    throw;
+                }
+                HighFive::FixedLenStringArray<MAX_LEN> tmp;
+                dset.read(tmp);
+                vvec.resize(tmp.size());
+                for (int i = 0; i < tmp.size(); ++i)
+                    vvec[i] = tmp[i];
+            } else if (dset.getDataType().isVariableStr()) {
+                dset.read(vvec);
+            } else {
+                ::Rf_error("Dataset is neither a fixed-length strings array nor a variable-length strings array");
+                Close(file);
+                throw;
+            }
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadDatatypeVector (STRING) HDF5 format, error=" << err.what() ;
@@ -331,7 +348,8 @@ public:
             ostr << "Read dataset (STRING) : [" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
             ::Rf_warning(ostr.str().c_str());
 #endif
-            datasetVal = H5Easy::load<std::vector<std::string>>(*file, datasetName);
+            //TODO: Change this?
+            ReadDatasetVector<256>(file, "", datasetName, datasetVal);
         } catch (HighFive::Exception& err) {
             std::stringstream ostr;
             ostr << "ReadRootDataset HDF5 format, error=" << err.what() ;
