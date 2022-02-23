@@ -22,7 +22,7 @@
 #include <H5Cpp.h>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
-#include <highfive/H5Easy.hpp>
+#include "Hdf5Util.h"
 
 // [[Rcpp::depends(Rhdf5lib)]]
 // [[Rcpp::depends(RcppProgress)]]
@@ -140,9 +140,10 @@ public:
     }
 
     std::vector<std::string> get_names() {
-        std::vector<std::string> gene = H5Easy::load<std::vector<std::string>>(
-                                                                this->file,
-                                                                group_name + "/barcodes");
+        com::bioturing::Hdf5Util h5util("");
+        std::vector<std::string> gene;
+        // Assume that barcodes have lengths < 256
+        h5util.ReadDatasetVector<256>(&this->file, group_name, "barcodes", gene);
         return gene;
     }
 
