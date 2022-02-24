@@ -173,18 +173,6 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
-// ReadRootDataset
-Rcpp::StringVector ReadRootDataset(const std::string& filePath, const std::string& datasetName);
-RcppExport SEXP _Signac_ReadRootDataset(SEXP filePathSEXP, SEXP datasetNameSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const std::string& >::type filePath(filePathSEXP);
-    Rcpp::traits::input_parameter< const std::string& >::type datasetName(datasetNameSEXP);
-    rcpp_result_gen = Rcpp::wrap(ReadRootDataset(filePath, datasetName));
-    return rcpp_result_gen;
-END_RCPP
-}
 // ReadIntegerVector
 Rcpp::NumericVector ReadIntegerVector(const std::string& filePath, const std::string& groupName, const std::string& datasetName);
 RcppExport SEXP _Signac_ReadIntegerVector(SEXP filePathSEXP, SEXP groupNameSEXP, SEXP datasetNameSEXP) {
@@ -687,7 +675,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_Signac_GetListRootObjectNames", (DL_FUNC) &_Signac_GetListRootObjectNames, 1},
     {"_Signac_Read10XH5Content", (DL_FUNC) &_Signac_Read10XH5Content, 3},
     {"_Signac_WriteRootDataset", (DL_FUNC) &_Signac_WriteRootDataset, 3},
-    {"_Signac_ReadRootDataset", (DL_FUNC) &_Signac_ReadRootDataset, 2},
     {"_Signac_ReadIntegerVector", (DL_FUNC) &_Signac_ReadIntegerVector, 3},
     {"_Signac_ReadDoubleVector", (DL_FUNC) &_Signac_ReadDoubleVector, 3},
     {"_Signac_FastMatMult", (DL_FUNC) &_Signac_FastMatMult, 2},
