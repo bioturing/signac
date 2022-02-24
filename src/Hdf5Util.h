@@ -174,11 +174,6 @@ public:
                 throw;
             }
 
-#ifdef DEBUG
-            std::stringstream ostr;
-            ostr << "Read dataset (STRING) : [" << groupName << "/" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
-            ::Rf_warning(ostr.str().c_str());
-#endif
             HighFive::DataSet dset = file->getDataSet(groupName + "/" + datasetName);
             if (dset.getDataType().isFixedLenStr()) {
                 if (dset.getDataType().getSize() > MAX_LEN) {
@@ -343,11 +338,6 @@ public:
                 Close(file);
                 throw;
             }
-#ifdef DEBUG
-            std::stringstream ostr;
-            ostr << "Read dataset (STRING) : [" << datasetName << "] with str_size=" << str_size << ", str_pad=" << str_pad << ", str_cset=" << str_cset << ", dims[0]=" << dims[0];
-            ::Rf_warning(ostr.str().c_str());
-#endif
             //TODO: Change this?
             ReadDatasetVector<256>(file, "", datasetName, datasetVal);
         } catch (HighFive::Exception& err) {
