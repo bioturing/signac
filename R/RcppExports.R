@@ -165,17 +165,6 @@ WriteRootDataset <- function(filePath, datasetName, datasetVal) {
     invisible(.Call(`_Signac_WriteRootDataset`, filePath, datasetName, datasetVal))
 }
 
-#' ReadRootDataset
-#'
-#' Read a string vector from root group
-#'
-#' @param filePath A fiel path
-#' @param datasetName A dataset name
-#' @export
-ReadRootDataset <- function(filePath, datasetName) {
-    .Call(`_Signac_ReadRootDataset`, filePath, datasetName)
-}
-
 #' ReadIntegerVector
 #'
 #' This function is used to read a integer vector from hdf5 file
