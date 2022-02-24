@@ -9,6 +9,7 @@
 #define C_INSIDE 1
 #define C_OUTSIDE 0
 
+#include "Hdf5Util.h"
 #include <boost/sort/spreadsort/spreadsort.hpp>
 #include <Rmath.h>
 
@@ -22,7 +23,6 @@
 #include <H5Cpp.h>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
-#include "Hdf5Util.h"
 
 // [[Rcpp::depends(Rhdf5lib)]]
 // [[Rcpp::depends(RcppProgress)]]
