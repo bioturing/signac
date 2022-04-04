@@ -234,23 +234,6 @@ void WriteRootDataset(const std::string &filePath, const std::string &datasetNam
     oHdf5Util.Close(file);
 }
 
-//' ReadRootDataset
-//'
-//' Read a string vector from root group
-//'
-//' @param filePath A fiel path
-//' @param datasetName A dataset name
-//' @export
-// [[Rcpp::export]]
-Rcpp::StringVector ReadRootDataset(const std::string &filePath, const std::string &datasetName) {
-    com::bioturing::Hdf5Util oHdf5Util(filePath);
-    HighFive::File *file = oHdf5Util.Open(1);
-    std::vector<std::string> dataVec;
-    oHdf5Util.ReadRootDataset(file, datasetName, dataVec);
-    oHdf5Util.Close(file);
-    return Rcpp::wrap(dataVec);
-}
-
 //' ReadIntegerVector
 //'
 //' This function is used to read a integer vector from hdf5 file
