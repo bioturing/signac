@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -pedantic -std=c11
 USER_INCLUDE_DIR=${R_PACKAGE_DIR}/include
 USER_LIB_DIR=${R_PACKAGE_DIR}/lib${R_ARCH}/
 
-PKG_CXXFLAGS = -DH5_USE_BOOST -DH5_USE_CXX11 $(SHLIB_OPENMP_CXXFLAGS) -I"../inst/" -I"."
+PKG_CXXFLAGS = -DH5_USE_BOOST -DH5_USE_CXX11 $(SHLIB_OPENMP_CXXFLAGS) -I"../inst/" -I"." -I"../HighFive/include/"
 has_hdf5_hl := $(shell (echo "${HDF5_LIB}" | grep hdf5_hl > /dev/null) && echo "1")
 ifeq (${has_hdf5_hl},1)
 	PKG_CXXFLAGS=$(PKG_CXXFLAGS) -DHAS_HDF5_HL
