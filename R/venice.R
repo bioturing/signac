@@ -23,16 +23,16 @@ VeniceAllMarkers <- function(
   logfc.threshold = 0.25,
   nperm = 0
 ) {
-  data.use <-  Seurat:::GetAssayData(object = object[[assay]], slot = slot)
+  data.use <-  Seurat::GetAssayData(object = object[[assay]], slot = slot)
   MapVals <- function(vec, from, to) {
     vec2 <- setNames(object = to, nm = from)[as.character(x = vec)]
     vec2[is.na(x = vec2)] <- vec[is.na(x = vec2)]
     return(unname(obj = vec2))
   }
   if (is.null(x = node)) {
-    idents.all <- sort(x = unique(x = Seurat:::Idents(object = object)))
+    idents.all <- sort(x = unique(x = Seurat::Idents(object = object)))
   } else {
-    tree <- Seurat:::Tool(object = object, slot = 'BuildClusterTree')
+    tree <- Seurat::Tool(object = object, slot = 'BuildClusterTree')
     if (is.null(x = tree)) {
       stop("Please run 'BuildClusterTree' before finding markers on nodes")
     }
@@ -172,7 +172,7 @@ VeniceFindMarkers <- function(
 
   counts <- switch(
     EXPR = slot,
-    'scale.data' = Seurat:::GetAssayData(object = object[[assay]], slot = "counts"),
+    'scale.data' = Seurat::GetAssayData(object = object[[assay]], slot = "counts"),
     numeric()
   )
 
@@ -213,7 +213,7 @@ GetCellsIndices <- function(data.use, object, ident.1, ident.2) {
     tree <- if (is(object = ident.1, class2 = 'phylo')) {
       ident.1
     } else {
-      Seurat:::Tool(object = object, slot = 'BuildClusterTree')
+      Seurat::Tool(object = object, slot = 'BuildClusterTree')
     }
     if (is.null(x = tree)) {
       stop("Please run 'BuildClusterTree' or pass an object of class 'phylo' as 'ident.1'")
@@ -228,7 +228,7 @@ GetCellsIndices <- function(data.use, object, ident.1, ident.2) {
       stop(paste0("The following cell names provided to ident.1 are not present in the object: ", paste(bad.cells, collapse = ", ")))
     }
   } else {
-    ident.1 <- Seurat:::WhichCells(object = object, idents = ident.1)
+    ident.1 <- Seurat::WhichCells(object = object, idents = ident.1)
   }
   # if NULL for ident.2, use all other cells
   if (length(x = as.vector(x = ident.2)) > 1 &&
@@ -241,7 +241,7 @@ GetCellsIndices <- function(data.use, object, ident.1, ident.2) {
     if (is.null(x = ident.2)) {
       ident.2 <- setdiff(x = colnames(x = data.use), y = ident.1)
     } else {
-      ident.2 <- Seurat:::WhichCells(object = object, idents = ident.2)
+      ident.2 <- Seurat::WhichCells(object = object, idents = ident.2)
     }
   }
   ### Label the cells before finding marker genes: 1: Ident.1,  0: Ident2, >1:Other

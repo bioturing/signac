@@ -20,7 +20,7 @@ LinkingTo:
     RcppProgress,
     BH
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.2
 Suggests: 
     testthat
 Depends: 
